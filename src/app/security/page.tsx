@@ -35,7 +35,7 @@ const securitySections = [
   },
   {
     title: "OS security direction",
-    copy: "Rukh OS is exploring sane defaults, app permission direction, encrypted storage direction, and low-noise system services.",
+    copy: "Glass Squares OS is exploring sane defaults, app permission direction, encrypted storage direction, and low-noise system services.",
     icon: LockKeyhole,
   },
   {
@@ -72,7 +72,7 @@ export default function SecurityPage() {
               return (
                 <Reveal key={item.title} delay={index * 0.04}>
                   <Card interactive className="h-full p-6">
-                    <span className="grid size-11 place-items-center rounded-lg border border-[#4db7ff]/22 bg-[#4db7ff]/10 text-[#9fdcff]">
+                    <span className="grid size-11 place-items-center rounded-lg border border-[color:var(--brand-red)]/22 bg-[color:var(--brand-red)]/10 text-[#ffb4b8]">
                       <Icon aria-hidden className="size-5" />
                     </span>
                     <h2 className="mt-5 text-lg font-semibold text-white">{item.title}</h2>

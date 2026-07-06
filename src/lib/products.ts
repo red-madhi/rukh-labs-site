@@ -11,23 +11,23 @@ export type Product = {
 
 export const products: Product[] = [
   {
-    slug: "rukh-os",
-    name: "Rukh OS",
+    slug: "glass-squares-os",
+    name: "Glass Squares OS",
     category: "Operating System",
     status: "In development",
     shortDescription:
-      "A clean Linux-based desktop OS focused on speed, beauty, privacy, and familiar workflows.",
+      "A glassy Linux-based desktop OS focused on speed, privacy, familiar workflows, and a cleaner visual system.",
     longDescription:
-      "Rukh OS is a Linux-based desktop experience designed to feel familiar, stay fast, reduce bloat, and give users more control without making them live in a terminal.",
+      "Glass Squares OS is a Linux-based desktop experience built around glassy surfaces, square-based layouts, low bloat, practical compatibility, and a familiar workflow that does not force normal users to live in a terminal.",
     features: [
-      "Familiar desktop patterns",
+      "Glass shell interface",
+      "Square-based layout system",
       "Low-bloat defaults",
-      "Security-conscious foundation",
       "Practical compatibility paths",
-      "Polished visual system",
+      "Privacy-respecting defaults",
       "Power-user controls",
     ],
-    href: "/products/rukh-os",
+    href: "/products/glass-squares-os",
   },
   {
     slug: "farzin",

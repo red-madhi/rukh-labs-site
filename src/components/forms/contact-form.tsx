@@ -77,7 +77,7 @@ export function ContactForm() {
               id="contact-name"
               value={form.name}
               onChange={(event) => updateField("name", event.target.value)}
-              className="mt-2 h-12 w-full rounded-lg border border-white/12 bg-[#070b12]/80 px-4 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[#4db7ff]/65 focus:ring-4 focus:ring-[#4db7ff]/10"
+              className="mt-2 h-12 w-full rounded-lg border border-white/12 bg-[#090707]/80 px-4 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[color:var(--brand-red)]/65 focus:ring-4 focus:ring-[color:var(--brand-red)]/10"
               required
             />
           </div>
@@ -90,7 +90,7 @@ export function ContactForm() {
               type="email"
               value={form.email}
               onChange={(event) => updateField("email", event.target.value)}
-              className="mt-2 h-12 w-full rounded-lg border border-white/12 bg-[#070b12]/80 px-4 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[#4db7ff]/65 focus:ring-4 focus:ring-[#4db7ff]/10"
+              className="mt-2 h-12 w-full rounded-lg border border-white/12 bg-[#090707]/80 px-4 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[color:var(--brand-red)]/65 focus:ring-4 focus:ring-[color:var(--brand-red)]/10"
               required
             />
           </div>
@@ -103,7 +103,7 @@ export function ContactForm() {
             id="contact-reason"
             value={form.reason}
             onChange={(event) => updateField("reason", event.target.value)}
-            className="mt-2 h-12 w-full rounded-lg border border-white/12 bg-[#070b12]/80 px-4 text-sm text-white outline-none transition focus:border-[#4db7ff]/65 focus:ring-4 focus:ring-[#4db7ff]/10"
+            className="mt-2 h-12 w-full rounded-lg border border-white/12 bg-[#090707]/80 px-4 text-sm text-white outline-none transition focus:border-[color:var(--brand-red)]/65 focus:ring-4 focus:ring-[color:var(--brand-red)]/10"
           >
             {siteConfig.contactReasons.map((reason) => (
               <option key={reason}>{reason}</option>
@@ -119,7 +119,7 @@ export function ContactForm() {
             value={form.message}
             onChange={(event) => updateField("message", event.target.value)}
             rows={6}
-            className="mt-2 w-full resize-y rounded-lg border border-white/12 bg-[#070b12]/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[#4db7ff]/65 focus:ring-4 focus:ring-[#4db7ff]/10"
+            className="mt-2 w-full resize-y rounded-lg border border-white/12 bg-[#090707]/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[color:var(--brand-red)]/65 focus:ring-4 focus:ring-[color:var(--brand-red)]/10"
             required
           />
         </div>

@@ -11,6 +11,8 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
+import { BrandBanner } from "@/components/brand/brand-banner";
+import { RukhMark } from "@/components/brand/rukh-mark";
 import { WaitlistForm } from "@/components/forms/waitlist-form";
 import { ProductCard } from "@/components/sections/product-card";
 import { Badge } from "@/components/ui/badge";
@@ -55,10 +57,10 @@ const philosophy = [
 ];
 
 const osBullets = [
-  "Familiar desktop patterns",
+  "Glass-panel desktop shell",
+  "Square-based layout system",
   "Low-bloat default apps",
-  "Security-conscious architecture",
-  "Compatibility-first workflow",
+  "Practical compatibility paths",
   "Clean visual system",
 ];
 
@@ -74,6 +76,9 @@ export default function Home() {
   return (
     <>
       <section className="relative overflow-hidden border-b border-white/10">
+        <div className="absolute right-[4vw] top-20 hidden opacity-[0.12] lg:block">
+          <RukhMark size="hero" glow container={false} decorative />
+        </div>
         <Container className="grid min-h-[calc(100vh-4.5rem)] items-center gap-12 py-16 sm:py-20 lg:grid-cols-[0.95fr_1.05fr] lg:py-24">
           <Reveal>
             <div className="max-w-3xl">
@@ -98,7 +103,7 @@ export default function Home() {
                 </Link>
               </div>
               <div className="mt-10 grid gap-3 text-sm text-white/50 sm:grid-cols-3">
-                <span>Linux-based OS concept</span>
+                <span>Glass Squares OS</span>
                 <span>Premium chess training</span>
                 <span>Independent software lab</span>
               </div>
@@ -109,6 +114,14 @@ export default function Home() {
           </Reveal>
         </Container>
       </section>
+
+      <Section className="py-8 sm:py-10">
+        <Container>
+          <Reveal>
+            <BrandBanner />
+          </Reveal>
+        </Container>
+      </Section>
 
       <Section>
         <Container>
@@ -159,7 +172,7 @@ export default function Home() {
               return (
                 <Reveal key={item.title} delay={index * 0.05}>
                   <Card interactive className="h-full p-5">
-                    <span className="grid size-11 place-items-center rounded-lg border border-[#4db7ff]/24 bg-[#4db7ff]/10 text-[#9fdcff]">
+                    <span className="grid size-11 place-items-center rounded-lg border border-[color:var(--brand-red)]/24 bg-[color:var(--brand-red)]/10 text-[#ffb4b8]">
                       <Icon aria-hidden className="size-5" />
                     </span>
                     <h3 className="mt-5 text-lg font-semibold text-white">{item.title}</h3>
@@ -176,27 +189,28 @@ export default function Home() {
         <Container className="grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr]">
           <Reveal>
             <div>
-              <Badge tone="blue">Rukh OS</Badge>
+              <Badge tone="red">Glass Squares OS</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
                 A desktop OS without the usual mess.
               </h2>
               <p className="mt-6 text-lg leading-8 text-white/64">
-                Rukh OS is a Linux-based desktop experience designed around
-                speed, clarity, compatibility, and control.
+                Glass Squares OS is a Linux-based desktop experience designed
+                around glassy surfaces, square layouts, speed, clarity,
+                compatibility, and control.
               </p>
               <ul className="mt-7 grid gap-3">
                 {osBullets.map((item) => (
                   <li key={item} className="flex items-center gap-3 text-sm text-white/68">
-                    <ShieldCheck aria-hidden className="size-4 text-[#9fdcff]" />
+                    <ShieldCheck aria-hidden className="size-4 text-[#ffb4b8]" />
                     {item}
                   </li>
                 ))}
               </ul>
               <Link
-                href="/products/rukh-os"
+                href="/products/glass-squares-os"
                 className={buttonStyles({ variant: "secondary", className: "mt-8" })}
               >
-                Explore Rukh OS
+                Explore Glass Squares OS
               </Link>
             </div>
           </Reveal>
@@ -272,7 +286,7 @@ export default function Home() {
 
                   return (
                     <div key={item.title}>
-                      <Icon aria-hidden className="size-5 text-[#9fdcff]" />
+                      <Icon aria-hidden className="size-5 text-[#ffb4b8]" />
                       <h3 className="mt-4 text-base font-semibold text-white">{item.title}</h3>
                       <p className="mt-3 text-sm leading-6 text-white/58">{item.copy}</p>
                     </div>

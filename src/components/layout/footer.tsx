@@ -18,7 +18,7 @@ function FooterColumn({
           <li key={link.href}>
             <Link
               href={link.href}
-              className="text-sm text-white/55 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#4db7ff]"
+              className="text-sm text-white/55 transition hover:text-[color:var(--brand-bronze)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--brand-red)]"
             >
               {link.label}
             </Link>
@@ -31,7 +31,7 @@ function FooterColumn({
 
 export function Footer() {
   return (
-    <footer className="border-t border-white/10 bg-[#05070b]/80">
+    <footer className="border-t border-[color:var(--brand-red)]/16 bg-[#050506]/86">
       <Container className="py-12 sm:py-16">
         <div className="grid gap-10 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
           <div className="max-w-sm">
@@ -46,7 +46,7 @@ export function Footer() {
           <FooterColumn title="Company" links={siteConfig.footer.company} />
           <FooterColumn title="Legal" links={siteConfig.footer.legal} />
         </div>
-        <div className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-xs text-white/42 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col gap-3 border-t border-[color:var(--brand-red)]/14 pt-6 text-xs text-white/42 sm:flex-row sm:items-center sm:justify-between">
           <span>&copy; 2026 Rukh Labs. All rights reserved.</span>
           <span>Software should feel powerful again.</span>
         </div>

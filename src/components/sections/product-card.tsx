@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Boxes, Cpu, Crown } from "lucide-react";
+import { ArrowRight, Boxes, Crown, LayoutGrid } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { buttonStyles } from "@/components/ui/button";
@@ -14,7 +14,7 @@ type ProductCardProps = {
 };
 
 const iconMap = {
-  "rukh-os": Cpu,
+  "glass-squares-os": LayoutGrid,
   farzin: Crown,
   lab: Boxes,
 };
@@ -25,10 +25,10 @@ export function ProductCard({ product, cta }: ProductCardProps) {
   return (
     <Card interactive className="flex h-full flex-col p-6">
       <div className="flex items-start justify-between gap-4">
-        <span className="grid size-12 place-items-center rounded-lg border border-[#4db7ff]/20 bg-[#4db7ff]/10 text-[#9fdcff]">
+        <span className="grid size-12 place-items-center rounded-lg border border-[color:var(--brand-red)]/24 bg-[color:var(--brand-red)]/10 text-[#ffb4b8]">
           <Icon aria-hidden className="size-5" />
         </span>
-        <Badge tone={product.status === "Research" ? "blue" : "gold"}>
+        <Badge tone={product.status === "Research" ? "slate" : "gold"}>
           {product.status}
         </Badge>
       </div>
@@ -42,7 +42,7 @@ export function ProductCard({ product, cta }: ProductCardProps) {
       <ul className="mt-6 grid gap-2 text-sm text-white/56">
         {product.features.slice(0, 3).map((feature) => (
           <li key={feature} className="flex items-center gap-2">
-            <span aria-hidden className="size-1.5 rounded-full bg-[#4db7ff]" />
+            <span aria-hidden className="size-1.5 rounded-full bg-[color:var(--brand-red)]" />
             {feature}
           </li>
         ))}

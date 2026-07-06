@@ -15,7 +15,7 @@ export const siteConfig = {
   ],
   navItems: [
     { label: "Products", href: "/products" },
-    { label: "Rukh OS", href: "/products/rukh-os" },
+    { label: "Glass Squares OS", href: "/products/glass-squares-os" },
     { label: "Farzin", href: "/products/farzin" },
     { label: "Changelog", href: "/changelog" },
     { label: "Security", href: "/security" },
@@ -25,7 +25,7 @@ export const siteConfig = {
   footer: {
     products: [
       { label: "Products", href: "/products" },
-      { label: "Rukh OS", href: "/products/rukh-os" },
+      { label: "Glass Squares OS", href: "/products/glass-squares-os" },
       { label: "Farzin", href: "/products/farzin" },
       { label: "Download", href: "/download" },
     ],
@@ -40,7 +40,7 @@ export const siteConfig = {
       { label: "Terms", href: "/legal/terms" },
     ],
   },
-  productInterestOptions: ["Everything Rukh Labs", "Rukh OS", "Farzin"],
+  productInterestOptions: ["Everything Rukh Labs", "Glass Squares OS", "Farzin"],
   contactReasons: [
     "Beta access",
     "Product feedback",

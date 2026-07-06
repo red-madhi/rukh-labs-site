@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BrandBanner } from "@/components/brand/brand-banner";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
@@ -33,7 +34,7 @@ const sections = [
   },
   {
     title: "What we are building",
-    copy: "Rukh OS starts with the desktop. Farzin starts with chess training. The lab grows from tools that deserve a higher standard.",
+    copy: "Glass Squares OS starts with the desktop. Farzin starts with chess training. The lab grows from tools that deserve a higher standard.",
   },
 ];
 
@@ -45,6 +46,13 @@ export default function AboutPage() {
         title="Rukh Labs builds software with sharper standards."
         description="Rukh Labs is an independent software lab focused on clean, powerful, privacy-conscious tools. We care about software that feels fast, looks beautiful, and respects the person using it."
       />
+      <Section className="pb-0">
+        <Container>
+          <Reveal>
+            <BrandBanner />
+          </Reveal>
+        </Container>
+      </Section>
       <Section>
         <Container>
           <div className="grid gap-5 lg:grid-cols-3">

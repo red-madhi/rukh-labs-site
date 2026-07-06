@@ -11,6 +11,7 @@ import {
   ListChecks,
   ScanSearch,
 } from "lucide-react";
+import { ProductBrandLockup } from "@/components/brand/product-brand-lockup";
 import { ComparisonTable } from "@/components/sections/comparison-table";
 import { FeatureGrid } from "@/components/sections/feature-grid";
 import { Badge } from "@/components/ui/badge";
@@ -107,7 +108,10 @@ export default function FarzinPage() {
         <Container className="grid items-center gap-12 py-20 sm:py-24 lg:grid-cols-[0.9fr_1.1fr]">
           <Reveal>
             <div>
-              <Badge tone="gold">Farzin</Badge>
+              <ProductBrandLockup product="Farzin" />
+              <Badge tone="gold" className="mt-6">
+                Farzin by Rukh Labs
+              </Badge>
               <h1 className="mt-6 text-4xl font-semibold leading-[1.05] text-white sm:text-6xl">
                 Serious chess training without the circus.
               </h1>
@@ -151,6 +155,30 @@ export default function FarzinPage() {
                 Farzin is for players who care about getting stronger. Less
                 clutter. Better study flow. Cleaner review. More signal.
               </p>
+            </Card>
+          </Reveal>
+        </Container>
+      </Section>
+
+      <Section className="border-y border-[color:var(--brand-red)]/14 bg-[rgba(183,29,37,0.035)]">
+        <Container>
+          <Reveal>
+            <Card className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[0.7fr_1.3fr] lg:p-10">
+              <div>
+                <Badge tone="red">Master every move.</Badge>
+                <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
+                  Why train where your opponents train?
+                </h2>
+              </div>
+              <div>
+                <p className="text-lg leading-8 text-white/68">
+                  Farzin is built for players who want a quieter, sharper, more
+                  serious way to study. Less noise. More signal. More discipline.
+                </p>
+                <p className="mt-5 text-sm font-medium text-[color:var(--brand-bronze)]">
+                  Premium chess training by Rukh Labs.
+                </p>
+              </div>
             </Card>
           </Reveal>
         </Container>

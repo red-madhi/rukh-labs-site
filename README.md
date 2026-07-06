@@ -1,6 +1,6 @@
 # Rukh Labs Site
 
-Production-quality marketing website for Rukh Labs, an independent software lab building Rukh OS and Farzin.
+Production-quality marketing website for Rukh Labs, an independent software lab building Glass Squares OS and Farzin.
 
 ## Stack
 

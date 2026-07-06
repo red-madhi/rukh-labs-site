@@ -17,7 +17,7 @@ export function RoadmapTimeline({ items }: RoadmapTimelineProps) {
       <div aria-hidden className="absolute bottom-0 left-5 top-0 hidden w-px bg-white/10 sm:block" />
       {items.map((item, index) => (
         <div key={item.title} className="relative sm:pl-14">
-          <span className="absolute left-[13px] top-6 hidden size-4 rounded-full border border-[#4db7ff]/45 bg-[#07101a] shadow-[0_0_22px_rgba(77,183,255,0.45)] sm:block" />
+          <span className="absolute left-[13px] top-6 hidden size-4 rounded-full border border-[color:var(--brand-red)]/45 bg-[#100708] shadow-[0_0_22px_rgba(183,29,37,0.45)] sm:block" />
           <Card className="p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>

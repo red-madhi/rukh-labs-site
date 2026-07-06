@@ -10,7 +10,7 @@ import { createPageMetadata } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Products",
   description:
-    "Products from Rukh Labs: Rukh OS, Farzin, and future lab projects.",
+    "Products from Rukh Labs: Glass Squares OS, Farzin, and future lab projects.",
   path: "/products",
 });
 

@@ -34,7 +34,7 @@ export function WaitlistForm({ defaultInterest }: { defaultInterest?: string }) 
     return (
       <Card className="p-6">
         <div className="flex gap-4">
-          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#4db7ff]/12 text-[#9fdcff]">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[color:var(--brand-red)]/12 text-[#ffb4b8]">
             <CheckCircle2 aria-hidden className="size-5" />
           </span>
           <div>
@@ -62,7 +62,7 @@ export function WaitlistForm({ defaultInterest }: { defaultInterest?: string }) 
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="you@example.com"
-            className="h-12 w-full rounded-lg border border-white/12 bg-[#070b12]/80 px-4 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[#4db7ff]/65 focus:ring-4 focus:ring-[#4db7ff]/10"
+            className="h-12 w-full rounded-lg border border-white/12 bg-[#090707]/80 px-4 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[color:var(--brand-red)]/65 focus:ring-4 focus:ring-[color:var(--brand-red)]/10"
             aria-describedby={error ? "waitlist-error" : "waitlist-note"}
             required
           />
@@ -75,7 +75,7 @@ export function WaitlistForm({ defaultInterest }: { defaultInterest?: string }) 
             id="waitlist-interest"
             value={interest}
             onChange={(event) => setInterest(event.target.value)}
-            className="h-12 w-full rounded-lg border border-white/12 bg-[#070b12]/80 px-4 text-sm text-white outline-none transition focus:border-[#4db7ff]/65 focus:ring-4 focus:ring-[#4db7ff]/10"
+            className="h-12 w-full rounded-lg border border-white/12 bg-[#090707]/80 px-4 text-sm text-white outline-none transition focus:border-[color:var(--brand-red)]/65 focus:ring-4 focus:ring-[color:var(--brand-red)]/10"
           >
             {siteConfig.productInterestOptions.map((option) => (
               <option key={option}>{option}</option>

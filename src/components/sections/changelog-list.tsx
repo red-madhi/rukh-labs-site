@@ -10,7 +10,7 @@ type ChangelogListProps = {
   entries: ChangelogEntry[];
 };
 
-const filters = ["All", "Rukh OS", "Farzin", "Lab"] as const;
+const filters = ["All", "Glass Squares OS", "Farzin", "Lab"] as const;
 
 export function ChangelogList({ entries }: ChangelogListProps) {
   const [filter, setFilter] = useState<(typeof filters)[number]>("All");
@@ -34,10 +34,10 @@ export function ChangelogList({ entries }: ChangelogListProps) {
             aria-selected={filter === item}
             onClick={() => setFilter(item)}
             className={cn(
-              "rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#4db7ff]",
+              "rounded-full border px-4 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-red)]",
               filter === item
                 ? "border-[#d6ad5b]/45 bg-[#d6ad5b]/12 text-[#f3d99d]"
-                : "border-white/12 bg-white/[0.035] text-white/58 hover:border-[#4db7ff]/40 hover:text-white",
+                : "border-white/12 bg-white/[0.035] text-white/58 hover:border-[color:var(--brand-red)]/40 hover:text-white",
             )}
           >
             {item}
@@ -53,7 +53,15 @@ export function ChangelogList({ entries }: ChangelogListProps) {
                   <time className="text-sm text-white/42" dateTime={entry.date}>
                     {entry.date}
                   </time>
-                  <Badge tone={entry.product === "Farzin" ? "blue" : "gold"}>
+                  <Badge
+                    tone={
+                      entry.product === "Glass Squares OS"
+                        ? "red"
+                        : entry.product === "Farzin"
+                          ? "gold"
+                          : "slate"
+                    }
+                  >
                     {entry.product}
                   </Badge>
                 </div>

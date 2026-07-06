@@ -18,7 +18,7 @@ export default function ChangelogPage() {
       <PageHeader
         eyebrow="Roadmap"
         title="Changelog & Roadmap"
-        description="A public development trail for Rukh Labs, Rukh OS, Farzin, and future lab work."
+        description="A public development trail for Rukh Labs, Glass Squares OS, Farzin, and future lab work."
       />
       <Section>
         <Container>

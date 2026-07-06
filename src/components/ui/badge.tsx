@@ -1,11 +1,12 @@
 import type { HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-type BadgeTone = "gold" | "blue" | "ivory" | "slate";
+type BadgeTone = "gold" | "red" | "blue" | "ivory" | "slate";
 
 const toneClasses: Record<BadgeTone, string> = {
-  gold: "border-[#d6ad5b]/35 bg-[#d6ad5b]/10 text-[#f3d99d]",
-  blue: "border-[#4db7ff]/35 bg-[#4db7ff]/10 text-[#a7dcff]",
+  gold: "border-[color:var(--brand-bronze)]/40 bg-[color:var(--brand-bronze)]/10 text-[#f3d99d]",
+  red: "border-[color:var(--brand-red)]/42 bg-[color:var(--brand-red)]/12 text-[#ffb4b8]",
+  blue: "border-[#4f8fbf]/28 bg-[#4f8fbf]/8 text-[#b7d7ea]",
   ivory: "border-[#f4e8c8]/30 bg-[#f4e8c8]/10 text-[#fff6dc]",
   slate: "border-white/12 bg-white/[0.05] text-white/70",
 };
