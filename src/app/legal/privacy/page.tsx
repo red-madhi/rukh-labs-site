@@ -80,9 +80,9 @@ export default function PrivacyPage() {
                 For privacy questions, contact Rukh Labs at:{" "}
                 <a
                   className="font-medium text-[color:var(--brand-bronze)] underline-offset-4 transition hover:underline"
-                  href="mailto:rukhlabs@gmail.com"
+                  href="mailto:rukh.labs@gmail.com"
                 >
-                  rukhlabs@gmail.com
+                  rukh.labs@gmail.com
                 </a>
               </p>
             </Card>
