@@ -6,6 +6,9 @@ export const siteConfig = {
   tagline: "Software should feel powerful again.",
   description:
     "Rukh Labs builds clean, secure, beautifully designed software for people who expect more from their tools.",
+  links: {
+    patreon: "https://patreon.com/rukhlabs",
+  },
   brandLines: [
     "Software should feel powerful again.",
     "Beautiful software for people who expect more.",

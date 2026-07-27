@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Heart } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
+import { buttonStyles } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { siteConfig } from "@/lib/site-config";
 
@@ -41,6 +43,20 @@ export function Footer() {
               expect more.
             </p>
             <p className="mt-4 text-xs text-white/42">Independent software lab.</p>
+            <a
+              href={siteConfig.links.patreon}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonStyles({
+                variant: "secondary",
+                size: "sm",
+                className:
+                  "mt-6 border-[color:var(--brand-red)]/30 bg-[color:var(--brand-red)]/10 hover:border-[color:var(--brand-red)]/55 hover:bg-[color:var(--brand-red)]/16",
+              })}
+            >
+              <Heart aria-hidden className="size-4 text-[#ff596b]" />
+              Support Rukh Labs on Patreon
+            </a>
           </div>
           <FooterColumn title="Products" links={siteConfig.footer.products} />
           <FooterColumn title="Company" links={siteConfig.footer.company} />
