@@ -1,12 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { OfficialBrandArt } from "@/components/brand/official-brand-art";
-
-const terminalLines = [
-  "$ glass status --clean",
-  "shell: square",
-  "desktop: glass",
-  "analysis: +0.42",
-];
+import { OSMiniPreview } from "@/components/visuals/os-mockup";
 
 export function HeroVisual() {
   return (
@@ -24,10 +18,8 @@ export function HeroVisual() {
               </span>
             </div>
           </div>
-          <div className="rounded-[1.4rem] border border-[#16c8ff]/18 bg-black/46 p-4 font-mono text-[11px] leading-6 text-[#74dcff]">
-            {terminalLines.map((line) => (
-              <p key={line}>{line}</p>
-            ))}
+          <div className="rounded-[1.4rem] border border-[#16c8ff]/18 bg-black/46 p-3 shadow-[0_0_70px_rgba(18,159,255,0.08)]">
+            <OSMiniPreview />
           </div>
         </div>
 
