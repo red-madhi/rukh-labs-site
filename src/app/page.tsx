@@ -76,19 +76,25 @@ export default function Home() {
   return (
     <>
       <section className="relative overflow-hidden border-b border-white/10">
-        <div className="absolute right-[4vw] top-20 hidden opacity-[0.12] lg:block">
+        <div className="absolute left-[-7rem] top-24 hidden opacity-[0.08] lg:block">
           <RukhMark size="hero" glow container={false} decorative />
         </div>
+        <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f0001c_45%,#16c8ff_70%,transparent)]" />
         <Container className="grid min-h-[calc(100vh-4.5rem)] items-center gap-12 py-16 sm:py-20 lg:grid-cols-[0.95fr_1.05fr] lg:py-24">
           <Reveal>
             <div className="max-w-3xl">
-              <Badge tone="gold">Clean tools. Sharper standards.</Badge>
+              <Badge tone="red" className="uppercase tracking-[0.18em]">
+                Independent software lab
+              </Badge>
               <h1 className="mt-7 text-5xl font-semibold leading-[1.02] text-white sm:text-7xl">
-                Software should feel powerful again.
+                Software should feel{" "}
+                <span className="bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_45%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent">
+                  powerful again.
+                </span>
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-8 text-white/68 sm:text-xl">
-                Rukh Labs builds clean, secure, beautifully designed software
-                for people who expect more from their tools.
+                Rukh Labs builds distinct, secure software with actual identity:
+                a glass-first desktop OS and a serious chess training platform.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link href="/download" className={buttonStyles({ size: "lg" })}>
@@ -102,10 +108,10 @@ export default function Home() {
                   Explore Products
                 </Link>
               </div>
-              <div className="mt-10 grid gap-3 text-sm text-white/50 sm:grid-cols-3">
-                <span>Glass Squares OS</span>
-                <span>Premium chess training</span>
-                <span>Independent software lab</span>
+              <div className="mt-10 grid gap-3 text-xs font-medium uppercase tracking-[0.14em] text-white/42 sm:grid-cols-3">
+                <span className="border-l border-[#16c8ff]/50 pl-3">Glass Squares OS</span>
+                <span className="border-l border-[#f4bd43]/50 pl-3">Farzin Chess</span>
+                <span className="border-l border-[#f0001c]/50 pl-3">Built by Rukh Labs</span>
               </div>
             </div>
           </Reveal>
@@ -128,7 +134,7 @@ export default function Home() {
           <Reveal>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <Badge tone="blue">Products</Badge>
+                <Badge tone="red">Products</Badge>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
                   Premium software with teeth.
                 </h2>
@@ -189,7 +195,7 @@ export default function Home() {
         <Container className="grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr]">
           <Reveal>
             <div>
-              <Badge tone="red">Glass Squares OS</Badge>
+              <Badge tone="blue">Glass Squares OS</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
                 A desktop OS without the usual mess.
               </h2>
@@ -201,7 +207,7 @@ export default function Home() {
               <ul className="mt-7 grid gap-3">
                 {osBullets.map((item) => (
                   <li key={item} className="flex items-center gap-3 text-sm text-white/68">
-                    <ShieldCheck aria-hidden className="size-4 text-[#ffb4b8]" />
+                    <ShieldCheck aria-hidden className="size-4 text-[#55d9ff]" />
                     {item}
                   </li>
                 ))}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Boxes, Crown, LayoutGrid } from "lucide-react";
+import { OfficialBrandArt } from "@/components/brand/official-brand-art";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { buttonStyles } from "@/components/ui/button";
@@ -21,13 +22,32 @@ const iconMap = {
 
 export function ProductCard({ product, cta }: ProductCardProps) {
   const Icon = iconMap[product.slug as keyof typeof iconMap] ?? Boxes;
+  const isGlass = product.slug === "glass-squares-os";
+  const isFarzin = product.slug === "farzin";
 
   return (
-    <Card interactive className="flex h-full flex-col p-6">
+    <Card
+      interactive
+      className={`flex h-full flex-col p-6 ${
+        isGlass
+          ? "product-card-glass"
+          : isFarzin
+            ? "product-card-farzin"
+            : "product-card-rukh"
+      }`}
+    >
       <div className="flex items-start justify-between gap-4">
-        <span className="grid size-12 place-items-center rounded-lg border border-[color:var(--brand-red)]/24 bg-[color:var(--brand-red)]/10 text-[#ffb4b8]">
-          <Icon aria-hidden className="size-5" />
-        </span>
+        {isGlass || isFarzin ? (
+          <OfficialBrandArt
+            brand={isGlass ? "glass-squares" : "farzin"}
+            decorative
+            className="size-16 rounded-2xl"
+          />
+        ) : (
+          <span className="grid size-12 place-items-center rounded-xl border border-[color:var(--brand-red)]/24 bg-[color:var(--brand-red)]/10 text-[#ffb4b8]">
+            <Icon aria-hidden className="size-5" />
+          </span>
+        )}
         <Badge tone={product.status === "Research" ? "slate" : "gold"}>
           {product.status}
         </Badge>

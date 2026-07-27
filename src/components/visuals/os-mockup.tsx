@@ -1,4 +1,5 @@
 import { Badge } from "@/components/ui/badge";
+import { OfficialBrandArt } from "@/components/brand/official-brand-art";
 
 const appCards = [
   { title: "Files", detail: "Glass cards" },
@@ -9,20 +10,18 @@ const appCards = [
 
 export function OSMockup() {
   return (
-    <div className="relative min-h-[560px] w-full min-w-0 overflow-hidden rounded-lg border border-white/12 bg-[#070609] shadow-[0_28px_120px_rgba(0,0,0,0.42)] sm:aspect-[1.45] sm:min-h-[360px]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_35%_20%,rgba(183,29,37,0.25),transparent_34%),radial-gradient(circle_at_78%_84%,rgba(184,137,77,0.2),transparent_35%),radial-gradient(circle_at_70%_22%,rgba(77,183,255,0.08),transparent_30%),linear-gradient(135deg,#070609,#131014_48%,#050506)]" />
+    <div className="relative min-h-[560px] w-full min-w-0 overflow-hidden rounded-[2rem] border border-[#16c8ff]/22 bg-[#040616] shadow-[0_28px_120px_rgba(17,101,255,0.16)] sm:aspect-[1.45] sm:min-h-[360px]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_16%,rgba(22,200,255,0.28),transparent_34%),radial-gradient(circle_at_78%_84%,rgba(109,49,255,0.28),transparent_36%),linear-gradient(135deg,#020617,#0b1741_48%,#05051a)]" />
       <div className="visual-grid absolute inset-0 opacity-30" />
       <div className="relative flex h-full flex-col p-4 sm:p-6">
-        <div className="mb-4 flex items-center justify-between rounded-lg border border-white/10 bg-black/30 px-4 py-3">
+        <div className="mb-4 flex items-center justify-between rounded-2xl border border-[#16c8ff]/18 bg-black/30 px-4 py-3 backdrop-blur-xl">
           <div className="flex items-center gap-3">
-            <span className="grid size-8 place-items-center rounded-md border border-[color:var(--brand-red)]/40 bg-[color:var(--brand-red)]/12 text-xs font-semibold text-[#ffb4b8]">
-              G
-            </span>
+            <OfficialBrandArt brand="glass-squares" decorative className="size-9 rounded-xl" />
             <span className="text-sm font-medium text-white">Glass Squares</span>
           </div>
           <div className="hidden items-center gap-2 sm:flex">
             <Badge tone="gold">Low bloat</Badge>
-            <Badge tone="red">Private</Badge>
+            <Badge tone="blue">Private</Badge>
             <Badge tone="ivory">Fast</Badge>
           </div>
         </div>
@@ -34,7 +33,7 @@ export function OSMockup() {
                 <div
                   key={item}
                   className={`rounded-md px-3 py-2 text-sm ${
-                    index === 0 ? "bg-[color:var(--brand-red)]/14 text-[#ffb4b8]" : "text-white/52"
+                    index === 0 ? "bg-[#16c8ff]/12 text-[#7de2ff]" : "text-white/52"
                   }`}
                 >
                   {item}
@@ -48,26 +47,26 @@ export function OSMockup() {
                 <p className="text-xs text-white/42">Control center</p>
                 <h3 className="mt-1 text-lg font-semibold text-white">Glass shell</h3>
               </div>
-              <span className="rounded-full bg-[color:var(--brand-red)]/12 px-3 py-1 text-xs text-[#ffb4b8]">
+              <span className="rounded-full bg-[#16c8ff]/12 px-3 py-1 text-xs text-[#7de2ff]">
                 square grid UI
               </span>
             </div>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {appCards.map((card) => (
                 <div key={card.title} className="rounded-lg border border-white/10 bg-white/[0.065] p-4 backdrop-blur">
-                  <div className="h-8 w-8 rounded-md border border-[color:var(--brand-bronze)]/22 bg-[color:var(--brand-bronze)]/12" />
+                  <div className="h-8 w-8 rounded-md border border-[#16c8ff]/22 bg-[linear-gradient(135deg,rgba(22,200,255,0.18),rgba(109,49,255,0.18))]" />
                   <h4 className="mt-5 text-sm font-semibold text-white">{card.title}</h4>
                   <p className="mt-1 text-xs text-white/48">{card.detail}</p>
                 </div>
               ))}
             </div>
           </main>
-          <aside className="rounded-lg border border-white/12 bg-black/38 p-4 font-mono text-xs leading-6 text-[#d8b47a]">
+          <aside className="rounded-lg border border-white/12 bg-black/38 p-4 font-mono text-xs leading-6 text-[#74dcff]">
             <p>$ glass status</p>
             <p>shell: frosted</p>
             <p>tiles: square</p>
             <p>privacy: default</p>
-            <div className="mt-5 rounded-md border border-[#d6ad5b]/22 bg-[#d6ad5b]/10 p-3 font-sans text-xs leading-5 text-[#f3d99d]">
+            <div className="mt-5 rounded-md border border-[#6d31ff]/30 bg-[#6d31ff]/12 p-3 font-sans text-xs leading-5 text-[#c4a8ff]">
               Practical compatibility, not magic.
             </div>
           </aside>
@@ -76,7 +75,7 @@ export function OSMockup() {
           {["Launcher", "Files", "Browser", "Notes", "Settings", "Glass shell"].map((item) => (
             <span
               key={item}
-              className="size-8 rounded-md border border-white/10 bg-white/[0.06] shadow-[0_0_18px_rgba(183,29,37,0.12)]"
+              className="size-8 rounded-md border border-white/10 bg-white/[0.06] shadow-[0_0_18px_rgba(22,200,255,0.16)]"
               title={item}
             />
           ))}

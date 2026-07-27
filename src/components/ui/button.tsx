@@ -1,16 +1,20 @@
 import type { ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "glass" | "gold";
 type ButtonSize = "sm" | "md" | "lg";
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    "border-transparent bg-[linear-gradient(135deg,#f6dfb2_0%,#b8894d_48%,#b71d25_130%)] text-[#090607] shadow-[0_14px_55px_rgba(183,29,37,0.25)] hover:brightness-110",
+    "border-transparent bg-[linear-gradient(135deg,#ff5364_0%,#f0001c_48%,#8f0011_100%)] text-white shadow-[0_14px_55px_rgba(240,0,28,0.28)] hover:brightness-110",
   secondary:
     "border-white/14 bg-white/[0.04] text-[#f7f0dd] hover:border-[color:var(--brand-red)]/55 hover:bg-[color:var(--brand-red)]/10",
   ghost:
     "border-transparent bg-transparent text-white/72 hover:bg-white/[0.06] hover:text-white",
+  glass:
+    "border-[#62ddff]/42 bg-[linear-gradient(135deg,#5fe0ff_0%,#188cff_48%,#6638eb_100%)] text-[#020616] shadow-[0_14px_55px_rgba(24,140,255,0.28)] hover:brightness-110",
+  gold:
+    "border-[#ffe29c]/38 bg-[linear-gradient(135deg,#fff0b5_0%,#f4bd43_48%,#9a5d00_100%)] text-[#120d04] shadow-[0_14px_55px_rgba(244,189,67,0.22)] hover:brightness-110",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

@@ -171,12 +171,13 @@ const roadmap = [
 export default function GlassSquaresOSPage() {
   return (
     <>
-      <section className="relative overflow-hidden border-b border-white/10">
+      <section className="relative overflow-hidden border-b border-[#16c8ff]/15 bg-[radial-gradient(circle_at_82%_22%,rgba(22,200,255,0.11),transparent_28%),radial-gradient(circle_at_72%_72%,rgba(109,49,255,0.1),transparent_30%)]">
+        <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#16c8ff,#6d31ff,transparent)]" />
         <Container className="grid items-center gap-12 py-20 sm:py-24 lg:grid-cols-[0.9fr_1.1fr]">
           <Reveal>
             <div>
               <ProductBrandLockup product="Glass Squares OS" />
-              <Badge tone="red" className="mt-6">
+              <Badge tone="blue" className="mt-6">
                 Glass Squares OS
               </Badge>
               <h1 className="mt-6 text-4xl font-semibold leading-[1.05] text-white sm:text-6xl">
@@ -189,7 +190,7 @@ export default function GlassSquaresOSPage() {
                 users to live in a terminal.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/download" className={buttonStyles({ size: "lg" })}>
+                <Link href="/download" className={buttonStyles({ variant: "glass", size: "lg" })}>
                   Join OS Beta
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
@@ -231,18 +232,18 @@ export default function GlassSquaresOSPage() {
         </Container>
       </Section>
 
-      <Section id="features" className="border-y border-white/10 bg-white/[0.025]">
+      <Section id="features" className="border-y border-[#16c8ff]/14 bg-[#071020]/55">
         <Container>
           <Reveal>
             <div className="max-w-3xl">
-              <Badge tone="red">Features</Badge>
+              <Badge tone="blue">Features</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
                 Glassy surfaces. Square layouts. Practical control.
               </h2>
             </div>
           </Reveal>
           <div className="mt-10">
-            <FeatureGrid features={features} />
+            <FeatureGrid features={features} tone="glass" />
           </div>
         </Container>
       </Section>
@@ -299,7 +300,7 @@ export default function GlassSquaresOSPage() {
               return (
                 <Reveal key={item.title} delay={index * 0.04}>
                   <Card className="h-full p-5">
-                    <Icon aria-hidden className="size-5 text-[#ffb4b8]" />
+                    <Icon aria-hidden className="size-5 text-[#8ce8ff]" />
                     <h3 className="mt-5 text-lg font-semibold text-white">{item.title}</h3>
                     <p className="mt-3 text-sm leading-6 text-white/58">{item.copy}</p>
                   </Card>
@@ -314,7 +315,7 @@ export default function GlassSquaresOSPage() {
         <Container className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
           <Reveal>
             <div>
-              <Badge tone="red">Roadmap</Badge>
+              <Badge tone="blue">Roadmap</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
                 From brand system to public preview.
               </h2>
@@ -329,11 +330,11 @@ export default function GlassSquaresOSPage() {
       <Section className="pt-0">
         <Container>
           <Reveal>
-            <div className="rounded-lg border border-[color:var(--brand-red)]/22 bg-[color:var(--brand-red)]/10 p-6 sm:p-8 lg:p-10">
+            <div className="rounded-[1.75rem] border border-[#16c8ff]/22 bg-[linear-gradient(135deg,rgba(22,200,255,0.12),rgba(109,49,255,0.12))] p-6 sm:p-8 lg:p-10">
               <h2 className="text-3xl font-semibold text-white sm:text-5xl">
                 Help shape the desktop Glass Squares OS becomes.
               </h2>
-              <Link href="/download" className={buttonStyles({ className: "mt-8", size: "lg" })}>
+              <Link href="/download" className={buttonStyles({ variant: "glass", className: "mt-8", size: "lg" })}>
                 Join OS Beta
               </Link>
             </div>

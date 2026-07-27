@@ -3,13 +3,16 @@
 :root {
   --background: #05070b;
   --foreground: #f7f0dd;
-  --brand-red: #b71d25;
-  --brand-red-glow: rgba(183, 29, 37, 0.42);
-  --brand-bronze: #b8894d;
-  --brand-gold: #d6ad5b;
+  --brand-red: #f0001c;
+  --brand-red-glow: rgba(240, 0, 28, 0.42);
+  --brand-bronze: #d89f32;
+  --brand-gold: #f4bd43;
   --brand-ivory: #f7f0dd;
   --brand-panel: #0b0a0d;
-  --brand-border: rgba(214, 173, 91, 0.18);
+  --brand-border: rgba(255, 255, 255, 0.14);
+  --glass-blue: #16c8ff;
+  --glass-violet: #6d31ff;
+  --farzin-gold: #f4bd43;
 }
 
 @theme inline {
@@ -54,8 +57,8 @@ html {
 
 .visual-grid {
   background-image:
-    linear-gradient(rgba(183, 29, 37, 0.18) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(214, 173, 91, 0.14) 1px, transparent 1px);
+    linear-gradient(rgba(22, 200, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(109, 49, 255, 0.12) 1px, transparent 1px);
   background-size: 28px 28px;
 }
 
@@ -66,12 +69,55 @@ html {
   background: conic-gradient(
     from 170deg,
     transparent,
-    rgba(183, 29, 37, 0.24),
+    rgba(240, 0, 28, 0.24),
     transparent,
-    rgba(184, 137, 77, 0.18),
+    rgba(22, 200, 255, 0.16),
     transparent
   );
   animation: glow-drift 18s linear infinite;
+}
+
+.brand-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 25%, rgba(255, 255, 255, 0.06), transparent 58%);
+  transform: translateX(-100%);
+  animation: brand-sheen 9s ease-in-out infinite;
+}
+
+.product-card-glass {
+  border-color: rgba(22, 200, 255, 0.2);
+  background:
+    radial-gradient(circle at 85% 0%, rgba(22, 200, 255, 0.14), transparent 36%),
+    radial-gradient(circle at 15% 100%, rgba(109, 49, 255, 0.14), transparent 38%),
+    rgba(5, 8, 22, 0.82);
+}
+
+.product-card-farzin {
+  border-color: rgba(244, 189, 67, 0.2);
+  background:
+    radial-gradient(circle at 85% 0%, rgba(244, 189, 67, 0.13), transparent 38%),
+    rgba(8, 7, 6, 0.88);
+}
+
+.product-card-rukh {
+  border-color: rgba(240, 0, 28, 0.2);
+  background:
+    radial-gradient(circle at 85% 0%, rgba(240, 0, 28, 0.12), transparent 38%),
+    rgba(11, 7, 8, 0.86);
+}
+
+@keyframes brand-sheen {
+  0%,
+  68% {
+    transform: translateX(-100%);
+  }
+  86%,
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @keyframes glow-drift {

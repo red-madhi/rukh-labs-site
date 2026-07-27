@@ -1,4 +1,4 @@
-import { RukhMark } from "@/components/brand/rukh-mark";
+import { OfficialBrandArt } from "@/components/brand/official-brand-art";
 import { cn } from "@/lib/utils";
 
 type ProductBrandLockupProps = {
@@ -12,14 +12,16 @@ export function ProductBrandLockup({
   line = "by Rukh Labs",
   className,
 }: ProductBrandLockupProps) {
+  const brand = product === "Farzin" ? "farzin" : "glass-squares";
+
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-3 rounded-lg border border-[color:var(--brand-red)]/20 bg-black/30 px-3 py-2",
+        "inline-flex items-center gap-3 rounded-2xl border border-white/12 bg-black/35 p-2 pr-4 backdrop-blur-xl",
         className,
       )}
     >
-      <RukhMark size="sm" glow container={false} decorative />
+      <OfficialBrandArt brand={brand} decorative className="size-11 rounded-xl" />
       <span className="leading-none">
         <span className="block text-sm font-semibold text-white">{product}</span>
         <span className="mt-1 block text-xs text-white/46">{line}</span>

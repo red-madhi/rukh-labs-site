@@ -1,5 +1,5 @@
 import { Badge } from "@/components/ui/badge";
-import { RukhMark } from "@/components/brand/rukh-mark";
+import { OfficialBrandArt } from "@/components/brand/official-brand-art";
 
 const moves = ["1. e4 c5", "2. Nf3 d6", "3. d4 cxd4"];
 const pieces: Record<number, string> = {
@@ -15,10 +15,10 @@ const pieces: Record<number, string> = {
 
 export function ChessMockup() {
   return (
-    <div className="relative overflow-hidden rounded-lg border border-white/12 bg-[#080607] p-4 shadow-[0_28px_120px_rgba(0,0,0,0.42)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(184,137,77,0.18),transparent_34%),radial-gradient(circle_at_82%_80%,rgba(183,29,37,0.18),transparent_36%)]" />
-      <div className="absolute right-4 top-4 opacity-85">
-        <RukhMark size="sm" glow decorative />
+    <div className="relative overflow-hidden rounded-[2rem] border border-[#f4bd43]/22 bg-[#080706] p-4 shadow-[0_28px_120px_rgba(176,112,0,0.14)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(244,189,67,0.2),transparent_34%),radial-gradient(circle_at_82%_80%,rgba(125,76,0,0.16),transparent_36%)]" />
+      <div className="absolute right-4 top-4 z-10 opacity-90">
+        <OfficialBrandArt brand="farzin" decorative className="size-10 rounded-xl" />
       </div>
       <div className="relative grid gap-4 lg:grid-cols-[1fr_280px]">
         <div className="grid gap-4 sm:grid-cols-[28px_1fr]">
@@ -26,7 +26,7 @@ export function ChessMockup() {
             {Array.from({ length: 20 }).map((_, index) => (
               <span
                 key={index}
-                className={index < 11 ? "flex-1 bg-[color:var(--brand-red)]" : "flex-1 bg-[color:var(--brand-bronze)]"}
+                className={index < 11 ? "flex-1 bg-[#f4bd43]" : "flex-1 bg-[#8d5d16]"}
               />
             ))}
           </div>
@@ -39,7 +39,7 @@ export function ChessMockup() {
                 <span
                   key={index}
                   className={`relative grid place-items-center text-lg font-semibold ${
-                    isLight ? "bg-[#b8894d]/84 text-[#11100e]" : "bg-[#151010] text-[#f4e8c8]"
+                    isLight ? "bg-[#c99639] text-[#11100e]" : "bg-[#12100c] text-[#f7e7b4]"
                   }`}
                 >
                   {pieces[index] ? <span>{pieces[index]}</span> : null}
@@ -51,7 +51,7 @@ export function ChessMockup() {
         <div className="grid gap-4">
           <div className="rounded-lg border border-white/12 bg-white/[0.045] p-4">
             <div className="flex items-center justify-between">
-              <Badge tone="red">+0.42</Badge>
+              <Badge tone="gold">+0.42</Badge>
               <span className="text-xs text-white/42">Depth 22</span>
             </div>
             <h3 className="mt-5 text-lg font-semibold text-white">Analysis line</h3>

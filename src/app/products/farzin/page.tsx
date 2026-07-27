@@ -104,7 +104,8 @@ const comparisonRows = [
 export default function FarzinPage() {
   return (
     <>
-      <section className="relative overflow-hidden border-b border-white/10">
+      <section className="relative overflow-hidden border-b border-[#f4bd43]/15 bg-[radial-gradient(circle_at_82%_22%,rgba(244,189,67,0.1),transparent_30%)]">
+        <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f4bd43,#fff0b5,transparent)]" />
         <Container className="grid items-center gap-12 py-20 sm:py-24 lg:grid-cols-[0.9fr_1.1fr]">
           <Reveal>
             <div>
@@ -120,7 +121,7 @@ export default function FarzinPage() {
                 analysis, sharper prep, and study tools that do not waste their time.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/download" className={buttonStyles({ size: "lg" })}>
+                <Link href="/download" className={buttonStyles({ variant: "gold", size: "lg" })}>
                   Join Farzin Beta
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
@@ -160,12 +161,12 @@ export default function FarzinPage() {
         </Container>
       </Section>
 
-      <Section className="border-y border-[color:var(--brand-red)]/14 bg-[rgba(183,29,37,0.035)]">
+      <Section className="border-y border-[#f4bd43]/14 bg-[rgba(244,189,67,0.035)]">
         <Container>
           <Reveal>
             <Card className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[0.7fr_1.3fr] lg:p-10">
               <div>
-                <Badge tone="red">Master every move.</Badge>
+                <Badge tone="gold">Master every move.</Badge>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
                   Why train where your opponents train?
                 </h2>
@@ -184,7 +185,7 @@ export default function FarzinPage() {
         </Container>
       </Section>
 
-      <Section id="features" className="border-y border-white/10 bg-white/[0.025]">
+      <Section id="features" className="border-y border-[#f4bd43]/12 bg-[#120e07]/52">
         <Container>
           <Reveal>
             <div className="max-w-3xl">
@@ -195,7 +196,7 @@ export default function FarzinPage() {
             </div>
           </Reveal>
           <div className="mt-10">
-            <FeatureGrid features={features} />
+            <FeatureGrid features={features} tone="farzin" />
           </div>
         </Container>
       </Section>
@@ -223,7 +224,7 @@ export default function FarzinPage() {
               <h2 className="text-3xl font-semibold text-white sm:text-5xl">
                 Train like your rating matters.
               </h2>
-              <Link href="/download" className={buttonStyles({ className: "mt-8", size: "lg" })}>
+              <Link href="/download" className={buttonStyles({ variant: "gold", className: "mt-8", size: "lg" })}>
                 Join Farzin Beta
               </Link>
             </div>
