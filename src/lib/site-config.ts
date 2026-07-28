@@ -3,11 +3,15 @@ import type { Metadata } from "next";
 export const siteConfig = {
   name: "Rukh Labs",
   url: "https://rukhlabs.com",
+  contactEmail: "rukhlabs@gmail.com",
   tagline: "Software should feel powerful again.",
   description:
     "Rukh Labs builds clean, secure, beautifully designed software for people who expect more from their tools.",
   links: {
     patreon: "https://patreon.com/rukhlabs",
+    email: "mailto:rukhlabs@gmail.com",
+    websiteProject:
+      "mailto:rukhlabs@gmail.com?subject=Rukh%20Labs%20Website%20Project",
   },
   brandLines: [
     "Software should feel powerful again.",
@@ -18,6 +22,7 @@ export const siteConfig = {
   ],
   navItems: [
     { label: "Products", href: "/products" },
+    { label: "Websites", href: "/services/web-development" },
     { label: "Glass Squares OS", href: "/products/glass-squares-os" },
     { label: "Farzin", href: "/products/farzin" },
     { label: "Changelog", href: "/changelog" },
@@ -33,6 +38,7 @@ export const siteConfig = {
       { label: "Download", href: "/download" },
     ],
     company: [
+      { label: "Web Development", href: "/services/web-development" },
       { label: "About", href: "/about" },
       { label: "Changelog", href: "/changelog" },
       { label: "Security", href: "/security" },

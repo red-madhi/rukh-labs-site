@@ -15,6 +15,7 @@ import { BrandBanner } from "@/components/brand/brand-banner";
 import { RukhMark } from "@/components/brand/rukh-mark";
 import { WaitlistForm } from "@/components/forms/waitlist-form";
 import { ProductCard } from "@/components/sections/product-card";
+import { WebsiteStudioTeaser } from "@/components/sections/website-studio-teaser";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -259,6 +260,8 @@ export default function Home() {
           </Reveal>
         </Container>
       </Section>
+
+      <WebsiteStudioTeaser />
 
       <Section>
         <Container>

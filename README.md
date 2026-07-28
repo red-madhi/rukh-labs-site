@@ -49,6 +49,7 @@ Primary brand, product, and roadmap content lives in:
 - `src/lib/site-config.ts`
 - `src/lib/products.ts`
 - `src/lib/changelog.ts`
+- `src/lib/web-development.ts`
 
 Shared UI lives in `src/components`. Product mockups are CSS/HTML based and live in `src/components/visuals`.
 
