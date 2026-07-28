@@ -58,7 +58,7 @@ export function WebsiteStudioTeaser() {
         </div>
 
         <Reveal delay={0.08}>
-          <div className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-4 lg:overflow-visible lg:pb-0">
+          <div className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 xl:grid-cols-6">
             {designDirections.map((direction) => (
               <Link
                 key={direction.slug}

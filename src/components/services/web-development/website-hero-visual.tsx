@@ -11,17 +11,17 @@ export function WebsiteHeroVisual() {
         <DesignPreview slug="atelier" size="mini" />
       </div>
       <div className="absolute right-0 top-[4%] hidden w-[56%] rotate-[5deg] opacity-78 sm:block">
-        <DesignPreview slug="obsidian" size="mini" />
+        <DesignPreview slug="spotlight" size="mini" />
       </div>
       <div className="absolute inset-x-[2%] bottom-[4%] z-10 sm:inset-x-[8%]">
         <DesignPreview
-          slug="signal"
+          slug="dispatch"
           size="card"
           className="shadow-[0_38px_100px_rgba(0,0,0,0.6)]"
         />
       </div>
       <div className="absolute bottom-0 right-[2%] z-20 rounded-full border border-white/14 bg-[#0d0b0d]/92 px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/66 shadow-xl backdrop-blur sm:right-[4%] sm:text-xs">
-        Four curated directions
+        Six curated directions
       </div>
     </div>
   );

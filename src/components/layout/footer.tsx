@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart } from "lucide-react";
+import { ArrowUpRight, Heart } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { buttonStyles } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -13,7 +13,7 @@ function FooterColumn({
   links,
 }: {
   title: string;
-  links: { label: string; href: string }[];
+  links: { label: string; href: string; external?: boolean }[];
 }) {
   return (
     <div>
@@ -23,9 +23,13 @@ function FooterColumn({
           <li key={link.href}>
             <Link
               href={link.href}
-              className="text-sm text-white/55 transition hover:text-[color:var(--brand-bronze)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--brand-red)]"
+              aria-label={link.external ? `${link.label} on Google Play` : undefined}
+              className="inline-flex items-center gap-1 text-sm text-white/55 transition hover:text-[color:var(--brand-bronze)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--brand-red)]"
             >
               {link.label}
+              {link.external ? (
+                <ArrowUpRight aria-hidden className="size-3.5" />
+              ) : null}
             </Link>
           </li>
         ))}

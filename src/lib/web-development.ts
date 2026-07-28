@@ -7,7 +7,9 @@ export type DesignDirectionSlug =
   | "obsidian"
   | "signal"
   | "atelier"
-  | "main-street";
+  | "main-street"
+  | "spotlight"
+  | "dispatch";
 
 export type DesignDirection = {
   slug: DesignDirectionSlug;
@@ -116,6 +118,56 @@ export const designDirections = [
       "A warm, conversion-focused neighborhood bakery and café website.",
     href: "/services/web-development/designs/main-street",
     sampleHref: "/services/web-development/designs/main-street/sample",
+  },
+  {
+    slug: "spotlight",
+    name: "Spotlight",
+    summary:
+      "Bold, personality-led, and media-forward, with a polished rhythm built for creators and public-facing personal brands.",
+    bestFor: [
+      "Influencers",
+      "Content creators",
+      "Podcasters",
+      "Personal brands",
+      "Brand partnerships",
+    ],
+    traits: [
+      "Creator-first storytelling",
+      "Social content and series highlights",
+      "Partnership proof and media-kit calls to action",
+      "Energetic modular layouts",
+    ],
+    sampleDomain: "mikarowe.co",
+    sampleName: "Mika Rowe",
+    sampleDescription:
+      "A creator portfolio for travel films, practical gear guides, and selective brand partnerships.",
+    href: "/services/web-development/designs/spotlight",
+    sampleHref: "/services/web-development/designs/spotlight/sample",
+  },
+  {
+    slug: "dispatch",
+    name: "Dispatch",
+    summary:
+      "A content-rich editorial system with strong reading hierarchy, flexible publishing structure, and a memorable point of view.",
+    bestFor: [
+      "Bloggers",
+      "Independent publications",
+      "Essayists",
+      "Newsletters",
+      "Editorial teams",
+    ],
+    traits: [
+      "Reading-first editorial hierarchy",
+      "Flexible categories and archives",
+      "Feature-story and newsletter presentation",
+      "Dense content without visual clutter",
+    ],
+    sampleDomain: "sundayindex.press",
+    sampleName: "The Sunday Index",
+    sampleDescription:
+      "An independent journal for essays on cities, culture, and the designed world.",
+    href: "/services/web-development/designs/dispatch",
+    sampleHref: "/services/web-development/designs/dispatch/sample",
   },
 ] as const satisfies readonly DesignDirection[];
 

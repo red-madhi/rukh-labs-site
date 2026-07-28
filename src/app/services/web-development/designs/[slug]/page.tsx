@@ -188,7 +188,7 @@ export default async function DesignDirectionPage({
               <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-white/62">
                 The palette, typography, layout, imagery, content, and individual
                 components are adapted to the project. The goal is a clear
-                starting language—not four copies of the same website.
+                starting language—not copies of the same website.
               </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
                 <a href={websiteProjectMailto} className={buttonStyles({ size: "lg" })}>

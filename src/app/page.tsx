@@ -26,7 +26,7 @@ import { ChessMockup } from "@/components/visuals/chess-mockup";
 import { HeroVisual } from "@/components/visuals/hero-visual";
 import { OSMockup } from "@/components/visuals/os-mockup";
 import { labProduct, products } from "@/lib/products";
-import { createPageMetadata } from "@/lib/site-config";
+import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Rukh Labs",
@@ -99,7 +99,7 @@ export default function Home() {
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link href="/download" className={buttonStyles({ size: "lg" })}>
-                  Join the Beta
+                  Glass Squares OS Beta
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
                 <Link
@@ -154,7 +154,13 @@ export default function Home() {
               <Reveal key={product.slug} delay={index * 0.06}>
                 <ProductCard
                   product={product}
-                  cta={product.slug === "lab" ? "Follow the Changelog" : `View ${product.name}`}
+                  cta={
+                    product.slug === "lab"
+                      ? "Follow the Changelog"
+                      : product.slug === "farzin"
+                        ? "Get Farzin on Google Play"
+                        : `View ${product.name}`
+                  }
                 />
               </Reveal>
             ))}
@@ -250,12 +256,13 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <Link
-                href="/products/farzin"
+              <a
+                href={siteConfig.links.farzinGooglePlay}
+                aria-label="Get Farzin 1.0.0 on Google Play"
                 className={buttonStyles({ variant: "secondary", className: "mt-8" })}
               >
-                Explore Farzin
-              </Link>
+                Get Farzin on Google Play
+              </a>
             </div>
           </Reveal>
         </Container>
@@ -313,12 +320,12 @@ export default function Home() {
             <div className="rounded-lg border border-[#d6ad5b]/20 bg-[linear-gradient(135deg,rgba(214,173,91,0.12),rgba(77,183,255,0.08)_54%,rgba(255,255,255,0.035))] p-6 shadow-[0_24px_100px_rgba(0,0,0,0.35)] sm:p-8 lg:p-10">
               <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-center">
                 <div>
-                  <Badge tone="gold">Beta waitlist</Badge>
+                  <Badge tone="gold">Glass Squares OS beta</Badge>
                   <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                    Get in before it gets loud.
+                    Follow the OS before it gets loud.
                   </h2>
                 </div>
-                <WaitlistForm />
+                <WaitlistForm defaultInterest="Glass Squares OS" />
               </div>
             </div>
           </Reveal>

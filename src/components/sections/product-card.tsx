@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Boxes, Crown, LayoutGrid } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Boxes, Crown, LayoutGrid } from "lucide-react";
 import { OfficialBrandArt } from "@/components/brand/official-brand-art";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -24,6 +24,7 @@ export function ProductCard({ product, cta }: ProductCardProps) {
   const Icon = iconMap[product.slug as keyof typeof iconMap] ?? Boxes;
   const isGlass = product.slug === "glass-squares-os";
   const isFarzin = product.slug === "farzin";
+  const isExternal = product.href.startsWith("http");
 
   return (
     <Card
@@ -75,7 +76,11 @@ export function ProductCard({ product, cta }: ProductCardProps) {
         })}
       >
         {cta}
-        <ArrowRight aria-hidden className="size-4" />
+        {isExternal ? (
+          <ArrowUpRight aria-hidden className="size-4" />
+        ) : (
+          <ArrowRight aria-hidden className="size-4" />
+        )}
       </Link>
     </Card>
   );

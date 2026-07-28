@@ -45,7 +45,7 @@ const securitySections = [
   },
   {
     title: "Responsible disclosure",
-    copy: "A formal intake process is planned before public releases. For now, security reports can start through contact.",
+    copy: "Security reports can start through contact while Rukh Labs formalizes a dedicated disclosure process.",
     icon: FileText,
   },
   {

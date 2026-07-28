@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Download, FileCheck2, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Download, FileCheck2, ShieldCheck } from "lucide-react";
 import { WaitlistForm } from "@/components/forms/waitlist-form";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
@@ -9,25 +9,27 @@ import { Container } from "@/components/ui/container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Reveal } from "@/components/ui/reveal";
 import { Section } from "@/components/ui/section";
-import { createPageMetadata } from "@/lib/site-config";
+import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Download",
   description:
-    "Glass Squares OS and Farzin downloads are not public yet. Join the beta list for access when builds are ready.",
+    "Get Farzin 1.0.0 on Google Play and join the Glass Squares OS beta list.",
   path: "/download",
 });
 
-const betaCards = [
+const releaseCards = [
   {
     title: "Glass Squares OS beta",
     copy: "Early images will focus on install research, glass-panel desktop experience, default apps, and compatibility testing.",
     icon: Download,
   },
   {
-    title: "Farzin beta",
-    copy: "Early access will focus on game review, analysis flow, study plans, and training interface feedback.",
+    title: "Farzin 1.0.0",
+    copy: "The production Android release is available now on Google Play.",
     icon: FileCheck2,
+    href: siteConfig.links.farzinGooglePlay,
+    cta: "Get Farzin on Google Play",
   },
   {
     title: "Checksums and release notes",
@@ -40,14 +42,14 @@ export default function DownloadPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Beta access"
-        title="Downloads are not public yet."
-        description="Glass Squares OS and Farzin are currently in development. Join the beta list to get access when builds are ready."
+        eyebrow="Downloads & releases"
+        title="Get the latest Rukh Labs software."
+        description="Farzin 1.0.0 is available now on Google Play. Glass Squares OS remains in development, with beta access opening separately."
       />
       <Section>
         <Container>
           <div className="grid gap-4 lg:grid-cols-3">
-            {betaCards.map((item, index) => {
+            {releaseCards.map((item, index) => {
               const Icon = item.icon;
 
               return (
@@ -58,6 +60,20 @@ export default function DownloadPage() {
                     </span>
                     <h2 className="mt-5 text-lg font-semibold text-white">{item.title}</h2>
                     <p className="mt-3 text-sm leading-6 text-white/58">{item.copy}</p>
+                    {item.href ? (
+                      <a
+                        href={item.href}
+                        aria-label="Get Farzin 1.0.0 on Google Play"
+                        className={buttonStyles({
+                          variant: "secondary",
+                          size: "sm",
+                          className: "mt-5",
+                        })}
+                      >
+                        {item.cta}
+                        <ArrowUpRight aria-hidden className="size-4" />
+                      </a>
+                    ) : null}
                   </Card>
                 </Reveal>
               );
@@ -85,13 +101,13 @@ export default function DownloadPage() {
         <Container>
           <Reveal>
             <div className="max-w-3xl">
-              <Badge tone="gold">Join beta</Badge>
+              <Badge tone="gold">Glass Squares OS beta</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Get access when builds are ready.
+                Get access when the OS beta opens.
               </h2>
             </div>
             <div className="mt-8">
-              <WaitlistForm />
+              <WaitlistForm defaultInterest="Glass Squares OS" />
             </div>
           </Reveal>
         </Container>

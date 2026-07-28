@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ArrowUpRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { ChangelogEntry } from "@/lib/changelog";
@@ -72,6 +73,15 @@ export function ChangelogList({ entries }: ChangelogListProps) {
             <p className="mt-4 max-w-3xl text-sm leading-6 text-white/60">
               {entry.description}
             </p>
+            {entry.href ? (
+              <a
+                href={entry.href}
+                className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-[#f3d99d] transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--brand-red)]"
+              >
+                {entry.linkLabel ?? "View update"}
+                <ArrowUpRight aria-hidden className="size-4" />
+              </a>
+            ) : null}
           </Card>
         ))}
       </div>

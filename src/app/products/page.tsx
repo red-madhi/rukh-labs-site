@@ -32,7 +32,9 @@ export default function ProductsPage() {
                   cta={
                     product.slug === "lab"
                       ? "Follow the Changelog"
-                      : `View ${product.name}`
+                      : product.slug === "farzin"
+                        ? "Get Farzin on Google Play"
+                        : `View ${product.name}`
                   }
                 />
               </Reveal>

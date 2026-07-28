@@ -1,12 +1,26 @@
+import { FARZIN_GOOGLE_PLAY_URL } from "@/lib/site-config";
+
 export type ChangelogEntry = {
   date: string;
   product: "Rukh Labs" | "Glass Squares OS" | "Farzin" | "Lab";
   title: string;
   description: string;
   status: "Published" | "In progress" | "Prototype" | "Draft" | "Research";
+  href?: string;
+  linkLabel?: string;
 };
 
 export const changelogEntries: ChangelogEntry[] = [
+  {
+    date: "2026-07-28",
+    product: "Farzin",
+    title: "Farzin 1.0.0 released on Google Play",
+    description:
+      "The first production release of Farzin is now available for Android through Google Play.",
+    status: "Published",
+    href: FARZIN_GOOGLE_PLAY_URL,
+    linkLabel: "Get Farzin on Google Play",
+  },
   {
     date: "2026-07-06",
     product: "Glass Squares OS",
@@ -46,6 +60,8 @@ export const changelogEntries: ChangelogEntry[] = [
     description:
       "Early concept work for game review, move analysis, and focused chess study.",
     status: "Prototype",
+    href: FARZIN_GOOGLE_PLAY_URL,
+    linkLabel: "See Farzin on Google Play",
   },
   {
     date: "2026-06-24",

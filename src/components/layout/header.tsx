@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { buttonStyles } from "@/components/ui/button";
 import { siteConfig } from "@/lib/site-config";
@@ -46,13 +46,17 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={item.external ? `${item.label} on Google Play` : undefined}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "rounded-full px-3 py-2 text-sm font-medium text-white/62 transition hover:bg-[color:var(--brand-red)]/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-red)]",
+                  "inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium text-white/62 transition hover:bg-[color:var(--brand-red)]/10 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--brand-red)]",
                   active && "bg-[color:var(--brand-red)]/12 text-white",
                 )}
               >
                 {item.label}
+                {item.external ? (
+                  <ArrowUpRight aria-hidden className="size-3.5" />
+                ) : null}
               </Link>
             );
           })}
@@ -60,7 +64,7 @@ export function Header() {
 
         <div className="hidden items-center gap-3 xl:flex">
           <Link href="/download" className={buttonStyles({ size: "sm" })}>
-            Join Beta
+            Glass Squares OS Beta
           </Link>
         </div>
 
@@ -93,6 +97,7 @@ export function Header() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  aria-label={item.external ? `${item.label} on Google Play` : undefined}
                   aria-current={active ? "page" : undefined}
                   tabIndex={open ? undefined : -1}
                   onClick={() => setOpen(false)}
@@ -101,7 +106,12 @@ export function Header() {
                     active && "bg-[color:var(--brand-red)]/12 text-white",
                   )}
                 >
-                  {item.label}
+                  <span className="flex items-center justify-between gap-3">
+                    {item.label}
+                    {item.external ? (
+                      <ArrowUpRight aria-hidden className="size-4" />
+                    ) : null}
+                  </span>
                 </Link>
               );
             })}
@@ -111,7 +121,7 @@ export function Header() {
               onClick={() => setOpen(false)}
               className={buttonStyles({ className: "mt-3 w-full" })}
             >
-              Join Beta
+              Glass Squares OS Beta
             </Link>
           </nav>
         </div>

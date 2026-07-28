@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  ArrowRight,
+  ArrowUpRight,
   BarChart3,
   BookOpen,
   Brain,
@@ -21,12 +21,12 @@ import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/ui/reveal";
 import { Section } from "@/components/ui/section";
 import { ChessMockup } from "@/components/visuals/chess-mockup";
-import { createPageMetadata } from "@/lib/site-config";
+import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Farzin",
   description:
-    "Farzin is a premium chess training app for cleaner analysis, sharper prep, and focused study.",
+    "Farzin 1.0.0 is a premium chess training app for Android, available now on Google Play.",
   path: "/products/farzin",
 });
 
@@ -102,8 +102,30 @@ const comparisonRows = [
 ];
 
 export default function FarzinPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "MobileApplication",
+    name: "Farzin",
+    description:
+      "A premium chess training app for cleaner analysis, sharper prep, and focused study.",
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "Android",
+    softwareVersion: "1.0.0",
+    url: `${siteConfig.url}/products/farzin`,
+    downloadUrl: siteConfig.links.farzinGooglePlay,
+    publisher: {
+      "@type": "Organization",
+      name: "Rukh Labs",
+      url: siteConfig.url,
+    },
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <section className="relative overflow-hidden border-b border-[#f4bd43]/15 bg-[radial-gradient(circle_at_82%_22%,rgba(244,189,67,0.1),transparent_30%)]">
         <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f4bd43,#fff0b5,transparent)]" />
         <Container className="grid items-center gap-12 py-20 sm:py-24 lg:grid-cols-[0.9fr_1.1fr]">
@@ -111,7 +133,7 @@ export default function FarzinPage() {
             <div>
               <ProductBrandLockup product="Farzin" />
               <Badge tone="gold" className="mt-6">
-                Farzin by Rukh Labs
+                Available now · v1.0.0
               </Badge>
               <h1 className="mt-6 text-4xl font-semibold leading-[1.05] text-white sm:text-6xl">
                 Serious chess training without the circus.
@@ -121,10 +143,14 @@ export default function FarzinPage() {
                 analysis, sharper prep, and study tools that do not waste their time.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/download" className={buttonStyles({ variant: "gold", size: "lg" })}>
-                  Join Farzin Beta
-                  <ArrowRight aria-hidden className="size-4" />
-                </Link>
+                <a
+                  href={siteConfig.links.farzinGooglePlay}
+                  aria-label="Get Farzin 1.0.0 on Google Play"
+                  className={buttonStyles({ variant: "gold", size: "lg" })}
+                >
+                  Get Farzin on Google Play
+                  <ArrowUpRight aria-hidden className="size-4" />
+                </a>
                 <Link
                   href="#features"
                   className={buttonStyles({ variant: "secondary", size: "lg" })}
@@ -224,9 +250,18 @@ export default function FarzinPage() {
               <h2 className="text-3xl font-semibold text-white sm:text-5xl">
                 Train like your rating matters.
               </h2>
-              <Link href="/download" className={buttonStyles({ variant: "gold", className: "mt-8", size: "lg" })}>
-                Join Farzin Beta
-              </Link>
+              <a
+                href={siteConfig.links.farzinGooglePlay}
+                aria-label="Get Farzin 1.0.0 on Google Play"
+                className={buttonStyles({
+                  variant: "gold",
+                  className: "mt-8",
+                  size: "lg",
+                })}
+              >
+                Get Farzin on Google Play
+                <ArrowUpRight aria-hidden className="size-4" />
+              </a>
             </div>
           </Reveal>
         </Container>

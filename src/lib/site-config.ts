@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+export const FARZIN_GOOGLE_PLAY_URL =
+  "https://play.google.com/store/apps/details?id=com.rukhlabs.farzin";
+
 export const siteConfig = {
   name: "Rukh Labs",
   url: "https://rukhlabs.com",
@@ -9,6 +12,7 @@ export const siteConfig = {
     "Rukh Labs builds clean, secure, beautifully designed software for people who expect more from their tools.",
   links: {
     patreon: "https://patreon.com/rukhlabs",
+    farzinGooglePlay: FARZIN_GOOGLE_PLAY_URL,
     email: "mailto:rukhlabs@gmail.com",
     websiteProject:
       "mailto:rukhlabs@gmail.com?subject=Rukh%20Labs%20Website%20Project",
@@ -24,7 +28,11 @@ export const siteConfig = {
     { label: "Products", href: "/products" },
     { label: "Websites", href: "/services/web-development" },
     { label: "Glass Squares OS", href: "/products/glass-squares-os" },
-    { label: "Farzin", href: "/products/farzin" },
+    {
+      label: "Farzin",
+      href: FARZIN_GOOGLE_PLAY_URL,
+      external: true,
+    },
     { label: "Changelog", href: "/changelog" },
     { label: "Security", href: "/security" },
     { label: "About", href: "/about" },
@@ -34,7 +42,11 @@ export const siteConfig = {
     products: [
       { label: "Products", href: "/products" },
       { label: "Glass Squares OS", href: "/products/glass-squares-os" },
-      { label: "Farzin", href: "/products/farzin" },
+      {
+        label: "Farzin",
+        href: FARZIN_GOOGLE_PLAY_URL,
+        external: true,
+      },
       { label: "Download", href: "/download" },
     ],
     company: [
@@ -49,7 +61,7 @@ export const siteConfig = {
       { label: "Terms", href: "/legal/terms" },
     ],
   },
-  productInterestOptions: ["Everything Rukh Labs", "Glass Squares OS", "Farzin"],
+  productInterestOptions: ["Everything Rukh Labs", "Glass Squares OS"],
   contactReasons: [
     "Beta access",
     "Product feedback",

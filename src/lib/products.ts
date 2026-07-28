@@ -1,8 +1,16 @@
+import { FARZIN_GOOGLE_PLAY_URL } from "@/lib/site-config";
+
 export type Product = {
   slug: string;
   name: string;
   category: string;
-  status: "In development" | "Beta waitlist" | "Research" | "Prototype" | "Roadmap";
+  status:
+    | "In development"
+    | "Beta waitlist"
+    | "Google Play · v1.0.0"
+    | "Research"
+    | "Prototype"
+    | "Roadmap";
   shortDescription: string;
   longDescription: string;
   features: string[];
@@ -32,8 +40,8 @@ export const products: Product[] = [
   {
     slug: "farzin",
     name: "Farzin",
-    category: "Chess Software",
-    status: "In development",
+    category: "Android Chess App",
+    status: "Google Play · v1.0.0",
     shortDescription:
       "A premium chess training app for focused analysis, prep, drills, and serious improvement.",
     longDescription:
@@ -46,7 +54,7 @@ export const products: Product[] = [
       "Study plans",
       "Progress tracking",
     ],
-    href: "/products/farzin",
+    href: FARZIN_GOOGLE_PLAY_URL,
   },
 ];
 

@@ -388,6 +388,289 @@ function MainStreetPreview({ size }: DirectionPreviewProps) {
   );
 }
 
+function SpotlightPreview({ size }: DirectionPreviewProps) {
+  const mini = size === "mini";
+  const full = size === "full";
+
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden bg-[#fff6ed] p-3 text-[#17133c] sm:p-4">
+      <div
+        aria-hidden
+        className="absolute -right-[8%] top-[17%] aspect-square w-[39%] rounded-full bg-[#ff654f]"
+      />
+      <div
+        aria-hidden
+        className="absolute right-[8%] top-[30%] aspect-[0.72/1] w-[27%] rotate-6 rounded-[1.25rem] border-[3px] border-[#17133c] bg-[#6657ff] shadow-[7px_8px_0_#c7ee4f]"
+      />
+      <div
+        aria-hidden
+        className="absolute right-[25%] top-[48%] aspect-square w-[17%] -rotate-6 rounded-xl border-[3px] border-[#17133c] bg-[#ffd552]"
+      />
+
+      <header className="relative z-10 flex items-center justify-between border-b-2 border-[#17133c] pb-2">
+        <span
+          className={cn(
+            "font-black uppercase tracking-[-0.045em]",
+            mini ? "text-[9px]" : full ? "text-base" : "text-xs",
+          )}
+        >
+          MIKA<span className="text-[#ff4f3b]">/</span>ROWE
+        </span>
+        {!mini ? (
+          <div
+            className={cn(
+              "flex items-center gap-4 font-bold uppercase tracking-[0.08em]",
+              full ? "text-[9px]" : "text-[6px]",
+            )}
+          >
+            <span>Watch</span>
+            <span>Guides</span>
+            <span className="rounded-full bg-[#17133c] px-2.5 py-1.5 text-[#fff6ed]">
+              Work with me
+            </span>
+          </div>
+        ) : (
+          <span className="rounded-full bg-[#17133c] px-2 py-1 text-[5px] font-bold uppercase text-white">
+            Media kit
+          </span>
+        )}
+      </header>
+
+      <main className="relative z-10 grid flex-1 grid-cols-[1.08fr_0.92fr] items-center gap-3">
+        <div>
+          <span
+            className={cn(
+              "font-bold uppercase tracking-[0.16em] text-[#ff4f3b]",
+              mini ? "text-[5px]" : full ? "text-[9px]" : "text-[6px]",
+            )}
+          >
+            Travel films · useful gear · honest takes
+          </span>
+          <h3
+            className={cn(
+              "mt-2 max-w-[8ch] font-black leading-[0.86] tracking-[-0.065em]",
+              mini
+                ? "text-xl"
+                : full
+                  ? "mt-4 text-4xl sm:text-6xl lg:text-7xl"
+                  : "text-3xl sm:text-4xl",
+            )}
+          >
+            Make the trip count.
+          </h3>
+          {!mini ? (
+            <p
+              className={cn(
+                "mt-4 max-w-[34ch] leading-relaxed text-[#17133c]/62",
+                full ? "text-sm" : "text-[8px]",
+              )}
+            >
+              Field-tested city guides and stories for people who would rather
+              go than scroll.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="relative h-[76%] min-h-24">
+          <div className="absolute bottom-[4%] right-[2%] w-[72%] rotate-3 rounded-xl border-2 border-[#17133c] bg-[#6657ff] p-2 text-[#fff6ed] shadow-[6px_7px_0_#17133c]">
+            <span
+              className={cn(
+                "block font-bold uppercase tracking-[0.14em] text-[#c7ee4f]",
+                mini ? "text-[5px]" : full ? "text-[8px]" : "text-[6px]",
+              )}
+            >
+              New film · 12 min
+            </span>
+            <strong
+              className={cn(
+                "mt-1 block max-w-[9ch] leading-[0.95]",
+                mini ? "text-[9px]" : full ? "text-lg" : "text-xs",
+              )}
+            >
+              Kyoto after the last train
+            </strong>
+          </div>
+          {!mini ? (
+            <div className="absolute left-[4%] top-[8%] w-[48%] -rotate-5 rounded-lg border-2 border-[#17133c] bg-[#ffd552] p-2 shadow-[5px_5px_0_#17133c]">
+              <span
+                className={cn(
+                  "block font-black uppercase tracking-[0.12em]",
+                  full ? "text-[8px]" : "text-[6px]",
+                )}
+              >
+                Field note 08
+              </span>
+              <span
+                className={cn(
+                  "mt-3 block font-bold leading-tight",
+                  full ? "text-sm" : "text-[9px]",
+                )}
+              >
+                One bag. Seven days.
+              </span>
+            </div>
+          ) : null}
+        </div>
+      </main>
+
+      <footer
+        className={cn(
+          "relative z-10 flex items-center justify-between border-t-2 border-[#17133c] pt-2 font-bold uppercase tracking-[0.11em]",
+          mini ? "text-[5px]" : full ? "text-[9px]" : "text-[6px]",
+        )}
+      >
+        <span>Films · Guides · Partnerships</span>
+        <span className="text-[#ff4f3b]">Latest stories →</span>
+      </footer>
+    </div>
+  );
+}
+
+function DispatchPreview({ size }: DirectionPreviewProps) {
+  const mini = size === "mini";
+  const full = size === "full";
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden bg-[#f3eddf] p-3 text-[#18352f] sm:p-4">
+      <div
+        className={cn(
+          "flex items-center justify-between border-b border-[#18352f]/35 pb-1 uppercase tracking-[0.16em] text-[#18352f]/62",
+          mini ? "text-[4px]" : full ? "text-[7px]" : "text-[5px]",
+        )}
+      >
+        <span>Independent journal · Issue 24</span>
+        <span>Sunday, 8:00 AM</span>
+      </div>
+
+      <header className="border-b-[3px] border-[#18352f] py-2 text-center">
+        <span
+          className={cn(
+            "[font-family:Georgia,'Times_New_Roman',serif] font-bold leading-none tracking-[-0.055em]",
+            mini ? "text-base" : full ? "text-4xl" : "text-2xl",
+          )}
+        >
+          The Sunday Index
+        </span>
+      </header>
+
+      {!mini ? (
+        <nav
+          className={cn(
+            "flex items-center justify-center gap-5 border-b border-[#18352f]/30 py-1.5 font-bold uppercase tracking-[0.13em]",
+            full ? "text-[8px]" : "text-[6px]",
+          )}
+        >
+          <span>Cities</span>
+          <span>Objects</span>
+          <span>Culture</span>
+          <span className="text-[#d85637]">Subscribe</span>
+        </nav>
+      ) : null}
+
+      <main
+        className={cn(
+          "grid flex-1 gap-3 py-3",
+          mini ? "grid-cols-[1.35fr_0.65fr]" : "grid-cols-[1.2fr_0.8fr]",
+        )}
+      >
+        <article className="flex flex-col justify-between border-r border-[#18352f]/28 pr-3">
+          <div>
+            <span
+              className={cn(
+                "font-bold uppercase tracking-[0.16em] text-[#d85637]",
+                mini ? "text-[5px]" : full ? "text-[8px]" : "text-[6px]",
+              )}
+            >
+              Cover story · Cities
+            </span>
+            <h3
+              className={cn(
+                "mt-2 max-w-[16ch] [font-family:Georgia,'Times_New_Roman',serif] font-bold leading-[0.94] tracking-[-0.045em]",
+                mini
+                  ? "text-base"
+                  : full
+                    ? "text-3xl sm:text-5xl lg:text-6xl"
+                    : "text-2xl sm:text-3xl",
+              )}
+            >
+              What the corner store knows about good cities.
+            </h3>
+            {!mini ? (
+              <p
+                className={cn(
+                  "mt-3 max-w-[48ch] leading-relaxed text-[#18352f]/64",
+                  full ? "text-sm" : "text-[8px]",
+                )}
+              >
+                The smallest shops do more than sell things. They remember us,
+                connect us, and keep a block alive.
+              </p>
+            ) : null}
+          </div>
+          <span
+            className={cn(
+              "font-semibold text-[#18352f]/58",
+              mini ? "text-[5px]" : full ? "text-[9px]" : "text-[6px]",
+            )}
+          >
+            By Lena Ortiz · 8 min read
+          </span>
+        </article>
+
+        <aside className="grid content-start gap-2">
+          <span
+            className={cn(
+              "font-bold uppercase tracking-[0.15em] text-[#18352f]/52",
+              mini ? "text-[5px]" : full ? "text-[8px]" : "text-[6px]",
+            )}
+          >
+            Also in this issue
+          </span>
+          {[
+            "The slow comeback of public benches",
+            "Notes from the last overnight train",
+            "A field guide to useful objects",
+          ]
+            .slice(0, mini ? 2 : 3)
+            .map((title, index) => (
+              <div
+                key={title}
+                className="border-t border-[#18352f]/24 pt-2"
+              >
+                <span
+                  className={cn(
+                    "block font-bold leading-tight",
+                    mini ? "text-[7px]" : full ? "text-sm" : "text-[9px]",
+                  )}
+                >
+                  {title}
+                </span>
+                <span
+                  className={cn(
+                    "mt-1 block uppercase tracking-[0.12em] text-[#d85637]",
+                    mini ? "text-[4px]" : full ? "text-[7px]" : "text-[5px]",
+                  )}
+                >
+                  0{index + 2} / Read
+                </span>
+              </div>
+            ))}
+        </aside>
+      </main>
+
+      <footer
+        className={cn(
+          "flex items-center justify-between border-t-[3px] border-[#18352f] pt-2 font-bold uppercase tracking-[0.12em]",
+          mini ? "text-[5px]" : full ? "text-[8px]" : "text-[6px]",
+        )}
+      >
+        <span>Essays for a slower internet</span>
+        <span className="text-[#d85637]">Read issue 24 →</span>
+      </footer>
+    </div>
+  );
+}
+
 export function DesignPreview({
   slug,
   size = "card",
@@ -398,6 +681,8 @@ export function DesignPreview({
     signal: <SignalPreview size={size} />,
     atelier: <AtelierPreview size={size} />,
     "main-street": <MainStreetPreview size={size} />,
+    spotlight: <SpotlightPreview size={size} />,
+    dispatch: <DispatchPreview size={size} />,
   } satisfies Record<DesignDirectionSlug, React.ReactNode>;
 
   return (
