@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Heart } from "lucide-react";
 import { Logo } from "@/components/layout/logo";
 import { buttonStyles } from "@/components/ui/button";
@@ -32,6 +35,15 @@ function FooterColumn({
 }
 
 export function Footer() {
+  const pathname = usePathname();
+  const isWebsiteSample =
+    pathname.startsWith("/services/web-development/designs/") &&
+    pathname.endsWith("/sample");
+
+  if (isWebsiteSample) {
+    return null;
+  }
+
   return (
     <footer className="border-t border-[color:var(--brand-red)]/16 bg-[#050506]/86">
       <Container className="py-12 sm:py-16">

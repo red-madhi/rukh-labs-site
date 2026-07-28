@@ -82,16 +82,19 @@ export default async function DesignDirectionPage({
                   {direction.summary}
                 </p>
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <a href={websiteProjectMailto} className={buttonStyles({ size: "lg" })}>
-                    Start with {direction.name}
-                    <ArrowRight aria-hidden className="size-4" />
-                  </a>
                   <Link
-                    href="/services/web-development#packages"
+                    href={direction.sampleHref}
+                    className={buttonStyles({ size: "lg" })}
+                  >
+                    Open full sample site
+                    <ArrowRight aria-hidden className="size-4" />
+                  </Link>
+                  <a
+                    href={websiteProjectMailto}
                     className={buttonStyles({ variant: "secondary", size: "lg" })}
                   >
-                    View packages
-                  </Link>
+                    Start with {direction.name}
+                  </a>
                 </div>
               </div>
             </div>
@@ -103,6 +106,30 @@ export default async function DesignDirectionPage({
         <Container>
           <Reveal>
             <DesignPreview slug={direction.slug} size="full" />
+            <div className="mt-5 flex flex-col gap-5 rounded-[1.15rem] border border-white/12 bg-white/[0.03] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#ff8d98]">
+                  Full working example
+                </p>
+                <h2 className="mt-2 text-xl font-semibold text-white">
+                  Explore {direction.sampleName} beyond the mockup.
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/54">
+                  Navigate a complete responsive sample with real sections,
+                  working interactions, and purposeful content.
+                </p>
+              </div>
+              <Link
+                href={direction.sampleHref}
+                className={buttonStyles({
+                  variant: "secondary",
+                  className: "shrink-0",
+                })}
+              >
+                Launch sample website
+                <ArrowRight aria-hidden className="size-4" />
+              </Link>
+            </div>
           </Reveal>
         </Container>
       </Section>

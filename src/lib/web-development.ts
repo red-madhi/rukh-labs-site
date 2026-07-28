@@ -16,7 +16,10 @@ export type DesignDirection = {
   bestFor: readonly string[];
   traits: readonly string[];
   sampleDomain: string;
+  sampleName: string;
+  sampleDescription: string;
   href: `/services/web-development/designs/${DesignDirectionSlug}`;
+  sampleHref: `/services/web-development/designs/${DesignDirectionSlug}/sample`;
 };
 
 export const designDirections = [
@@ -39,7 +42,11 @@ export const designDirections = [
       "Asymmetric product storytelling",
     ],
     sampleDomain: "northstar.systems",
+    sampleName: "Northstar Systems",
+    sampleDescription:
+      "A secure edge-operations platform for infrastructure and field teams.",
     href: "/services/web-development/designs/obsidian",
+    sampleHref: "/services/web-development/designs/obsidian/sample",
   },
   {
     slug: "signal",
@@ -60,7 +67,11 @@ export const designDirections = [
       "Clean calls to action",
     ],
     sampleDomain: "cedarstrategy.co",
+    sampleName: "Cedar Strategy",
+    sampleDescription:
+      "An independent strategy practice for teams making consequential growth decisions.",
     href: "/services/web-development/designs/signal",
+    sampleHref: "/services/web-development/designs/signal/sample",
   },
   {
     slug: "atelier",
@@ -75,7 +86,11 @@ export const designDirections = [
       "Quiet, intentional navigation",
     ],
     sampleDomain: "marabell.studio",
+    sampleName: "Mara Bell Studio",
+    sampleDescription:
+      "An editorial portfolio for a multidisciplinary identity and spatial design practice.",
     href: "/services/web-development/designs/atelier",
+    sampleHref: "/services/web-development/designs/atelier/sample",
   },
   {
     slug: "main-street",
@@ -96,7 +111,11 @@ export const designDirections = [
       "Warm, approachable presentation",
     ],
     sampleDomain: "juniperandpine.com",
+    sampleName: "Juniper & Pine",
+    sampleDescription:
+      "A warm, conversion-focused neighborhood bakery and café website.",
     href: "/services/web-development/designs/main-street",
+    sampleHref: "/services/web-development/designs/main-street/sample",
   },
 ] as const satisfies readonly DesignDirection[];
 

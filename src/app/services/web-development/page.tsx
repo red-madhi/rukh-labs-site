@@ -214,7 +214,8 @@ export default function WebDevelopmentPage() {
               <p className="max-w-2xl text-lg leading-8 text-white/62 lg:justify-self-end">
                 These are visual starting systems, not rigid templates. Every
                 project is shaped around the client&apos;s content, goals, brand,
-                and audience.
+                and audience. Open any direction to explore a complete working
+                sample site.
               </p>
             </div>
           </Reveal>
@@ -250,17 +251,27 @@ export default function WebDevelopmentPage() {
                         </li>
                       ))}
                     </ul>
-                    <Link
-                      href={direction.href}
-                      className={buttonStyles({
-                        variant: "ghost",
-                        className:
-                          "mt-5 px-0 text-white/72 hover:bg-transparent hover:text-white focus-visible:outline-offset-4",
-                      })}
-                    >
-                      Explore this style
-                      <ArrowRight aria-hidden className="size-4" />
-                    </Link>
+                    <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <Link
+                        href={direction.sampleHref}
+                        className={buttonStyles({
+                          variant: "secondary",
+                          size: "sm",
+                        })}
+                      >
+                        Open full sample
+                        <ArrowRight aria-hidden className="size-4" />
+                      </Link>
+                      <Link
+                        href={direction.href}
+                        className={buttonStyles({
+                          variant: "ghost",
+                          size: "sm",
+                        })}
+                      >
+                        Direction details
+                      </Link>
+                    </div>
                   </div>
                 </article>
               </Reveal>

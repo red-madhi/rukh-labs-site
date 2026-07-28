@@ -19,6 +19,13 @@ function isNavItemActive(pathname: string, href: string) {
 export function Header() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const isWebsiteSample =
+    pathname.startsWith("/services/web-development/designs/") &&
+    pathname.endsWith("/sample");
+
+  if (isWebsiteSample) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-50 border-b border-[color:var(--brand-red)]/18 bg-[#060507]/88 backdrop-blur-xl">
