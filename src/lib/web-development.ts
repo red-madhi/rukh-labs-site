@@ -123,7 +123,7 @@ export const designDirections = [
     slug: "spotlight",
     name: "Spotlight",
     summary:
-      "Bold, personality-led, and media-forward, with a polished rhythm built for creators and public-facing personal brands.",
+      "Social-first, personality-led, and built around vertical content, audience trust, and a creator’s full world beyond the feed.",
     bestFor: [
       "Influencers",
       "Content creators",
@@ -132,15 +132,15 @@ export const designDirections = [
       "Brand partnerships",
     ],
     traits: [
-      "Creator-first storytelling",
-      "Social content and series highlights",
-      "Partnership proof and media-kit calls to action",
-      "Energetic modular layouts",
+      "Vertical video and social-first storytelling",
+      "Creator profile, highlights, and curated recommendations",
+      "Platform-specific audience proof",
+      "Partnership work and media-kit calls to action",
     ],
     sampleDomain: "mikarowe.co",
     sampleName: "Mika Rowe",
     sampleDescription:
-      "A creator portfolio for travel films, practical gear guides, and selective brand partnerships.",
+      "A social-first creator home for style, travel, useful finds, and selective brand partnerships.",
     href: "/services/web-development/designs/spotlight",
     sampleHref: "/services/web-development/designs/spotlight/sample",
   },
@@ -148,7 +148,7 @@ export const designDirections = [
     slug: "dispatch",
     name: "Dispatch",
     summary:
-      "A content-rich editorial system with strong reading hierarchy, flexible publishing structure, and a memorable point of view.",
+      "A sleek, author-owned publishing system for newsletters, long-form reading, searchable archives, and reader membership.",
     bestFor: [
       "Bloggers",
       "Independent publications",
@@ -157,15 +157,15 @@ export const designDirections = [
       "Editorial teams",
     ],
     traits: [
-      "Reading-first editorial hierarchy",
-      "Flexible categories and archives",
-      "Feature-story and newsletter presentation",
-      "Dense content without visual clutter",
+      "Author-owned publishing identity",
+      "Long-form reading and newsletter conversion",
+      "Searchable archives and recurring series",
+      "Free and supporting-member presentation",
     ],
     sampleDomain: "sundayindex.press",
     sampleName: "The Sunday Index",
     sampleDescription:
-      "An independent journal for essays on cities, culture, and the designed world.",
+      "A premium reader-supported publication for essays on cities, culture, and the designed world.",
     href: "/services/web-development/designs/dispatch",
     sampleHref: "/services/web-development/designs/dispatch/sample",
   },

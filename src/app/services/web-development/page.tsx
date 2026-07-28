@@ -49,8 +49,8 @@ const directionAccents = {
   signal: "border-[#4f83ff]/25",
   atelier: "border-[#b86d5d]/28",
   "main-street": "border-[#efb84c]/28",
-  spotlight: "border-[#ff5f48]/30",
-  dispatch: "border-[#287c66]/30",
+  spotlight: "border-[#ff4f72]/30",
+  dispatch: "border-[#d65237]/30",
 } as const;
 
 const deliverableIcons = [

@@ -18,6 +18,7 @@ import {
   Wifi,
 } from "lucide-react";
 import { OfficialBrandArt } from "@/components/brand/official-brand-art";
+import { cn } from "@/lib/utils";
 
 const locations = [
   { label: "Home", icon: Home, active: true },
@@ -58,11 +59,14 @@ function DesktopWallpaper({ compact = false }: { compact?: boolean }) {
   );
 }
 
-export function OSMiniPreview() {
+export function OSMiniPreview({ className }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className="relative aspect-[1.46] overflow-hidden rounded-xl border border-[#4bdcff]/25 bg-[#030717] shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]"
+      className={cn(
+        "relative aspect-[1.46] overflow-hidden rounded-xl border border-[#4bdcff]/25 bg-[#030717] shadow-[inset_0_1px_0_rgba(255,255,255,0.14)]",
+        className,
+      )}
     >
       <DesktopWallpaper compact />
       <div className="absolute left-[9%] top-[10%] h-[66%] w-[73%] overflow-hidden rounded-[0.55rem] border border-white/15 bg-[#061124]/80 shadow-[0_12px_35px_rgba(0,0,0,0.35)] backdrop-blur-md">

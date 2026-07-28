@@ -1,125 +1,162 @@
 "use client";
 
 import { useState } from "react";
-import { BookOpen, Clapperboard, Play } from "lucide-react";
+import {
+  Bookmark,
+  Camera,
+  Clapperboard,
+  Heart,
+  MessageCircle,
+  Music2,
+  Play,
+  Sparkles,
+} from "lucide-react";
 
-type SpotlightContentType = "film" | "guide" | "short";
+type SpotlightCategory = "style" | "travel" | "beauty" | "life";
+type SpotlightPlatform = "Instagram" | "TikTok" | "YouTube";
 
 type SpotlightContentItem = {
-  type: SpotlightContentType;
-  typeLabel: string;
+  id: string;
+  category: SpotlightCategory;
+  categoryLabel: string;
+  platform: SpotlightPlatform;
   title: string;
-  description: string;
-  meta: string;
-  artClass: string;
-  accentClass: string;
-  marker: string;
+  hook: string;
+  views: string;
+  saves: string;
+  duration: string;
+  tone: string;
+  accent: string;
 };
 
 const contentItems = [
   {
-    type: "film",
-    typeLabel: "Film",
-    title: "Kyoto after the last train",
-    description:
-      "A quiet 12-hour route through late kitchens, river paths, and the first market of the morning.",
-    meta: "12 min · Japan",
-    artClass: "bg-[#6657ff]",
-    accentClass: "bg-[#c7ee4f] text-[#17133c]",
-    marker: "01",
+    id: "lisbon",
+    category: "travel",
+    categoryLabel: "Weekend guide",
+    platform: "Instagram",
+    title: "48 hours in Lisbon without speed-running the city",
+    hook: "Save this for the tram route, tiny hotel, and late dinner alone.",
+    views: "1.8M",
+    saves: "42.7K",
+    duration: "0:46",
+    tone:
+      "bg-[radial-gradient(circle_at_64%_18%,rgba(255,255,255,0.46),transparent_17%),radial-gradient(circle_at_25%_65%,rgba(255,211,173,0.55),transparent_22%),linear-gradient(155deg,#ff9b86,#f05282_45%,#6a57d9)]",
+    accent: "bg-[#ffec7a] text-[#1b1824]",
   },
   {
-    type: "guide",
-    typeLabel: "Field guide",
-    title: "Seven days from one carry-on",
-    description:
-      "The exact packing system, layers, and small tools that earned their place on a three-city rail trip.",
-    meta: "9 min read · Packing",
-    artClass: "bg-[#ffd552]",
-    accentClass: "bg-[#17133c] text-[#fff6ed]",
-    marker: "02",
+    id: "repeat",
+    category: "style",
+    categoryLabel: "Outfit repeat",
+    platform: "TikTok",
+    title: "Three pieces I wore all month",
+    hook: "No haul. Just the things that kept making it out of the closet.",
+    views: "842K",
+    saves: "18.3K",
+    duration: "0:31",
+    tone:
+      "bg-[radial-gradient(circle_at_35%_20%,rgba(255,255,255,0.3),transparent_18%),linear-gradient(155deg,#9585ff,#5546d8_48%,#211d3a)]",
+    accent: "bg-white text-[#4f40cc]",
   },
   {
-    type: "short",
-    typeLabel: "Short",
-    title: "The café worth missing a tram for",
-    description:
-      "A two-minute stop in Lisbon for tiled walls, perfect espresso, and a counter that has not changed in 40 years.",
-    meta: "2 min · Portugal",
-    artClass: "bg-[#ff654f]",
-    accentClass: "bg-[#fff6ed] text-[#17133c]",
-    marker: "03",
+    id: "shelf",
+    category: "beauty",
+    categoryLabel: "The shelf",
+    platform: "TikTok",
+    title: "Five empties I actually repurchased",
+    hook: "The routine is short. The opinions are not.",
+    views: "614K",
+    saves: "27.1K",
+    duration: "0:52",
+    tone:
+      "bg-[radial-gradient(circle_at_70%_20%,rgba(255,255,255,0.4),transparent_17%),linear-gradient(160deg,#ffd8cb,#ff9d84_50%,#ed567f)]",
+    accent: "bg-[#1b1824] text-white",
   },
   {
-    type: "guide",
-    typeLabel: "Field guide",
-    title: "A better first day in Copenhagen",
-    description:
-      "A low-stress walking route with good bread, harbor light, useful design, and no race across town.",
-    meta: "11 min read · Denmark",
-    artClass: "bg-[#c7ee4f]",
-    accentClass: "bg-[#6657ff] text-white",
-    marker: "04",
+    id: "carry-on",
+    category: "travel",
+    categoryLabel: "One bag",
+    platform: "YouTube",
+    title: "Seven days, one carry-on, zero fantasy packing",
+    hook: "Every layer, charger, and tiny thing that earned the space.",
+    views: "386K",
+    saves: "11.6K",
+    duration: "8:14",
+    tone:
+      "bg-[radial-gradient(circle_at_28%_24%,rgba(255,255,255,0.34),transparent_18%),linear-gradient(155deg,#63c8bc,#357d9a_50%,#26334c)]",
+    accent: "bg-[#ffec7a] text-[#1b1824]",
   },
   {
-    type: "film",
-    typeLabel: "Film",
-    title: "The coast road in winter",
-    description:
-      "Wind, empty beaches, and the small Atlantic towns that make an off-season trip worth taking.",
-    meta: "16 min · Ireland",
-    artClass: "bg-[#17133c]",
-    accentClass: "bg-[#ff654f] text-[#17133c]",
-    marker: "05",
+    id: "under-fifty",
+    category: "style",
+    categoryLabel: "Under $50",
+    platform: "Instagram",
+    title: "Small upgrades that made getting dressed easier",
+    hook: "The belt, bag insert, and tailor fix I keep sending to friends.",
+    views: "711K",
+    saves: "36.4K",
+    duration: "0:39",
+    tone:
+      "bg-[radial-gradient(circle_at_72%_26%,rgba(255,255,255,0.36),transparent_18%),linear-gradient(145deg,#e7b877,#b9706c_52%,#4e355e)]",
+    accent: "bg-white text-[#1b1824]",
   },
   {
-    type: "short",
-    typeLabel: "Short",
-    title: "Three things I stopped packing",
-    description:
-      "The bulky, fragile, and overpromised travel gear that stays home now.",
-    meta: "90 sec · Gear",
-    artClass: "bg-[#f1dfcf]",
-    accentClass: "bg-[#ffd552] text-[#17133c]",
-    marker: "06",
+    id: "sunday-reset",
+    category: "life",
+    categoryLabel: "Real life",
+    platform: "TikTok",
+    title: "The Sunday reset that does not eat Sunday",
+    hook: "Forty minutes, one playlist, and absolutely no color-coded bins.",
+    views: "929K",
+    saves: "54.2K",
+    duration: "0:44",
+    tone:
+      "bg-[radial-gradient(circle_at_30%_18%,rgba(255,255,255,0.42),transparent_18%),linear-gradient(155deg,#ffcc8a,#f47a68_48%,#bf406e)]",
+    accent: "bg-[#5a43d8] text-white",
   },
 ] as const satisfies readonly SpotlightContentItem[];
 
 const filters = [
-  { id: "all", label: "Everything" },
-  { id: "film", label: "Films" },
-  { id: "guide", label: "Guides" },
-  { id: "short", label: "Shorts" },
+  { id: "all", label: "For you" },
+  { id: "style", label: "Style" },
+  { id: "travel", label: "Travel" },
+  { id: "beauty", label: "Beauty" },
+  { id: "life", label: "Real life" },
 ] as const;
 
-function ContentIcon({ type }: { type: SpotlightContentType }) {
-  if (type === "film") {
+function PlatformIcon({ platform }: { platform: SpotlightPlatform }) {
+  if (platform === "Instagram") {
+    return <Camera aria-hidden className="size-4" />;
+  }
+
+  if (platform === "YouTube") {
     return <Clapperboard aria-hidden className="size-4" />;
   }
 
-  if (type === "guide") {
-    return <BookOpen aria-hidden className="size-4" />;
-  }
-
-  return <Play aria-hidden className="size-4" />;
+  return <Music2 aria-hidden className="size-4" />;
 }
 
 export function SpotlightContentGrid() {
   const [activeFilter, setActiveFilter] = useState<
     (typeof filters)[number]["id"]
   >("all");
+  const [selectedId, setSelectedId] = useState<
+    (typeof contentItems)[number]["id"]
+  >(contentItems[0].id);
 
   const visibleItems =
     activeFilter === "all"
       ? contentItems
-      : contentItems.filter((item) => item.type === activeFilter);
+      : contentItems.filter((item) => item.category === activeFilter);
+  const selectedItem =
+    visibleItems.find((item) => item.id === selectedId) ?? visibleItems[0];
 
   return (
     <div className="mt-12">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 border-y border-[#1b1824]/10 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div
-          aria-label="Filter creator stories"
-          className="flex flex-wrap gap-2"
+          aria-label="Filter creator content"
+          className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
           role="group"
         >
           {filters.map((filter) => {
@@ -131,10 +168,10 @@ export function SpotlightContentGrid() {
                 type="button"
                 aria-pressed={active}
                 onClick={() => setActiveFilter(filter.id)}
-                className={`min-h-11 rounded-full border-2 px-4 text-xs font-black uppercase tracking-[0.11em] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#6657ff] ${
+                className={`min-h-11 shrink-0 rounded-full border px-4 text-xs font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#5a43d8] ${
                   active
-                    ? "border-[#17133c] bg-[#17133c] text-[#fff6ed]"
-                    : "border-[#17133c]/24 bg-transparent text-[#17133c]/64 hover:border-[#17133c] hover:text-[#17133c]"
+                    ? "border-[#1b1824] bg-[#1b1824] text-white"
+                    : "border-[#1b1824]/14 bg-white/70 text-[#1b1824]/62 hover:border-[#1b1824]/36 hover:text-[#1b1824]"
                 }`}
               >
                 {filter.label}
@@ -144,52 +181,112 @@ export function SpotlightContentGrid() {
         </div>
         <p
           aria-live="polite"
-          className="shrink-0 text-[10px] font-black uppercase tracking-[0.13em] text-[#17133c]/64"
+          className="shrink-0 text-[11px] font-semibold text-[#1b1824]/62"
         >
-          {visibleItems.length} {visibleItems.length === 1 ? "story" : "stories"}
+          {visibleItems.length} posts in this edit
         </p>
       </div>
 
-      <div className="mt-7 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {visibleItems.map((item) => (
-          <article
-            key={item.title}
-            className="group overflow-hidden rounded-[1.75rem] border-2 border-[#17133c] bg-[#fffaf4] shadow-[6px_7px_0_#17133c] transition hover:-translate-y-1 hover:shadow-[9px_11px_0_#17133c]"
-          >
-            <div
-              className={`relative flex min-h-52 items-end overflow-hidden p-5 ${item.artClass}`}
-            >
-              <span
-                aria-hidden
-                className="absolute -right-8 -top-8 size-36 rounded-full border-[18px] border-[#fff6ed]/42"
-              />
-              <span
-                aria-hidden
-                className="absolute left-7 top-7 h-20 w-28 -rotate-6 border-2 border-[#17133c]/55"
-              />
-              <span
-                className={`relative z-10 grid size-12 place-items-center rounded-full text-sm font-black ${item.accentClass}`}
-              >
-                {item.marker}
+      <div className="mt-7 grid gap-7 lg:grid-cols-[0.82fr_1.18fr]">
+        <article
+          className={`relative min-h-[34rem] overflow-hidden rounded-[2rem] text-white shadow-[0_28px_75px_rgba(45,32,72,0.2)] sm:min-h-[42rem] lg:sticky lg:top-24 lg:h-[calc(100vh-7rem)] lg:min-h-0 lg:max-h-[46rem] ${selectedItem.tone}`}
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(12,10,20,0.86)_0%,rgba(12,10,20,0.08)_58%,rgba(12,10,20,0.22)_100%)]" />
+          <div className="relative flex h-full min-h-[34rem] flex-col p-5 sm:min-h-[42rem] sm:p-7 lg:min-h-0">
+            <div className="flex items-center justify-between gap-4">
+              <span className="inline-flex items-center gap-2 rounded-full bg-black/24 px-3 py-2 text-[11px] font-semibold backdrop-blur-md">
+                <PlatformIcon platform={selectedItem.platform} />
+                {selectedItem.platform}
+              </span>
+              <span className="rounded-full bg-black/24 px-3 py-2 text-[11px] font-semibold backdrop-blur-md">
+                {selectedItem.duration}
               </span>
             </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between gap-4 text-[11px] font-black uppercase tracking-[0.12em] text-[#ff4f3b]">
-                <span className="inline-flex items-center gap-2">
-                  <ContentIcon type={item.type} />
-                  {item.typeLabel}
-                </span>
-                <span className="text-[#17133c]/66">{item.meta}</span>
-              </div>
-              <h3 className="mt-5 text-2xl font-black leading-[0.98] tracking-[-0.045em] text-[#17133c]">
-                {item.title}
+
+            <div className="mt-auto max-w-xl">
+              <span
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-bold ${selectedItem.accent}`}
+              >
+                <Sparkles aria-hidden className="size-3.5" />
+                {selectedItem.categoryLabel}
+              </span>
+              <h3 className="mt-5 text-4xl font-semibold leading-[0.96] tracking-[-0.055em] sm:text-5xl">
+                {selectedItem.title}
               </h3>
-              <p className="mt-4 text-sm leading-7 text-[#17133c]/62">
-                {item.description}
+              <p className="mt-4 max-w-lg text-sm leading-7 text-white/76">
+                {selectedItem.hook}
               </p>
+              <div className="mt-6 flex items-center gap-5 text-xs font-semibold text-white/78">
+                <span className="inline-flex items-center gap-2">
+                  <Play aria-hidden className="size-4 fill-current" />
+                  {selectedItem.views}
+                </span>
+                <span className="inline-flex items-center gap-2">
+                  <Bookmark aria-hidden className="size-4" />
+                  {selectedItem.saves} saves
+                </span>
+              </div>
             </div>
-          </article>
-        ))}
+
+            <div
+              aria-hidden
+              className="absolute bottom-7 right-5 hidden flex-col gap-3 sm:flex"
+            >
+              {[Heart, MessageCircle, Bookmark].map((Icon, index) => (
+                <span
+                  key={index}
+                  className="grid size-11 place-items-center rounded-full bg-black/26 backdrop-blur-md"
+                >
+                  <Icon className="size-4" />
+                </span>
+              ))}
+            </div>
+          </div>
+        </article>
+
+        <div className="grid content-start gap-4 sm:grid-cols-2">
+          {visibleItems.map((item) => {
+            const active = item.id === selectedItem.id;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setSelectedId(item.id)}
+                className={`group relative aspect-[9/12] min-w-0 overflow-hidden rounded-[1.5rem] border text-left text-white shadow-[0_14px_40px_rgba(45,32,72,0.11)] transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#5a43d8] ${
+                  active
+                    ? "border-[#5a43d8] ring-2 ring-[#5a43d8]/22"
+                    : "border-white/70 hover:-translate-y-1 hover:border-[#1b1824]/20"
+                } ${item.tone}`}
+              >
+                <div className="absolute inset-0 bg-gradient-to-t from-black/78 via-black/8 to-black/18" />
+                <div className="relative flex h-full flex-col p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-black/24 px-2.5 py-1.5 text-[10px] font-semibold backdrop-blur">
+                      <PlatformIcon platform={item.platform} />
+                      {item.platform}
+                    </span>
+                    <span className="text-[10px] font-semibold text-white/78">
+                      {item.views}
+                    </span>
+                  </div>
+                  <span className="absolute left-1/2 top-[42%] grid size-11 -translate-x-1/2 place-items-center rounded-full bg-white/86 text-[#1b1824] shadow-lg">
+                    <Play aria-hidden className="ml-0.5 size-4 fill-current" />
+                  </span>
+                  <div className="mt-auto">
+                    <span className="text-[10px] font-semibold text-white/68">
+                      {item.categoryLabel}
+                    </span>
+                    <h4 className="mt-2 text-xl font-semibold leading-[1.02] tracking-[-0.04em]">
+                      {item.title}
+                    </h4>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
