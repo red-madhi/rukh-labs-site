@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { OfficialBrandArt } from "@/components/brand/official-brand-art";
+import { RukhMark } from "@/components/brand/rukh-mark";
+import { RukhWordmark } from "@/components/brand/rukh-wordmark";
 import { cn } from "@/lib/utils";
 
 type LogoProps = {
@@ -9,11 +10,10 @@ type LogoProps = {
 
 export function Logo({ href = "/", className }: LogoProps) {
   const content = (
-    <OfficialBrandArt
-      brand="rukh-labs"
-      priority
-      className="w-[176px] sm:w-[202px]"
-    />
+    <span className="inline-flex items-center gap-2.5" aria-label="Rukh Labs">
+      <RukhMark size="md" decorative />
+      <RukhWordmark compact />
+    </span>
   );
 
   if (!href) {

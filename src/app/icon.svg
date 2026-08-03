@@ -1,8 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#050506"/>
-  <rect x="8" y="8" width="48" height="48" rx="10" fill="#0c0809" stroke="#b71d25" stroke-width="2"/>
-  <path d="M17 14h24.5L53 24v9.5L46.2 38 56 55H41.2l-8.9-15.5H29V55H17V14z" fill="#b71d25"/>
-  <path d="M29 24v7h10l4.6-3.4L39 24H29z" fill="#080607"/>
-  <path d="M41.5 14 53 24H41.2L34.1 14h7.4z" fill="#ff4a52"/>
-  <path d="M17 14h24.5L53 24v9.5L46.2 38 56 55H41.2l-8.9-15.5H29V55H17V14z" fill="none" stroke="#ff6a70" stroke-opacity=".55"/>
+  <defs>
+    <linearGradient id="panel" x1="7" y1="3" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3b3d40"/>
+      <stop offset=".38" stop-color="#101216"/>
+      <stop offset=".78" stop-color="#050608"/>
+      <stop offset="1" stop-color="#181108"/>
+    </linearGradient>
+    <linearGradient id="frame" x1="7" y1="5" x2="58" y2="59" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff6d8"/>
+      <stop offset=".34" stop-color="#8e9092"/>
+      <stop offset=".7" stop-color="#f4bd43"/>
+      <stop offset="1" stop-color="#8d5b10"/>
+    </linearGradient>
+    <linearGradient id="rook" x1="20" y1="10" x2="43" y2="44" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff"/>
+      <stop offset=".58" stop-color="#f2eee5"/>
+      <stop offset="1" stop-color="#d6b978"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#050608"/>
+  <rect x="2" y="2" width="60" height="60" rx="14" fill="url(#panel)"/>
+  <rect x="4.25" y="4.25" width="55.5" height="55.5" rx="12" fill="none" stroke="url(#frame)" stroke-width="1.1"/>
+  <path d="M5 18 31.8 44.7 59 17.5" fill="none" stroke="#fff" stroke-opacity=".14" stroke-width=".7"/>
+  <path d="M4.5 38 19.7 52.8 32 44.8 44.4 53 59.5 38" fill="none" stroke="#f4bd43" stroke-opacity=".52" stroke-width=".7"/>
+  <path d="M15 12h9v7h4v-7h8v7h4v-7h9v15.5L42 34 32 44.5 22 34l-7-6.5V12Z" fill="url(#rook)" stroke="#fff" stroke-opacity=".58" stroke-width=".65"/>
+  <path d="m32 44.5-12.5 12.5h25L32 44.5Z" fill="#090a0c" fill-opacity=".82" stroke="url(#frame)" stroke-width=".65"/>
+  <path d="M18.5 57h27v4h-27v-4Z" fill="#090a0c" stroke="url(#frame)" stroke-width=".65"/>
+  <path d="M6 5h25C23 7 13 12 6 24V5Z" fill="#fff" fill-opacity=".12"/>
 </svg>

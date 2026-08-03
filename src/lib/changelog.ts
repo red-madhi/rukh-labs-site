@@ -12,6 +12,14 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    date: "2026-08-02",
+    product: "Rukh Labs",
+    title: "Rukh Labs brand identity finalized",
+    description:
+      "Adopted the silver rook-and-hourglass emblem, geometric Rukh wordmark, and gold-accented lockup as the official Rukh Labs identity.",
+    status: "Published",
+  },
+  {
     date: "2026-07-28",
     product: "Farzin",
     title: "Farzin 1.0.0 released on Google Play",
@@ -32,10 +40,10 @@ export const changelogEntries: ChangelogEntry[] = [
   {
     date: "2026-07-06",
     product: "Rukh Labs",
-    title: "Brand mark direction",
+    title: "Early brand mark direction",
     description:
-      "Introduced the red angular Rukh Labs mark direction across the site for stronger parent-brand recognition.",
-    status: "In progress",
+      "Explored an angular red monogram before the official rook-and-hourglass identity was finalized.",
+    status: "Prototype",
   },
   {
     date: "2026-07-04",

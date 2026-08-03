@@ -98,11 +98,20 @@ export function createPageMetadata({
       url,
       siteName: siteConfig.name,
       type: "website",
+      images: [
+        {
+          url: "/brand/rukh-labs-primary.png",
+          width: 1549,
+          height: 690,
+          alt: "Rukh Labs",
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: fullTitle,
       description,
+      images: ["/brand/rukh-labs-primary.png"],
     },
   };
 }

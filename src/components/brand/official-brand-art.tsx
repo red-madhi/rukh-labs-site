@@ -1,17 +1,23 @@
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
-type Brand = "rukh-labs" | "glass-squares" | "farzin";
+type Brand = "rukh-labs" | "rukh-labs-stacked" | "glass-squares" | "farzin";
 
 const brandAssets: Record<
   Brand,
   { src: string; alt: string; width: number; height: number }
 > = {
   "rukh-labs": {
-    src: "/brand/rukh-labs-official.webp",
+    src: "/brand/rukh-labs-primary.png",
+    alt: "Rukh Labs — Apps, Websites, Digital Products. Smart Solutions. Local Impact.",
+    width: 1549,
+    height: 690,
+  },
+  "rukh-labs-stacked": {
+    src: "/brand/rukh-labs-stacked.png",
     alt: "Rukh Labs",
-    width: 1600,
-    height: 533,
+    width: 1254,
+    height: 1254,
   },
   "glass-squares": {
     src: "/brand/glass-squares-official.webp",

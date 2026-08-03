@@ -18,15 +18,42 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-site-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-rukh-display);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-site-sans), Arial, Helvetica, sans-serif;
   text-rendering: geometricPrecision;
+}
+
+h1,
+h2,
+h3 {
+  letter-spacing: -0.035em;
+}
+
+.rukh-display {
+  font-family: var(--font-rukh-display), var(--font-site-sans), sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.rukh-metal-text {
+  background: linear-gradient(180deg, #ffffff 8%, #d9d8d4 48%, #fffaf0 72%, #a5a5a0 100%);
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.5));
+}
+
+.rukh-gold-text {
+  background: linear-gradient(180deg, #fff0b8 0%, #e8b348 44%, #a66c16 100%);
+  background-clip: text;
+  color: transparent;
 }
 
 html {
