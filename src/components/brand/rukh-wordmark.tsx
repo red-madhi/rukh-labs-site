@@ -10,13 +10,13 @@ export function RukhWordmark({ compact = false, className }: RukhWordmarkProps) 
     <span className={cn("inline-flex min-w-0 flex-col", className)}>
       <span
         className={cn(
-          "rukh-display rukh-metal-text block whitespace-nowrap leading-none",
+          "rukh-display rukh-metal-text block whitespace-nowrap text-center leading-none",
           compact ? "text-[0.78rem] tracking-[0.3em] sm:text-sm" : "text-lg sm:text-xl",
         )}
       >
         RUKH
       </span>
-      <span className="mt-1 flex items-center gap-1.5" aria-hidden="true">
+      <span className="mt-1 flex items-center justify-center gap-1.5" aria-hidden="true">
         <span className="h-px w-4 bg-[linear-gradient(90deg,transparent,var(--brand-gold))] sm:w-5" />
         <span
           className={cn(
