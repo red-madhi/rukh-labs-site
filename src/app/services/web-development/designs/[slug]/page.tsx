@@ -13,7 +13,7 @@ import { createPageMetadata } from "@/lib/site-config";
 import {
   designDirections,
   getDesignDirection,
-  websiteProjectMailto,
+  getWebsiteProjectHref,
 } from "@/lib/web-development";
 
 type DesignDirectionPageProps = {
@@ -89,12 +89,12 @@ export default async function DesignDirectionPage({
                     Open full sample site
                     <ArrowRight aria-hidden className="size-4" />
                   </Link>
-                  <a
-                    href={websiteProjectMailto}
+                  <Link
+                    href={getWebsiteProjectHref({ design: direction.slug })}
                     className={buttonStyles({ variant: "secondary", size: "lg" })}
                   >
                     Start with {direction.name}
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -191,10 +191,13 @@ export default async function DesignDirectionPage({
                 starting language—not copies of the same website.
               </p>
               <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-                <a href={websiteProjectMailto} className={buttonStyles({ size: "lg" })}>
+                <Link
+                  href={getWebsiteProjectHref({ design: direction.slug })}
+                  className={buttonStyles({ size: "lg" })}
+                >
                   Start a Project
                   <ArrowRight aria-hidden className="size-4" />
-                </a>
+                </Link>
                 <Link
                   href="/services/web-development#designs"
                   className={buttonStyles({ variant: "secondary", size: "lg" })}

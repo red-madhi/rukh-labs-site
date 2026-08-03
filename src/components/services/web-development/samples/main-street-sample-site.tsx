@@ -1,8 +1,8 @@
 import { ArrowRight, Check, Clock, MapPin, Menu } from "lucide-react";
 import { MainStreetMenu } from "./main-street-menu";
 
-const mainStreetMailto =
-  "mailto:rukhlabs@gmail.com?subject=Main%20Street%20Website%20Direction%20Inquiry";
+const mainStreetProjectHref =
+  "/contact?inquiry=website&design=main-street";
 
 const mainStreetNav = [
   { label: "Menu", href: "#mainstreet-menu" },
@@ -315,7 +315,7 @@ export function MainStreetSampleSite() {
                 like it came from a neighborhood bakery.
               </p>
               <a
-                href={mainStreetMailto}
+                href={mainStreetProjectHref}
                 className={`mt-8 inline-flex min-h-12 items-center justify-center gap-3 rounded-full bg-[#d9673f] px-6 text-sm font-bold text-white transition hover:bg-[#c5512f] ${focus}`}
               >
                 Ask about catering
@@ -400,7 +400,7 @@ export function MainStreetSampleSite() {
                 Questions about a menu, visit, or project like this sample?
               </p>
               <a
-                href={mainStreetMailto}
+                href={mainStreetProjectHref}
                 className={`inline-flex min-h-11 items-center justify-center rounded-full bg-[#173f32] px-5 text-sm font-bold text-[#fff8e9] ${focus}`}
               >
                 Ask a question

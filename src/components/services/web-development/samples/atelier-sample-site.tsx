@@ -1,8 +1,7 @@
 import { ArrowDownRight, ArrowRight, ChevronDown, Menu } from "lucide-react";
 import { AtelierProjectGallery } from "./atelier-project-gallery";
 
-const atelierMailto =
-  "mailto:rukhlabs@gmail.com?subject=Atelier%20Website%20Direction%20Inquiry";
+const atelierProjectHref = "/contact?inquiry=website&design=atelier";
 
 const atelierNav = [
   { label: "Work", href: "#atelier-work" },
@@ -96,7 +95,7 @@ export function AtelierSampleSite() {
                 <ArrowDownRight aria-hidden className="size-4" />
               </a>
               <a
-                href={atelierMailto}
+                href={atelierProjectHref}
                 className={`inline-flex min-h-12 items-center justify-center border border-[#211c18]/26 px-6 text-xs font-semibold uppercase tracking-[0.14em] transition hover:border-[#7d2a24] hover:text-[#7d2a24] ${focus}`}
               >
                 Commission a project
@@ -365,7 +364,7 @@ export function AtelierSampleSite() {
             </h2>
           </div>
           <a
-            href={atelierMailto}
+            href={atelierProjectHref}
             className="inline-flex min-h-13 shrink-0 items-center justify-center gap-3 border border-[#fff8ea]/50 px-6 text-xs font-semibold uppercase tracking-[0.14em] transition hover:bg-[#fff8ea] hover:text-[#7d2a24] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#fff8ea]"
           >
             Begin an inquiry

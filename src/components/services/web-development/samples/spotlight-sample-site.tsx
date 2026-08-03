@@ -17,8 +17,7 @@ import {
 import { SampleMobileMenu } from "./sample-mobile-menu";
 import { SpotlightContentGrid } from "./spotlight-content-grid";
 
-const spotlightMailto =
-  "mailto:rukhlabs@gmail.com?subject=Spotlight%20Website%20Direction%20Inquiry";
+const spotlightProjectHref = "/contact?inquiry=website&design=spotlight";
 
 const spotlightNav = [
   { label: "Watch", href: "#spotlight-watch" },
@@ -640,7 +639,7 @@ export function SpotlightSampleSite() {
               </h2>
             </div>
             <a
-              href={spotlightMailto}
+              href={spotlightProjectHref}
               className={`inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-[#1b1824] px-7 text-sm font-semibold text-white transition hover:bg-[#5a43d8] ${focus}`}
             >
               <Mail aria-hidden className="size-4" />

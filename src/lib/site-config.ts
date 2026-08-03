@@ -6,16 +6,15 @@ export const FARZIN_GOOGLE_PLAY_URL =
 export const siteConfig = {
   name: "Rukh Labs",
   url: "https://rukhlabs.com",
-  contactEmail: "rukhlabs@gmail.com",
+  contactEmail: "rukh.labs@gmail.com",
   tagline: "Software should feel powerful again.",
   description:
     "Rukh Labs builds clean, secure, beautifully designed software for people who expect more from their tools.",
   links: {
     patreon: "https://patreon.com/rukhlabs",
     farzinGooglePlay: FARZIN_GOOGLE_PLAY_URL,
-    email: "mailto:rukhlabs@gmail.com",
-    websiteProject:
-      "mailto:rukhlabs@gmail.com?subject=Rukh%20Labs%20Website%20Project",
+    email: "mailto:rukh.labs@gmail.com",
+    websiteProject: "/contact?inquiry=website",
   },
   brandLines: [
     "Software should feel powerful again.",
@@ -63,10 +62,12 @@ export const siteConfig = {
   },
   productInterestOptions: ["Everything Rukh Labs", "Glass Squares OS"],
   contactReasons: [
+    "Website design project",
     "Beta access",
     "Product feedback",
     "Security report",
     "Partnership or press",
+    "Something else",
   ],
 };
 

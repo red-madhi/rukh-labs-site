@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
-import type { DesignDirection } from "@/lib/web-development";
+import {
+  getWebsiteProjectHref,
+  type DesignDirection,
+} from "@/lib/web-development";
 
 type SampleSiteFrameProps = {
   direction: DesignDirection;
@@ -11,9 +14,7 @@ export function SampleSiteFrame({
   direction,
   children,
 }: SampleSiteFrameProps) {
-  const directionMailto = `mailto:rukhlabs@gmail.com?subject=${encodeURIComponent(
-    `${direction.name} Website Direction Inquiry`,
-  )}`;
+  const projectHref = getWebsiteProjectHref({ design: direction.slug });
 
   return (
     <div className="min-h-screen bg-[#050506]">
@@ -53,14 +54,14 @@ export function SampleSiteFrame({
               <span className="hidden sm:inline">Back to {direction.name}</span>
               <span className="sm:hidden">Back</span>
             </Link>
-            <a
-              href={directionMailto}
+            <Link
+              href={projectHref}
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-[color:var(--brand-red)] px-3 text-xs font-semibold text-white transition hover:bg-[#ff2038] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#ff5364] sm:px-4"
             >
               <span className="hidden sm:inline">Start with this direction</span>
               <span className="sm:hidden">Start a project</span>
               <ArrowUpRight aria-hidden className="size-3.5" />
-            </a>
+            </Link>
           </div>
         </div>
       </aside>

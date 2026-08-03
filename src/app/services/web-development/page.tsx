@@ -25,13 +25,14 @@ import { Section } from "@/components/ui/section";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 import {
   designDirections,
+  getWebsiteProjectHref,
   websiteAddOns,
   websiteDeliverables,
   websiteFaqs,
   websitePackages,
   websiteProcess,
   websiteProjectEmail,
-  websiteProjectMailto,
+  websiteProjectHref,
   type WebsitePackage,
 } from "@/lib/web-development";
 
@@ -122,8 +123,8 @@ function PackageCard({ websitePackage }: { websitePackage: WebsitePackage }) {
           </li>
         ))}
       </ul>
-      <a
-        href={websiteProjectMailto}
+      <Link
+        href={getWebsiteProjectHref({ packageId: websitePackage.id })}
         className={buttonStyles({
           variant: websitePackage.recommended ? "primary" : "secondary",
           className: "mt-8 w-full sm:w-auto sm:self-start",
@@ -131,7 +132,7 @@ function PackageCard({ websitePackage }: { websitePackage: WebsitePackage }) {
       >
         Discuss {websitePackage.name}
         <ArrowRight aria-hidden className="size-4" />
-      </a>
+      </Link>
     </article>
   );
 }
@@ -179,10 +180,10 @@ export default function WebDevelopmentPage() {
                 overhead.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <a href={websiteProjectMailto} className={buttonStyles({ size: "lg" })}>
+                <Link href={websiteProjectHref} className={buttonStyles({ size: "lg" })}>
                   Start a Project
                   <ArrowRight aria-hidden className="size-4" />
-                </a>
+                </Link>
                 <Link
                   href="#designs"
                   className={buttonStyles({ variant: "secondary", size: "lg" })}
@@ -451,10 +452,10 @@ export default function WebDevelopmentPage() {
                   and what the website needs to do.
                 </p>
                 <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-                  <a href={websiteProjectMailto} className={buttonStyles({ size: "lg" })}>
+                  <Link href={websiteProjectHref} className={buttonStyles({ size: "lg" })}>
                     Start a Project
                     <ArrowRight aria-hidden className="size-4" />
-                  </a>
+                  </Link>
                   <a
                     href={`mailto:${websiteProjectEmail}`}
                     className={buttonStyles({ variant: "secondary", size: "lg" })}

@@ -1,7 +1,7 @@
 import { siteConfig } from "@/lib/site-config";
 
 export const websiteProjectEmail = siteConfig.contactEmail;
-export const websiteProjectMailto = siteConfig.links.websiteProject;
+export const websiteProjectHref = siteConfig.links.websiteProject;
 
 export type DesignDirectionSlug =
   | "obsidian"
@@ -10,6 +10,23 @@ export type DesignDirectionSlug =
   | "main-street"
   | "spotlight"
   | "dispatch";
+
+export function getWebsiteProjectHref(options?: {
+  packageId?: WebsitePackageId;
+  design?: DesignDirectionSlug;
+}) {
+  const params = new URLSearchParams({ inquiry: "website" });
+
+  if (options?.packageId) {
+    params.set("package", options.packageId);
+  }
+
+  if (options?.design) {
+    params.set("design", options.design);
+  }
+
+  return `/contact?${params.toString()}`;
+}
 
 export type DesignDirection = {
   slug: DesignDirectionSlug;

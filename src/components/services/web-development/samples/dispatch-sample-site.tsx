@@ -15,8 +15,7 @@ import { DispatchMembershipDemo } from "./dispatch-membership-demo";
 import { DispatchStoryIndex } from "./dispatch-story-index";
 import { SampleMobileMenu } from "./sample-mobile-menu";
 
-const dispatchMailto =
-  "mailto:rukhlabs@gmail.com?subject=Dispatch%20Website%20Direction%20Inquiry";
+const dispatchProjectHref = "/contact?inquiry=website&design=dispatch";
 
 const dispatchNav = [
   { label: "Latest", href: "#dispatch-latest" },
@@ -655,7 +654,7 @@ export function DispatchSampleSite() {
               </h2>
             </div>
             <a
-              href={dispatchMailto}
+              href={dispatchProjectHref}
               className="inline-flex min-h-14 items-center justify-center gap-3 rounded-full bg-[#151a18] px-7 text-sm font-semibold text-white transition hover:bg-[#1e5748] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
             >
               <Mail aria-hidden className="size-4" />
@@ -693,7 +692,7 @@ export function DispatchSampleSite() {
               Archive
             </a>
             <a
-              href={dispatchMailto}
+              href={dispatchProjectHref}
               className={`inline-flex items-center gap-2 text-xs font-semibold text-[#f39a83] hover:text-white ${focus}`}
             >
               Build this direction
