@@ -43,8 +43,10 @@ export function Footer() {
   const isWebsiteSample =
     pathname.startsWith("/services/web-development/designs/") &&
     pathname.endsWith("/sample");
+  const isPrivatePortfolio = pathname.startsWith("/portfolio/brett-gallaher");
+  const isCareerPortfolioDemo = pathname === "/services/career-portfolios/demo";
 
-  if (isWebsiteSample) {
+  if (isWebsiteSample || isPrivatePortfolio || isCareerPortfolioDemo) {
     return null;
   }
 

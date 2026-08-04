@@ -16,6 +16,7 @@ import { RukhMark } from "@/components/brand/rukh-mark";
 import { WaitlistForm } from "@/components/forms/waitlist-form";
 import { ProductCard } from "@/components/sections/product-card";
 import { WebsiteStudioTeaser } from "@/components/sections/website-studio-teaser";
+import { CareerPortfolioTeaser } from "@/components/sections/career-portfolio-teaser";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -269,6 +270,7 @@ export default function Home() {
       </Section>
 
       <WebsiteStudioTeaser />
+      <CareerPortfolioTeaser />
 
       <Section>
         <Container>

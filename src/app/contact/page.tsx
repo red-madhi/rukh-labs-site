@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Check, Clock3, Globe2, Mail, Sparkles } from "lucide-react";
+import { ArrowRight, BriefcaseBusiness, Check, Clock3, Globe2, Mail, Sparkles } from "lucide-react";
 import { ContactForm } from "@/components/forms/contact-form";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
@@ -12,9 +12,9 @@ import { Section } from "@/components/ui/section";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Contact & Website Project Inquiry",
+  title: "Contact & Project Inquiry",
   description:
-    "Start a website design project with Rukh Labs or get in touch about products, partnerships, press, and security.",
+    "Start a website or career portfolio project with Rukh Labs, or get in touch about products, partnerships, press, and security.",
   path: "/contact",
 });
 
@@ -39,8 +39,8 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
     <>
       <PageHeader
         eyebrow="Contact Rukh Labs"
-        title="Have a website in mind? Let’s talk."
-        description="Start a web design project, ask a product question, report a security issue, or discuss a serious partnership. Website clients can share the useful details below and get a clear next step."
+        title="Have a project in mind? Let’s talk."
+        description="Start a website or career portfolio project, ask a product question, report a security issue, or discuss a serious partnership. Share the useful details below and get a clear next step."
       />
       <Section>
         <Container className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">
@@ -71,6 +71,29 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
                   className={buttonStyles({ variant: "secondary", className: "mt-7 w-full" })}
                 >
                   View packages and designs
+                  <ArrowRight aria-hidden className="size-4" />
+                </Link>
+              </Card>
+            </Reveal>
+
+            <Reveal delay={0.04}>
+              <Card className="overflow-hidden border-[#16c8ff]/24 bg-[radial-gradient(circle_at_90%_8%,rgba(22,200,255,0.16),transparent_42%),linear-gradient(145deg,rgba(8,23,31,0.96),rgba(10,8,14,0.96))] p-6 sm:p-7">
+                <span className="grid size-11 place-items-center rounded-xl border border-[#16c8ff]/28 bg-[#16c8ff]/10 text-[#8aeaff]">
+                  <BriefcaseBusiness aria-hidden className="size-5" />
+                </span>
+                <Badge tone="blue" className="mt-6">Career portfolio clients</Badge>
+                <h2 className="mt-5 text-2xl font-semibold leading-tight text-white sm:text-3xl">
+                  Turn career claims into visible proof.
+                </h2>
+                <p className="mt-4 text-sm leading-7 text-white/62">
+                  Focused portfolios start at $995, signature builds at $1,995,
+                  and custom proof systems at $3,500.
+                </p>
+                <Link
+                  href="/services/career-portfolios"
+                  className={buttonStyles({ variant: "secondary", className: "mt-7 w-full" })}
+                >
+                  View career portfolio packages
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
               </Card>
