@@ -1,0 +1,35 @@
+{
+  "status": "packaged",
+  "pairedProducts": 4,
+  "packages": [
+    {
+      "file": "Mobility-PowerBI.zip",
+      "files": 111,
+      "bytes": 128686,
+      "sha256": "b9b8a57b50d3f089df4069c6d2defdb74498c58ac799714a8419ed32a82ddfcc"
+    },
+    {
+      "file": "Capital-PowerBI.zip",
+      "files": 117,
+      "bytes": 139086,
+      "sha256": "3c82eb734cdf7178d84202f3b360c7ba013eac162f0a7c25ae87632a1e61773b"
+    },
+    {
+      "file": "Factory-PowerBI.zip",
+      "files": 379,
+      "bytes": 4984575,
+      "sha256": "2f4eb3193f700e34635200532cd385f6aedc017bf7e2e05b1024e03fff06e59d"
+    },
+    {
+      "file": "Service-PowerBI.zip",
+      "files": 147,
+      "bytes": 183593,
+      "sha256": "ca445e8870c10c827461e6a07674ba4e156c3b1bb0ca9fab1e1ee4c1bc7c4aac"
+    }
+  ],
+  "recruiterPortfolio": {
+    "file": "Brett-Gallaher-Recruiter-Portfolio.zip",
+    "bytes": 6651609,
+    "sha256": "f6ceeef59a2d98e35dfe6753827013b424bda3b63a1af130b6831aac8632e0db"
+  }
+}

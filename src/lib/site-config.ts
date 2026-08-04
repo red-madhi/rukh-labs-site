@@ -15,6 +15,7 @@ export const siteConfig = {
     farzinGooglePlay: FARZIN_GOOGLE_PLAY_URL,
     email: "mailto:rukh.labs@gmail.com",
     websiteProject: "/contact?inquiry=website",
+    careerPortfolioProject: "/contact?inquiry=career-portfolio",
   },
   brandLines: [
     "Software should feel powerful again.",
@@ -26,6 +27,7 @@ export const siteConfig = {
   navItems: [
     { label: "Products", href: "/products" },
     { label: "Websites", href: "/services/web-development" },
+    { label: "Career Portfolios", href: "/services/career-portfolios" },
     { label: "Glass Squares OS", href: "/products/glass-squares-os" },
     {
       label: "Farzin",
@@ -50,6 +52,7 @@ export const siteConfig = {
     ],
     company: [
       { label: "Web Development", href: "/services/web-development" },
+      { label: "Career Portfolios", href: "/services/career-portfolios" },
       { label: "About", href: "/about" },
       { label: "Changelog", href: "/changelog" },
       { label: "Security", href: "/security" },
@@ -63,6 +66,7 @@ export const siteConfig = {
   productInterestOptions: ["Everything Rukh Labs", "Glass Squares OS"],
   contactReasons: [
     "Website design project",
+    "Career portfolio project",
     "Beta access",
     "Product feedback",
     "Security report",

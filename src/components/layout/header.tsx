@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 function isNavItemActive(pathname: string, href: string) {
   return (
     pathname === href ||
-    (href === "/services/web-development" && pathname.startsWith(`${href}/`))
+    (href.startsWith("/services/") && pathname.startsWith(`${href}/`))
   );
 }
 
@@ -22,8 +22,10 @@ export function Header() {
   const isWebsiteSample =
     pathname.startsWith("/services/web-development/designs/") &&
     pathname.endsWith("/sample");
+  const isPrivatePortfolio = pathname.startsWith("/portfolio/brett-gallaher");
+  const isCareerPortfolioDemo = pathname === "/services/career-portfolios/demo";
 
-  if (isWebsiteSample) {
+  if (isWebsiteSample || isPrivatePortfolio || isCareerPortfolioDemo) {
     return null;
   }
 

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { DesignPreview } from "@/components/services/web-development/design-preview";
 import { WebsiteHeroVisual } from "@/components/services/web-development/website-hero-visual";
+import { CareerPortfolioTeaser } from "@/components/sections/career-portfolio-teaser";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -404,6 +405,8 @@ export default function WebDevelopmentPage() {
           </div>
         </Container>
       </Section>
+
+      <CareerPortfolioTeaser />
 
       <Section className="border-y border-white/10 bg-white/[0.02]">
         <Container className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr]">
