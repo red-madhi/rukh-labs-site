@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { BrandBanner } from "@/components/brand/brand-banner";
 import { RukhMark } from "@/components/brand/rukh-mark";
-import { WaitlistForm } from "@/components/forms/waitlist-form";
 import { ProductCard } from "@/components/sections/product-card";
 import { WebsiteStudioTeaser } from "@/components/sections/website-studio-teaser";
 import { CareerPortfolioTeaser } from "@/components/sections/career-portfolio-teaser";
@@ -30,9 +29,9 @@ import { labProduct, products } from "@/lib/products";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Rukh Labs",
+  title: "Websites, Career Portfolios & Software",
   description:
-    "Rukh Labs builds clean, secure, beautifully designed software for people who expect more from their tools.",
+    "Rukh Labs designs distinct websites and career portfolios, and builds software products with clarity, security, and character.",
 });
 
 const philosophy = [
@@ -86,34 +85,39 @@ export default function Home() {
           <Reveal>
             <div className="max-w-3xl">
               <Badge tone="red" className="uppercase tracking-[0.18em]">
-                Independent software lab
+                Digital studio & software lab
               </Badge>
               <h1 className="mt-7 text-5xl font-semibold leading-[1.02] text-white sm:text-7xl">
-                Software should feel{" "}
+                Build a presence that{" "}
                 <span className="bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_45%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent">
-                  powerful again.
+                  does more than exist.
                 </span>
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-8 text-white/68 sm:text-xl">
-                Rukh Labs builds distinct, secure software with actual identity:
-                a glass-first desktop OS and a serious chess training platform.
+                Rukh Labs designs and builds websites for businesses, brands, and
+                products—plus career portfolios that turn experience into proof.
+                We also create original software, including Glass Squares OS and
+                Farzin.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-                <Link href="/download" className={buttonStyles({ size: "lg" })}>
-                  Glass Squares OS Beta
+                <Link
+                  href="/services/web-development"
+                  className={buttonStyles({ size: "lg" })}
+                >
+                  Build your website
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
                 <Link
-                  href="/products"
+                  href="/services/career-portfolios"
                   className={buttonStyles({ variant: "secondary", size: "lg" })}
                 >
-                  Explore Products
+                  Build a career portfolio
                 </Link>
               </div>
               <div className="mt-10 grid gap-3 text-xs font-medium uppercase tracking-[0.14em] text-white/42 sm:grid-cols-3">
-                <span className="border-l border-[#16c8ff]/50 pl-3">Glass Squares OS</span>
-                <span className="border-l border-[#f4bd43]/50 pl-3">Farzin Chess</span>
-                <span className="border-l border-[#f0001c]/50 pl-3">Built by Rukh Labs</span>
+                <span className="border-l border-[#16c8ff]/50 pl-3">Web development</span>
+                <span className="border-l border-[#9a6dff]/50 pl-3">Career portfolios</span>
+                <span className="border-l border-[#f0001c]/50 pl-3">Original software</span>
               </div>
             </div>
           </Reveal>
@@ -131,15 +135,22 @@ export default function Home() {
         </Container>
       </Section>
 
+      <WebsiteStudioTeaser />
+      <CareerPortfolioTeaser />
+
       <Section>
         <Container>
           <Reveal>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <Badge tone="red">Products</Badge>
+                <Badge tone="slate">Products from the lab</Badge>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  Premium software with teeth.
+                  Software we build for ourselves.
                 </h2>
+                <p className="mt-4 max-w-2xl text-lg leading-8 text-white/64">
+                  Our products are where we explore the same standards we bring to
+                  client work: clarity, control, and distinctive design.
+                </p>
               </div>
               <Link
                 href="/products"
@@ -269,9 +280,6 @@ export default function Home() {
         </Container>
       </Section>
 
-      <WebsiteStudioTeaser />
-      <CareerPortfolioTeaser />
-
       <Section>
         <Container>
           <Reveal>
@@ -322,12 +330,27 @@ export default function Home() {
             <div className="rounded-lg border border-[#d6ad5b]/20 bg-[linear-gradient(135deg,rgba(214,173,91,0.12),rgba(77,183,255,0.08)_54%,rgba(255,255,255,0.035))] p-6 shadow-[0_24px_100px_rgba(0,0,0,0.35)] sm:p-8 lg:p-10">
               <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-center">
                 <div>
-                  <Badge tone="gold">Glass Squares OS beta</Badge>
+                  <Badge tone="gold">Start a project</Badge>
                   <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                    Follow the OS before it gets loud.
+                    Make the next impression count.
                   </h2>
                 </div>
-                <WaitlistForm defaultInterest="Glass Squares OS" />
+                <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+                  <Link
+                    href="/services/web-development"
+                    className={buttonStyles({ size: "lg" })}
+                  >
+                    Plan a website
+                    <ArrowRight aria-hidden className="size-4" />
+                  </Link>
+                  <Link
+                    href="/services/career-portfolios"
+                    className={buttonStyles({ variant: "secondary", size: "lg" })}
+                  >
+                    Build a career portfolio
+                    <ArrowRight aria-hidden className="size-4" />
+                  </Link>
+                </div>
               </div>
             </div>
           </Reveal>
