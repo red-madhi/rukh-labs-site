@@ -5,6 +5,7 @@ import { CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { siteConfig } from "@/lib/site-config";
+import { trackEvent } from "@/lib/analytics";
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -27,6 +28,10 @@ export function WaitlistForm({ defaultInterest }: { defaultInterest?: string }) 
       return;
     }
 
+    trackEvent("glass_squares_waitlist_submit", {
+      product: "glass-squares-os",
+      source_page: "/download",
+    });
     setSubmitted(true);
   }
 

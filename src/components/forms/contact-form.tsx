@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import {
   BriefcaseBusiness,
   CheckCircle2,
@@ -13,6 +13,7 @@ import { Card } from "@/components/ui/card";
 import { careerPortfolioPackages } from "@/lib/career-portfolios";
 import { siteConfig } from "@/lib/site-config";
 import { designDirections, websitePackages } from "@/lib/web-development";
+import { trackEvent } from "@/lib/analytics";
 
 const WEBSITE_REASON = "Website design project";
 const CAREER_REASON = "Career portfolio project";
@@ -108,10 +109,20 @@ export function ContactForm({
   });
   const [error, setError] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const hasTrackedStart = useRef(false);
 
   const isWebsiteProject = form.reason === WEBSITE_REASON;
   const isCareerProject = form.reason === CAREER_REASON;
   const isProject = isWebsiteProject || isCareerProject;
+
+  function handleFormStart() {
+    if (hasTrackedStart.current) return;
+    hasTrackedStart.current = true;
+    trackEvent("contact_form_start", {
+      inquiry_type: form.reason,
+      source_page: "/contact",
+    });
+  }
 
   function updateField(field: keyof typeof form, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -243,6 +254,10 @@ export function ContactForm({
       return;
     }
 
+    trackEvent("contact_form_submit", {
+      inquiry_type: form.reason,
+      source_page: "/contact",
+    });
     openEmailDraft();
   }
 
@@ -264,7 +279,11 @@ export function ContactForm({
                 <ExternalLink aria-hidden className="size-4" />
                 Open draft again
               </Button>
-              <a href={siteConfig.links.email} className={buttonStyles({ variant: "secondary" })}>
+              <a
+                href={siteConfig.links.email}
+                onClick={() => trackEvent("email_click", { source_page: "/contact" })}
+                className={buttonStyles({ variant: "secondary" })}
+              >
                 <Mail aria-hidden className="size-4" />
                 {siteConfig.contactEmail}
               </a>
@@ -287,7 +306,12 @@ export function ContactForm({
 
   return (
     <Card className="border-white/12 p-5 sm:p-7">
-      <form onSubmit={handleSubmit} className="grid gap-6" noValidate>
+      <form
+        onSubmit={handleSubmit}
+        onFocusCapture={handleFormStart}
+        className="grid gap-6"
+        noValidate
+      >
         <div className="border-b border-white/10 pb-6">
           <div className="flex items-center gap-3">
             <span className="grid size-10 place-items-center rounded-lg border border-[color:var(--brand-red)]/28 bg-[color:var(--brand-red)]/10 text-[#ff8e99]">

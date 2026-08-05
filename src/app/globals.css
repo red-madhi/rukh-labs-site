@@ -136,6 +136,22 @@ html {
     rgba(11, 7, 8, 0.86);
 }
 
+.reveal-enter {
+  animation: reveal-enter 0.55s ease-out both;
+  animation-delay: var(--reveal-delay, 0s);
+}
+
+@keyframes reveal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes brand-sheen {
   0%,
   68% {
