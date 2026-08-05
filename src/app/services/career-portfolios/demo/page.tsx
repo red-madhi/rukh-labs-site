@@ -33,20 +33,20 @@ export default function CareerPortfolioDemoPage() {
             </Link>
             <div className="mt-9 grid gap-7 lg:grid-cols-[1fr_0.7fr] lg:items-end">
               <div>
-                <Badge tone="blue">Fictional interactive demo</Badge>
+                <Badge tone="blue">Fully functional fictional portfolio</Badge>
                 <h1 className="mt-6 max-w-4xl text-4xl font-semibold leading-[1.04] text-white sm:text-6xl">
-                  Show the thinking behind the title.
+                  Explore the portfolio, not a static mockup.
                 </h1>
               </div>
               <div>
                 <p className="text-lg leading-8 text-white/62">
-                  This sample demonstrates how positioning, proof, outcomes, and
-                  interaction can help a candidate stand out without exposing a
-                  real person or confidential work.
+                  Navigate a complete fictional candidate story, compare case
+                  studies, review a résumé view, and operate a live scenario
+                  dashboard—all without exposing a real person or confidential work.
                 </p>
                 <p className="mt-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-[#8aeaff]">
                   <ShieldCheck aria-hidden className="size-4" />
-                  No personal data, downloads, or submission endpoint
+                  No real identity, downloadable files, or submission endpoint
                 </p>
               </div>
             </div>

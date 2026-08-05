@@ -2,15 +2,15 @@ import { Badge } from "@/components/ui/badge";
 import { OfficialBrandArt } from "@/components/brand/official-brand-art";
 
 const moves = ["1. e4 c5", "2. Nf3 d6", "3. d4 cxd4"];
-const pieces: Record<number, string> = {
-  4: "K",
-  9: "N",
-  12: "B",
-  19: "P",
-  28: "Q",
-  35: "p",
-  44: "n",
-  51: "k",
+const pieces: Record<number, { symbol: string; side: "light" | "dark" }> = {
+  4: { symbol: "♔", side: "light" },
+  9: { symbol: "♘", side: "light" },
+  12: { symbol: "♗", side: "light" },
+  19: { symbol: "♙", side: "light" },
+  28: { symbol: "♕", side: "light" },
+  35: { symbol: "♟", side: "dark" },
+  44: { symbol: "♞", side: "dark" },
+  51: { symbol: "♚", side: "dark" },
 };
 
 export function ChessMockup() {
@@ -20,9 +20,9 @@ export function ChessMockup() {
       <div className="absolute right-4 top-4 z-10 opacity-90">
         <OfficialBrandArt brand="farzin" decorative className="size-10 rounded-xl" />
       </div>
-      <div className="relative grid gap-4 lg:grid-cols-[1fr_280px]">
-        <div className="grid gap-4 sm:grid-cols-[28px_1fr]">
-          <div className="hidden overflow-hidden rounded-full border border-white/10 bg-white/[0.04] sm:flex sm:flex-col-reverse">
+      <div className="relative grid items-center gap-4 lg:grid-cols-[minmax(0,1.16fr)_minmax(230px,0.84fr)]">
+        <div className="relative mx-auto aspect-square w-full max-w-[32rem] overflow-hidden rounded-xl border border-white/14 bg-[#12100c]">
+          <div className="absolute inset-y-3 left-3 z-10 hidden w-3 overflow-hidden rounded-full border border-black/28 bg-black/32 shadow-[0_3px_14px_rgba(0,0,0,0.42)] sm:flex sm:flex-col-reverse">
             {Array.from({ length: 20 }).map((_, index) => (
               <span
                 key={index}
@@ -30,19 +30,32 @@ export function ChessMockup() {
               />
             ))}
           </div>
-          <div className="grid aspect-square grid-cols-8 overflow-hidden rounded-lg border border-white/14">
+          <div className="grid h-full w-full grid-cols-8">
             {Array.from({ length: 64 }).map((_, index) => {
               const row = Math.floor(index / 8);
               const isLight = (row + index) % 2 === 0;
+              const piece = pieces[index];
 
               return (
                 <span
                   key={index}
-                  className={`relative grid place-items-center text-lg font-semibold ${
-                    isLight ? "bg-[#c99639] text-[#11100e]" : "bg-[#12100c] text-[#f7e7b4]"
+                  className={`relative grid place-items-center ${
+                    isLight ? "bg-[#c99639]" : "bg-[#12100c]"
                   }`}
                 >
-                  {pieces[index] ? <span>{pieces[index]}</span> : null}
+                  {piece ? (
+                    <span
+                      aria-hidden
+                      className={`text-2xl leading-none sm:text-3xl ${
+                        piece.side === "light"
+                          ? "text-[#fff1c7] drop-shadow-[0_2px_1px_rgba(0,0,0,0.72)]"
+                          : "text-[#171006] drop-shadow-[0_1px_0_rgba(255,231,174,0.42)]"
+                      }`}
+                      style={{ fontFamily: '"Segoe UI Symbol", "Noto Sans Symbols 2", serif' }}
+                    >
+                      {piece.symbol}
+                    </span>
+                  ) : null}
                 </span>
               );
             })}
@@ -54,8 +67,8 @@ export function ChessMockup() {
               <Badge tone="gold">+0.42</Badge>
               <span className="text-xs text-white/42">Depth 22</span>
             </div>
-            <h3 className="mt-5 text-lg font-semibold text-white">Analysis line</h3>
-            <div className="mt-4 space-y-3">
+            <h3 className="mt-4 text-lg font-semibold text-white">Analysis line</h3>
+            <div className="mt-3 space-y-2.5">
               {moves.map((move) => (
                 <div key={move} className="flex items-center justify-between text-sm">
                   <span className="font-mono text-white/68">{move}</span>
@@ -66,10 +79,10 @@ export function ChessMockup() {
           </div>
           <div className="rounded-lg border border-[#d6ad5b]/20 bg-[#d6ad5b]/9 p-4">
             <p className="text-xs font-medium text-[#f3d99d]">Training card</p>
-            <h4 className="mt-3 text-base font-semibold text-white">
+            <h4 className="mt-2 text-base font-semibold text-white">
               Mistake pattern: overloaded defender
             </h4>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-3 flex flex-wrap gap-2">
               {["Review", "Drill", "Prep"].map((action) => (
                 <span
                   key={action}
