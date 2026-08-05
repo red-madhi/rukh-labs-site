@@ -14,6 +14,12 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "How Rukh Labs handles website inquiries, email communications, analytics, technical logs, and beta-interest forms.",
   path: "/legal/privacy",
+  image: {
+    url: "/opengraph-image",
+    width: 1200,
+    height: 630,
+    alt: "Rukh Labs privacy policy",
+  },
 });
 
 const policySections = [

@@ -101,6 +101,13 @@ export default function Home() {
         },
         email: siteConfig.contactEmail,
         description: "An independent digital studio and software lab.",
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "customer support",
+          email: siteConfig.contactEmail,
+          availableLanguage: ["English"],
+        },
+        sameAs: [siteConfig.links.patreon],
         hasOfferCatalog: {
           "@type": "OfferCatalog",
           name: "Rukh Labs services and software",
@@ -403,7 +410,6 @@ export default function Home() {
                   href={siteConfig.links.farzinGooglePlay}
                   eventName="google_play_click"
                   eventProperties={{ product: "farzin", source_page: "/" }}
-                  aria-label="Get Farzin 1.0.0 on Google Play"
                   className={buttonStyles({ variant: "ghost" })}
                 >
                   Install on Google Play

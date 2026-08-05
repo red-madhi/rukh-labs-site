@@ -17,6 +17,12 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Access Farzin on Google Play, register for the Glass Squares OS beta, and follow future Rukh Labs downloads and release notes.",
   path: "/download",
+  image: {
+    url: "/opengraph-image",
+    width: 1200,
+    height: 630,
+    alt: "Rukh Labs downloads and releases",
+  },
 });
 
 const releaseCards = [

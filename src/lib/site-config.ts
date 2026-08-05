@@ -129,7 +129,7 @@ export function createPageMetadata({
       card: "summary_large_image",
       title: fullTitle,
       description,
-      images: image ? [image.url] : undefined,
+      images: image ? [image] : undefined,
     },
     robots,
     authors: authors?.map((name) => ({ name })),
