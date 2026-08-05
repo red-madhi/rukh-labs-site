@@ -12,6 +12,24 @@ type AnalyticsEvents = {
   glass_squares_waitlist_submit: { product: "glass-squares-os"; source_page: string };
   sample_site_open: { design_direction: string; source_page: string };
   career_demo_open: { source_page: string };
+  work_project_open: { project_slug: string; source_page: string };
+  insight_article_open: { article_slug: string; source_page: string };
+  insight_service_cta_click: { article_slug: string; destination: string };
+  work_service_cta_click: { project_slug: string; destination: string };
+  related_content_click: { source_page: string; destination: string };
+  project_brief_start: { source_page: string };
+  project_brief_complete: {
+    project_type: string;
+    selected_budget_range: string;
+    selected_timeline_range: string;
+    number_of_selected_pages: number;
+    number_of_selected_features: number;
+    source_page: string;
+  };
+  project_brief_copy: { project_type: string; source_page: string };
+  project_brief_download: { project_type: string; source_page: string };
+  project_brief_print: { project_type: string; source_page: string };
+  project_brief_contact_click: { project_type: string; source_page: string };
 };
 
 export type AnalyticsEventName = keyof AnalyticsEvents;
