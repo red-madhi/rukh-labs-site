@@ -43,7 +43,7 @@ Vercel terminates TLS before the Next.js application, so HTTP-to-HTTPS enforceme
 | Route | Schema |
 | --- | --- |
 | `/` | `Organization`, `WebSite`, supporting `OfferCatalog`, `Service`, and `SoftwareApplication` nodes |
-| `/about` | `Person` connected to the stable Organization ID |
+| `/about` | No person schema; the page intentionally presents Rukh Labs without individual identity metadata |
 | `/services/web-development` | `Service`, `Audience`, and truthful visible package `Offer` data |
 | `/services/career-portfolios` | `Service`, `Audience`, and truthful visible package `Offer` data |
 | `/products/farzin` | `SoftwareApplication` |

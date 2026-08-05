@@ -90,11 +90,6 @@ export default function Home() {
         },
         email: siteConfig.contactEmail,
         description: "An independent digital studio and software lab.",
-        founder: {
-          "@type": "Person",
-          "@id": `${siteConfig.url}/about#brett-gallaher`,
-          name: "Brett Gallaher",
-        },
         hasOfferCatalog: {
           "@type": "OfferCatalog",
           name: "Rukh Labs services and software",
