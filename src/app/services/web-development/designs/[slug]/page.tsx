@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Palette } from "lucide-react";
 import { DesignPreview } from "@/components/services/web-development/design-preview";
+import { TrackedLink } from "@/components/analytics/tracked-link";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -59,6 +61,15 @@ export default async function DesignDirectionPage({
 
   return (
     <>
+      <div className="border-b border-white/10 bg-black/15">
+        <Container className="py-4">
+          <Breadcrumbs items={[
+            { name: "Home", path: "/" },
+            { name: "Website development", path: "/services/web-development" },
+            { name: direction.name, path: direction.href },
+          ]} />
+        </Container>
+      </div>
       <section className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f0001c_48%,transparent)]" />
         <Container className="py-16 sm:py-20 lg:py-24">
@@ -82,13 +93,18 @@ export default async function DesignDirectionPage({
                   {direction.summary}
                 </p>
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <Link
+                  <TrackedLink
                     href={direction.sampleHref}
+                    eventName="sample_site_open"
+                    eventProperties={{
+                      design_direction: direction.slug,
+                      source_page: direction.href,
+                    }}
                     className={buttonStyles({ size: "lg" })}
                   >
                     Open full sample site
                     <ArrowRight aria-hidden className="size-4" />
-                  </Link>
+                  </TrackedLink>
                   <Link
                     href={getWebsiteProjectHref({ design: direction.slug })}
                     className={buttonStyles({ variant: "secondary", size: "lg" })}
@@ -119,8 +135,13 @@ export default async function DesignDirectionPage({
                   working interactions, and purposeful content.
                 </p>
               </div>
-              <Link
+              <TrackedLink
                 href={direction.sampleHref}
+                eventName="sample_site_open"
+                eventProperties={{
+                  design_direction: direction.slug,
+                  source_page: direction.href,
+                }}
                 className={buttonStyles({
                   variant: "secondary",
                   className: "shrink-0",
@@ -128,7 +149,7 @@ export default async function DesignDirectionPage({
               >
                 Launch sample website
                 <ArrowRight aria-hidden className="size-4" />
-              </Link>
+              </TrackedLink>
             </div>
           </Reveal>
         </Container>

@@ -14,7 +14,9 @@ import {
   Sparkles,
   Target,
 } from "lucide-react";
-import { FictionalPortfolioDemo } from "@/components/services/career-portfolios/fictional-portfolio-demo";
+import { LazyFictionalPortfolioDemo } from "@/components/services/career-portfolios/lazy-fictional-portfolio-demo";
+import { TrackedLink } from "@/components/analytics/tracked-link";
+import { StructuredData } from "@/components/seo/structured-data";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -33,7 +35,7 @@ const pageDescription =
   "Rukh Labs creates recruiter-ready career portfolio websites for job searches, turning professional experience into credible case studies and visible proof.";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Career Portfolio Websites",
+  title: "Career Portfolio Websites for Analysts & Technical Professionals",
   description: pageDescription,
   path: "/services/career-portfolios",
 });
@@ -110,8 +112,13 @@ function PackageCard({
           </li>
         ))}
       </ul>
-      <Link
+      <TrackedLink
         href={getCareerPortfolioInquiryHref(careerPackage.id)}
+        eventName="career_package_click"
+        eventProperties={{
+          package_id: careerPackage.id,
+          source_page: "/services/career-portfolios",
+        }}
         className={buttonStyles({
           variant: careerPackage.recommended ? "primary" : "secondary",
           className: "mt-8 w-full sm:w-auto sm:self-start",
@@ -119,7 +126,7 @@ function PackageCard({
       >
         Discuss {careerPackage.name}
         <ArrowRight aria-hidden className="size-4" />
-      </Link>
+      </TrackedLink>
     </article>
   );
 }
@@ -134,10 +141,16 @@ export default function CareerPortfoliosPage() {
     url: siteConfig.url + "/services/career-portfolios",
     provider: {
       "@type": "Organization",
+      "@id": `${siteConfig.url}/#organization`,
       name: siteConfig.name,
       url: siteConfig.url,
       email: siteConfig.contactEmail,
     },
+    audience: {
+      "@type": "Audience",
+      audienceType: "Analysts, technical professionals, leaders, and consultants",
+    },
+    serviceOutput: "A responsive career portfolio website and approved project deliverables",
     offers: careerPortfolioPackages.map((careerPackage) => ({
       "@type": "Offer",
       name: careerPackage.name,
@@ -149,10 +162,7 @@ export default function CareerPortfoliosPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <StructuredData data={structuredData} />
 
       <section className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#16c8ff_38%,#8b5cf6_70%,transparent)]" />
@@ -182,12 +192,14 @@ export default function CareerPortfoliosPage() {
                   Start Your Portfolio
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
-                <Link
+                <TrackedLink
                   href="/services/career-portfolios/demo"
+                  eventName="career_demo_open"
+                  eventProperties={{ source_page: "/services/career-portfolios" }}
                   className={buttonStyles({ variant: "secondary", size: "lg" })}
                 >
                   Explore Fictional Demo
-                </Link>
+                </TrackedLink>
               </div>
               <p className="mt-7 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.13em] text-white/40">
                 <Layers3 aria-hidden className="size-4 text-[#67e8f9]" />
@@ -307,18 +319,20 @@ export default function CareerPortfoliosPage() {
                   Explore a working career portfolio demo.
                 </h2>
               </div>
-              <Link
+              <TrackedLink
                 href="/services/career-portfolios/demo"
+                eventName="career_demo_open"
+                eventProperties={{ source_page: "/services/career-portfolios" }}
                 className={buttonStyles({ variant: "ghost" })}
               >
                 Open full demo
                 <ArrowRight aria-hidden className="size-4" />
-              </Link>
+              </TrackedLink>
             </div>
           </Reveal>
           <Reveal delay={0.08}>
             <div className="mt-10">
-              <FictionalPortfolioDemo />
+              <LazyFictionalPortfolioDemo />
             </div>
           </Reveal>
         </Container>
@@ -480,13 +494,18 @@ export default function CareerPortfoliosPage() {
                   have. Rukh Labs will recommend the smallest useful scope.
                 </p>
               </div>
-              <Link
-                href={getCareerPortfolioInquiryHref()}
-                className={buttonStyles({ size: "lg", className: "justify-self-start" })}
-              >
-                Start a Project
-                <Sparkles aria-hidden className="size-4" />
-              </Link>
+              <div className="flex flex-col gap-3 lg:items-end">
+                <Link
+                  href={getCareerPortfolioInquiryHref()}
+                  className={buttonStyles({ size: "lg", className: "justify-self-start" })}
+                >
+                  Start a Project
+                  <Sparkles aria-hidden className="size-4" />
+                </Link>
+                <Link href="/about" className={buttonStyles({ variant: "ghost", size: "sm" })}>
+                  Meet the founder
+                </Link>
+              </div>
             </div>
           </Reveal>
         </Container>
