@@ -1,5 +1,3 @@
-import { FARZIN_GOOGLE_PLAY_URL } from "@/lib/site-config";
-
 export type Product = {
   slug: string;
   name: string;
@@ -54,7 +52,7 @@ export const products: Product[] = [
       "Study plans",
       "Progress tracking",
     ],
-    href: FARZIN_GOOGLE_PLAY_URL,
+    href: "/products/farzin",
   },
 ];
 
