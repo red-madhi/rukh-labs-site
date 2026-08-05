@@ -6,14 +6,14 @@ export const FARZIN_GOOGLE_PLAY_URL =
 export const siteConfig = {
   name: "Rukh Labs",
   url: "https://rukhlabs.com",
-  contactEmail: "rukh.labs@gmail.com",
+  contactEmail: "hello@rukhlabs.com",
   tagline: "Clean tools. Sharper standards.",
   description:
     "Rukh Labs is an independent digital studio and software lab creating distinctive websites, recruiter-ready career portfolios, and original software including Glass Squares OS and Farzin.",
   links: {
     patreon: "https://patreon.com/rukhlabs",
     farzinGooglePlay: FARZIN_GOOGLE_PLAY_URL,
-    email: "mailto:rukh.labs@gmail.com",
+    email: "mailto:hello@rukhlabs.com",
     websiteProject: "/contact?inquiry=website",
     careerPortfolioProject: "/contact?inquiry=career-portfolio",
   },

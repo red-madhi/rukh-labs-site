@@ -72,7 +72,7 @@ All JSON-LD is rendered through the reusable safe serializer in `src/components/
 - [ ] Verify the domain in Bing Webmaster Tools and submit the same sitemap.
 - [ ] Configure and verify an IndexNow key or endpoint if the selected Bing/Vercel integration requires account-level setup.
 - [ ] In Google Play Console, change Farzin's privacy-policy URL from `/legal/privacy` if it is still set there to `https://rukhlabs.com/products/farzin/privacy`. The old general URL remains live and links visibly to the app policy, while `/farzin/privacy` and `/legal/farzin-privacy` are permanent aliases.
-- [ ] Create a domain email such as `hello@rukhlabs.com`, migrate contact references deliberately, and preserve the current inbox during the transition.
+- [ ] Verify `hello@rukhlabs.com` remains the public contact address, forwards as intended, and preserve the current inbox during any transition.
 - [ ] Have a qualified attorney review and finalize website terms and client contract documents.
 - [ ] Have qualified counsel review both privacy policies for the applicable jurisdictions and actual production providers.
 - [ ] Baseline field Core Web Vitals after deployment using Search Console and Vercel Analytics; do not infer field performance from local builds.
