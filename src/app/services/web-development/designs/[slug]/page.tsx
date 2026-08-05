@@ -47,6 +47,12 @@ export async function generateMetadata({
     title: `${direction.name} Website Direction`,
     description: `${direction.summary} Explore the ${direction.name} website design direction from Rukh Labs.`,
     path: direction.href,
+    image: {
+      url: `${direction.href}/opengraph-image`,
+      width: 1200,
+      height: 630,
+      alt: `${direction.name} website direction by Rukh Labs`,
+    },
   });
 }
 

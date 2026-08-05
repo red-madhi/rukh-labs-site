@@ -32,6 +32,19 @@ export default function InsightsPage() {
     description: "Practical guides on website planning, career portfolios, analytics careers, privacy, and proof.",
     isPartOf: { "@id": `${siteConfig.url}/#website` },
     publisher: { "@id": `${siteConfig.url}/#organization` },
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: insights.map((insight, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "Article",
+          name: insight.title,
+          url: `${siteConfig.url}/insights/${insight.slug}`,
+          description: insight.summary,
+        },
+      })),
+    },
   };
 
   return (

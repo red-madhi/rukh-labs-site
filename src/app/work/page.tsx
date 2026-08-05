@@ -9,6 +9,7 @@ import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/ui/reveal";
 import { Section } from "@/components/ui/section";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
+import { getSeoRoute } from "@/lib/seo-routes";
 import { workProjects } from "@/lib/work";
 
 export const metadata: Metadata = createPageMetadata({
@@ -20,6 +21,9 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export default function WorkPage() {
+  const indexableProjects = workProjects.filter((project) =>
+    getSeoRoute(`/work/${project.slug}`)?.indexable,
+  );
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -29,6 +33,19 @@ export default function WorkPage() {
     description: "First-party Rukh Labs platform, product, and service demonstration work.",
     isPartOf: { "@id": `${siteConfig.url}/#website` },
     publisher: { "@id": `${siteConfig.url}/#organization` },
+    mainEntity: {
+      "@type": "ItemList",
+      itemListElement: indexableProjects.map((project, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        item: {
+          "@type": "CreativeWork",
+          name: project.title,
+          url: `${siteConfig.url}/work/${project.slug}`,
+          description: project.summary,
+        },
+      })),
+    },
   };
 
   return (

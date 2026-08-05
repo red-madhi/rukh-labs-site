@@ -386,15 +386,17 @@ export default function WebDevelopmentPage() {
           </Reveal>
           <ol className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {websiteProcess.map((step, index) => (
-              <Reveal key={step.number} delay={index * 0.05}>
-                <li className="relative h-full rounded-xl border border-white/10 bg-[#0b090b]/72 p-5">
-                  <span className="font-mono text-xs font-semibold tracking-[0.16em] text-[#ff7c89]">
-                    {step.number}
-                  </span>
-                  <h3 className="mt-6 text-lg font-semibold text-white">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-6 text-white/56">{step.description}</p>
-                </li>
-              </Reveal>
+              <li key={step.number} className="h-full">
+                <Reveal delay={index * 0.05} className="h-full">
+                  <div className="relative h-full rounded-xl border border-white/10 bg-[#0b090b]/72 p-5">
+                    <span className="font-mono text-xs font-semibold tracking-[0.16em] text-[#ff7c89]">
+                      {step.number}
+                    </span>
+                    <h3 className="mt-6 text-lg font-semibold text-white">{step.title}</h3>
+                    <p className="mt-3 text-sm leading-6 text-white/56">{step.description}</p>
+                  </div>
+                </Reveal>
+              </li>
             ))}
           </ol>
         </Container>

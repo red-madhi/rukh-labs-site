@@ -17,6 +17,12 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Start a website or career portfolio project with Rukh Labs, or get in touch about products, partnerships, press, and security.",
   path: "/contact",
+  image: {
+    url: "/opengraph-image",
+    width: 1200,
+    height: 630,
+    alt: "Contact Rukh Labs",
+  },
 });
 
 type ContactPageProps = {

@@ -10,6 +10,12 @@ export const metadata: Metadata = createPageMetadata({
   title: "Changelog",
   description: "Product updates, roadmap notes, and development status from Rukh Labs.",
   path: "/changelog",
+  image: {
+    url: "/opengraph-image",
+    width: 1200,
+    height: 630,
+    alt: "Rukh Labs changelog and roadmap",
+  },
 });
 
 export default function ChangelogPage() {

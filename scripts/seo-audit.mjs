@@ -18,6 +18,9 @@ const { shouldShowUpdatedDate } = await import(
 const { workProjects } = await import(
   pathToFileURL(path.join(root, "src/lib/work.ts")).href
 );
+const { products } = await import(
+  pathToFileURL(path.join(root, "src/lib/products.ts")).href
+);
 const { focusedServices } = await import(
   pathToFileURL(path.join(root, "src/lib/focused-services.ts")).href
 );
@@ -28,6 +31,8 @@ const sourceFiles = {
   analytics: await readFile(path.join(root, "src/lib/analytics.ts"), "utf8"),
   home: await readFile(path.join(root, "src/app/page.tsx"), "utf8"),
   workPage: await readFile(path.join(root, "src/app/work/[slug]/page.tsx"), "utf8"),
+  notFound: await readFile(path.join(root, "src/app/not-found.tsx"), "utf8"),
+  notFoundFocus: await readFile(path.join(root, "src/components/seo/not-found-focus.tsx"), "utf8"),
 };
 const port = Number(process.env.SEO_AUDIT_PORT || 3417);
 const localOrigin = `http://127.0.0.1:${port}`;
@@ -99,6 +104,12 @@ function parsedJsonLd(values) {
       return [];
     }
   });
+}
+
+function jsonLdNodes(values) {
+  return parsedJsonLd(values).flatMap((value) =>
+    Array.isArray(value?.["@graph"]) ? value["@graph"] : [value],
+  );
 }
 
 function jsonLdTypes(value) {
@@ -230,11 +241,49 @@ try {
   }
 
   const titleOwners = new Map();
+  const descriptionOwners = new Map();
+  const checkedSocialImages = new Set();
   for (const route of seoRoutes.filter((item) => item.indexable)) {
-    const title = pages.get(route.path)?.titles[0];
+    const page = pages.get(route.path);
+    const title = page?.titles[0];
+    const description = page?.description ?? "";
     if (!title) continue;
     check(!titleOwners.has(title), `${route.path} has a unique indexable title`);
     titleOwners.set(title, route.path);
+    check(!descriptionOwners.has(description), `${route.path} has a unique indexable description`);
+    descriptionOwners.set(description, route.path);
+
+    const html = page?.html ?? "";
+    const openGraphImage = getMeta(html, "property", "og:image");
+    const twitterImage = getMeta(html, "name", "twitter:image");
+    check(getMeta(html, "property", "og:title") === title, `${route.path} Open Graph title matches its page title`);
+    check(getMeta(html, "property", "og:description") === description, `${route.path} Open Graph description matches its meta description`);
+    check(getMeta(html, "property", "og:url") === page?.canonical, `${route.path} Open Graph URL matches its canonical`);
+    check(getMeta(html, "property", "og:type").length > 0, `${route.path} has an Open Graph type`);
+    check(openGraphImage.startsWith(canonicalOrigin), `${route.path} has an absolute Open Graph image`);
+    check(getMeta(html, "property", "og:image:width") === "1200", `${route.path} Open Graph image declares a 1200px width`);
+    check(getMeta(html, "property", "og:image:height") === "630", `${route.path} Open Graph image declares a 630px height`);
+    check(getMeta(html, "property", "og:image:alt").length > 0, `${route.path} Open Graph image has meaningful alternative text`);
+    check(getMeta(html, "name", "twitter:card") === "summary_large_image", `${route.path} uses a large Twitter card`);
+    check(getMeta(html, "name", "twitter:title") === title, `${route.path} Twitter title matches its page title`);
+    check(getMeta(html, "name", "twitter:description") === description, `${route.path} Twitter description matches its meta description`);
+    check(twitterImage.startsWith(canonicalOrigin), `${route.path} has an absolute Twitter image`);
+    check(getMeta(html, "name", "twitter:image:alt").length > 0, `${route.path} Twitter image has meaningful alternative text`);
+
+    for (const imageUrl of [openGraphImage, twitterImage]) {
+      if (!imageUrl || checkedSocialImages.has(imageUrl)) continue;
+      checkedSocialImages.add(imageUrl);
+      const imageResponse = await fetch(imageUrl.replace(canonicalOrigin, localOrigin));
+      const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+      const isPng =
+        imageBytes.length >= 24 &&
+        imageBytes.subarray(1, 4).toString("ascii") === "PNG";
+      const width = isPng ? imageBytes.readUInt32BE(16) : 0;
+      const height = isPng ? imageBytes.readUInt32BE(20) : 0;
+      check(imageResponse.status === 200, `${imageUrl} returns 200`);
+      check(imageResponse.headers.get("content-type")?.startsWith("image/"), `${imageUrl} returns image content`);
+      check(width === 1200 && height === 630, `${imageUrl} renders at 1200 by 630 pixels`);
+    }
   }
 
   const privatePage = pages.get("/portfolio/brett-gallaher");
@@ -314,6 +363,23 @@ try {
   check(
     hostRedirect.location === "https://rukhlabs.com/products/farzin?source=seo",
     "www host redirect preserves path and query",
+  );
+
+  const missingPath = "/seo-hardening-unknown-route-20260805";
+  const missingResponse = await fetch(localOrigin + missingPath, { redirect: "manual" });
+  const missingHtml = await missingResponse.text();
+  const missingRobots = getMeta(missingHtml, "name", "robots").toLowerCase();
+  check(missingResponse.status === 404, "Unknown routes return a real 404 response");
+  check((missingHtml.match(/<h1\b/gi) ?? []).length === 1, "The 404 page has one clear H1");
+  check(missingRobots.includes("noindex") && !missingRobots.includes("nofollow"), "The 404 page is noindex and allows link following");
+  check(getCanonical(missingHtml) === "", "The 404 page does not emit a canonical URL");
+  check(!missingHtml.includes(missingPath), "The 404 page does not render the invalid URL");
+  for (const href of ["/", "/services/web-development", "/services/career-portfolios", "/products", "/work", "/contact"]) {
+    check(missingHtml.includes(`href="${href}"`), `The 404 page links to ${href}`);
+  }
+  check(
+    !/trackEvent|TrackedAnchor|TrackedLink/.test(sourceFiles.notFound + sourceFiles.notFoundFocus),
+    "The 404 page defines no custom analytics event for invalid URLs",
   );
 
   const checkedLinks = new Set();
@@ -411,6 +477,72 @@ try {
     (pages.get("/contact")?.html ?? "").includes("hello@rukhlabs.com"),
     "Contact page exposes the public hello@rukhlabs.com address",
   );
+
+  const homeNodes = jsonLdNodes(pages.get("/")?.jsonLd ?? []);
+  const organizations = homeNodes.filter((value) => hasJsonLdType(value, "Organization"));
+  const websites = homeNodes.filter((value) => hasJsonLdType(value, "WebSite"));
+  const organization = organizations[0];
+  const website = websites[0];
+  check(organizations.length === 1, "Homepage exposes one primary Organization entity");
+  check(websites.length === 1, "Homepage exposes one primary WebSite entity");
+  check(organization?.["@id"] === `${canonicalOrigin}/#organization`, "Homepage Organization keeps its stable identifier");
+  check(website?.["@id"] === `${canonicalOrigin}/#website`, "Homepage WebSite keeps its stable identifier");
+  check(website?.publisher?.["@id"] === organization?.["@id"], "Homepage WebSite publisher references the Organization");
+  check(organization?.email === "hello@rukhlabs.com", "Homepage Organization uses the public contact email");
+  check(
+    organization?.contactPoint?.["@type"] === "ContactPoint" &&
+      organization?.contactPoint?.contactType === "customer support" &&
+      organization?.contactPoint?.email === "hello@rukhlabs.com" &&
+      organization?.contactPoint?.availableLanguage?.includes("English"),
+    "Homepage Organization exposes the visible public support contact",
+  );
+  check(
+    JSON.stringify(organization?.sameAs) === JSON.stringify(["https://patreon.com/rukhlabs"]),
+    "Homepage Organization sameAs contains only the approved public profile",
+  );
+  check(!homeNodes.some((value) => hasJsonLdType(value, "Person")), "Homepage structured data does not identify a Person or founder");
+  check(!Object.hasOwn(organization ?? {}, "founder"), "Homepage Organization exposes no founder property");
+
+  const collectionExpectations = new Map([
+    [
+      "/work",
+      [
+        `${canonicalOrigin}/work/rukh-labs-website`,
+        `${canonicalOrigin}/work/career-portfolio-demo`,
+      ],
+    ],
+    [
+      "/insights",
+      insights.map((insight) => `${canonicalOrigin}/insights/${insight.slug}`),
+    ],
+    [
+      "/products",
+      products.map((product) => `${canonicalOrigin}${product.href}`),
+    ],
+  ]);
+  for (const [route, expectedUrls] of collectionExpectations) {
+    const nodes = jsonLdNodes(pages.get(route)?.jsonLd ?? []);
+    const collection = nodes.find((value) => hasJsonLdType(value, "CollectionPage"));
+    const list = collection?.mainEntity;
+    const elements = list?.itemListElement ?? [];
+    const urls = elements.map((element) => element?.item?.url);
+    check(list?.["@type"] === "ItemList", `${route} CollectionPage includes an ItemList`);
+    check(JSON.stringify(urls) === JSON.stringify(expectedUrls), `${route} ItemList matches the visible indexable collection in stable order`);
+    check(
+      elements.every((element, index) => element?.["@type"] === "ListItem" && element?.position === index + 1),
+      `${route} ItemList uses sequential ListItem positions`,
+    );
+    for (const expectedUrl of expectedUrls) {
+      const expectedPath = new URL(expectedUrl).pathname;
+      const expectedRoute = seoRoutes.find((entry) => entry.path === expectedPath);
+      check(expectedRoute?.indexable, `${route} ItemList URL ${expectedPath} is classified as indexable`);
+      check(pages.get(expectedPath)?.response.status === 200, `${route} ItemList URL ${expectedPath} returns 200`);
+      check(sitemapUrls.has(expectedUrl), `${route} ItemList URL ${expectedPath} is present in the sitemap`);
+      check((pages.get(route)?.html ?? "").includes(`href="${expectedPath}"`), `${route} visibly links to its ItemList URL ${expectedPath}`);
+    }
+  }
+  const workCollectionJson = JSON.stringify(jsonLdNodes(pages.get("/work")?.jsonLd ?? []));
+  check(!workCollectionJson.includes("/work/farzin") && !workCollectionJson.includes("/work/glass-squares-os"), "Work ItemList excludes noindex product-work routes");
   check(!shouldShowUpdatedDate("2026-08-05", "2026-08-05"), "Publication meta hides the Updated label when dates match");
   check(shouldShowUpdatedDate("2026-08-05", "2026-08-20"), "Publication meta shows the Updated label when dates differ");
 

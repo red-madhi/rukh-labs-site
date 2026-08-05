@@ -69,7 +69,9 @@ export function WebsiteStudioTeaser() {
                   aria-label={`Explore the ${direction.name} website direction`}
                   className="group w-[78vw] max-w-sm shrink-0 snap-start rounded-[1.25rem] border border-white/10 bg-white/[0.025] p-2 transition hover:-translate-y-1 hover:border-[color:var(--brand-red)]/38 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--brand-red)] lg:w-auto lg:max-w-none"
                 >
-                  <DesignPreview slug={direction.slug} size="mini" />
+                  <div aria-hidden="true">
+                    <DesignPreview slug={direction.slug} size="mini" />
+                  </div>
                   <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-3">
                     <span className="text-sm font-semibold text-white">{direction.name}</span>
                     <ArrowRight

@@ -13,6 +13,12 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Privacy information for Farzin, the Android chess training application from Rukh Labs.",
   path: "/products/farzin/privacy",
+  image: {
+    url: "/opengraph-image",
+    width: 1200,
+    height: 630,
+    alt: "Farzin privacy information from Rukh Labs",
+  },
 });
 
 const policySections = [

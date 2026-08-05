@@ -13,6 +13,12 @@ export const metadata: Metadata = createPageMetadata({
   description:
     "Learn how Rukh Labs approaches websites, career portfolios, and original software as an independent digital studio and software lab.",
   path: "/about",
+  image: {
+    url: "/opengraph-image",
+    width: 1200,
+    height: 630,
+    alt: "About Rukh Labs",
+  },
 });
 
 const principles = [
