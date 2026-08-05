@@ -10,6 +10,7 @@ import { StructuredData } from "@/components/seo/structured-data";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
+import { getSeoRoute } from "@/lib/seo-routes";
 import { getWorkProject, workProjects } from "@/lib/work";
 
 type PageProps = { params: Promise<{ slug: string }> };
@@ -21,14 +22,17 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const project = getWorkProject((await params).slug);
   if (!project) return {};
+  const path = `/work/${project.slug}`;
+  const seoRoute = getSeoRoute(path);
   return createPageMetadata({
     title: project.metaTitle,
     description: project.description,
-    path: `/work/${project.slug}`,
+    path,
     image: { url: `/work/${project.slug}/opengraph-image`, width: 1200, height: 630, alt: project.title },
     type: "article",
-    modifiedTime: "2026-08-05",
+    modifiedTime: seoRoute?.lastModified,
     authors: [siteConfig.name],
+    robots: seoRoute ? { index: seoRoute.indexable, follow: seoRoute.follow } : undefined,
   });
 }
 
@@ -37,6 +41,7 @@ export default async function WorkProjectPage({ params }: PageProps) {
   if (!project) notFound();
 
   const path = `/work/${project.slug}`;
+  const seoRoute = getSeoRoute(path);
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CreativeWork",
@@ -46,7 +51,7 @@ export default async function WorkProjectPage({ params }: PageProps) {
     url: `${siteConfig.url}${path}`,
     author: { "@type": "Organization", "@id": `${siteConfig.url}/#organization`, name: siteConfig.name },
     publisher: { "@type": "Organization", "@id": `${siteConfig.url}/#organization`, name: siteConfig.name },
-    dateModified: "2026-08-05",
+    dateModified: seoRoute?.lastModified,
     creativeWorkStatus: project.status,
   };
 

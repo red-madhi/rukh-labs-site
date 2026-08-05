@@ -47,7 +47,7 @@ export default function FarzinPrivacyPage() {
       <Section>
         <Container>
           <div className="mb-6 rounded-lg border border-[#d6ad5b]/20 bg-[#d6ad5b]/8 p-5 text-sm leading-7 text-white/68">
-            <p className="font-medium text-[color:var(--brand-bronze)]">Last updated: July 8, 2026</p>
+            <p className="font-medium text-[color:var(--brand-bronze)]">Last updated: August 5, 2026</p>
             <p className="mt-2">Farzin is designed around account-free chess practice. Rukh Labs does not sell user data.</p>
           </div>
           <div className="grid gap-4">

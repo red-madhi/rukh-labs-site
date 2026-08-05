@@ -44,6 +44,32 @@ export function ContentSection({ section }: { section: ContentSectionData }) {
             );
           }
 
+          if (block.type === "model") {
+            return (
+              <figure key={index} className="rounded-xl border border-white/10 bg-white/[0.02] p-5 sm:p-6">
+                <figcaption className="font-semibold text-white">{block.caption}</figcaption>
+                <div className="mt-5 grid gap-3" aria-label={`${block.dimensions.join(", ")} connect to ${block.fact}`}>
+                  <ul className="grid gap-2 sm:grid-cols-2">
+                    {block.dimensions.map((dimension) => <li key={dimension} className="rounded-lg border border-[#16c8ff]/25 bg-[#16c8ff]/5 px-4 py-3 text-sm text-white/72">{dimension}</li>)}
+                  </ul>
+                  <span aria-hidden className="text-center text-xl text-[#67e8f9]">↓</span>
+                  <div className="rounded-lg border border-[#9a6dff]/35 bg-[#9a6dff]/8 px-4 py-3 text-center text-sm font-semibold text-white">{block.fact}</div>
+                </div>
+                <p className="mt-4 text-sm leading-7 text-white/58">{block.description}</p>
+              </figure>
+            );
+          }
+
+          if (block.type === "code") {
+            return (
+              <figure key={index} className="min-w-0 rounded-xl border border-white/10 bg-white/[0.02] p-5 sm:p-6">
+                <figcaption className="font-semibold text-white">{block.title}</figcaption>
+                <pre className="mt-4 overflow-x-auto rounded-lg border border-white/10 bg-[#050611] p-4 text-sm leading-7 text-[#c8f4ff]"><code data-language={block.language}>{block.content}</code></pre>
+                {block.description ? <p className="mt-4 text-sm leading-7 text-white/58">{block.description}</p> : null}
+              </figure>
+            );
+          }
+
           return (
             <div key={index} className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-5">
               {block.title ? <h3 className="font-semibold text-white">{block.title}</h3> : null}
@@ -52,7 +78,7 @@ export function ContentSection({ section }: { section: ContentSectionData }) {
                 const content = <><span className="font-medium">{link.label}</span>{link.description ? <span className="text-white/52"> — {link.description}</span> : null}</>;
 
                 return link.external ? (
-                  <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className={className}>{content}</a>
+                  <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" className={className}>{content}</a>
                 ) : (
                   <Link key={link.href} href={link.href} className={className}>{content}</Link>
                 );

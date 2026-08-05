@@ -4,6 +4,7 @@ import type {
   ContentSection,
   ContentSource,
 } from "@/lib/content";
+import { SEO_PHASE_TWO_DEPLOYMENT_DATE } from "./seo-routes.ts";
 
 export type Insight = {
   slug: string;
@@ -22,7 +23,7 @@ export type Insight = {
   schemaType: "Article" | "TechArticle";
 };
 
-const publishedOn = "2026-08-05";
+const publishedOn = SEO_PHASE_TWO_DEPLOYMENT_DATE;
 
 export const insights: readonly Insight[] = [
   {
@@ -97,14 +98,14 @@ export const insights: readonly Insight[] = [
           {
             type: "paragraph",
             content:
-              "These current figures are broad planning references, not quotes. Scope, geography, content readiness, integrations, provider, and billing cycle can all change the total. Use them to understand the routes available, then ask each provider what the figure includes and excludes.",
+              "These current figures are broad planning references, not quotes. Scope, provider, geography, billing term, content readiness, integrations, maintenance, and platform fees can all change the total. Use them to understand the routes available, then ask each provider what the figure includes and excludes.",
           },
           {
             type: "table",
             caption: "Current market and platform reference ranges in U.S. dollars",
             columns: ["Route", "Current reference", "What the figure does and does not cover"],
             rows: [
-              ["DIY website builder", "Official platform examples run from $0 for WordPress.com’s free plan to $39/month for Wix Business with annual billing.", "Platform software only; it does not include custom strategy, content, design, or implementation help."],
+              ["DIY website builder", "Examples include WordPress.com’s free plan and Wix Business at $39 per month with annual billing.", "Platform software only; it does not include custom strategy, content, design, or implementation help. Wix also publishes a wider annual-billing range of $17 to $159 per month."],
               ["Template-led freelancer project", "Upwork lists $20–$50+/hour for CMS web design as a current market reference.", "A broad hourly market estimate, not a fixed project price or a guarantee of scope."],
               ["Independent custom design", "Upwork lists $45–$75+/hour for full custom website design as a current market reference.", "A broad hourly market estimate; discovery, content, integrations, and support can be separate."],
               ["Agency project", "Clutch reports a $2,000–$100,000 project range, with most reviewed projects under $10,000.", "A wide agency-market reference; project type and operating context materially affect total cost."],
@@ -400,6 +401,98 @@ export const insights: readonly Insight[] = [
             links: [
               { label: "How to show confidential work in a career portfolio", href: "/insights/show-confidential-work-in-career-portfolio", description: "Use redaction, synthetic data, and access controls responsibly." },
               { label: "Fictional career portfolio demonstration", href: "/work/career-portfolio-demo", description: "See how a no-download, privacy-safe example is framed." },
+            ],
+          },
+        ],
+      },
+      {
+        id: "fictional-worked-example",
+        title: "A fictional worked example",
+        blocks: [
+          {
+            type: "callout",
+            title: "Fictional example built by Rukh Labs",
+            content: "All data in this service-support scenario is synthetic. No real company, employer, client, employee, customer, or measured business impact is represented. The example demonstrates portfolio structure and analytical reasoning, not a real engagement or result.",
+            tone: "blue",
+          },
+          {
+            type: "paragraph",
+            content: "Business question: how should a support-operations team examine resolution patterns by category and channel while keeping the metric definition and incomplete records visible? The intended audience is a fictional support-operations lead. The intended decision is where to investigate definitions, workflow, or staffing questions next, not whether a person or team has met a performance target. This belongs in an analyst portfolio because it connects a decision to source data, quality work, modeling, measure design, dashboard structure, and limitations.",
+          },
+          {
+            type: "table",
+            caption: "Illustrative synthetic source tables",
+            columns: ["Table", "Important example fields", "Role in the analysis"],
+            rows: [
+              ["Tickets", "Ticket ID, opened date, resolution timestamp, final status, agent key, category key, channel key", "One record per synthetic support ticket before documented quality handling."],
+              ["Agents", "Agent key, team label, active-date range", "Provides non-identifying synthetic grouping attributes; no person names are used."],
+              ["Dates", "Date key, date, week, month, quarter", "Supports consistent time filtering and trend comparisons."],
+              ["Categories", "Category key, standardized category", "Keeps inconsistent source labels out of report groupings."],
+              ["Channels", "Channel key, channel label", "Supports a controlled channel breakdown and makes incomplete values visible."],
+            ],
+          },
+          {
+            type: "model",
+            caption: "Illustrative star-schema structure",
+            dimensions: ["Dim Date", "Dim Agent", "Dim Category", "Dim Channel"],
+            fact: "Fact Tickets",
+            description: "The grain of Fact Tickets is one eligible synthetic ticket per row. Dimensions are separated so dates, agents, categories, and channels can filter the same measures consistently. This structure supports trend and breakdown questions, but it is illustrative rather than a universal modeling requirement.",
+          },
+          {
+            type: "code",
+            title: "Example measure",
+            language: "DAX",
+            content: "Resolution Rate =\nDIVIDE(\n    [Resolved Tickets],\n    [Total Tickets]\n)",
+            description: "Resolved Tickets is the numerator: eligible tickets meeting the documented final-resolution rule in the current filter context. Total Tickets is the denominator: all eligible ticket records in that same context. Reopened tickets need an explicit rule, and blank or incomplete status and timestamp records should be flagged rather than silently counted. The business definition must be documented because the calculation is only as valid as those choices.",
+          },
+          {
+            type: "callout",
+            title: "Data-quality issue: resolution timestamps",
+            content: "A fictional set of records has a resolved status but no resolution timestamp; another set was reopened after an initial resolution. The analyst would detect the conflict with status-and-timestamp validation checks, isolate affected records, agree on an eligibility rule, and preserve an exception count. The project page would document the treatment and explain that the rate can change when the operational definition changes.",
+            tone: "gold",
+          },
+          {
+            type: "table",
+            caption: "Dashboard structure for the fictional scenario",
+            columns: ["Layer", "Purpose", "Design and accessibility notes"],
+            rows: [
+              ["Primary KPI", "Show Resolution Rate with its written definition and exception context.", "Do not rely on color alone; label the value and definition directly."],
+              ["Trend", "Show the rate and eligible ticket volume over time.", "Use readable axes, direct labels where practical, and sufficient contrast."],
+              ["Breakdown", "Compare category and channel patterns without turning the view into a ranking claim.", "Keep category names legible and provide a table alternative when useful."],
+              ["Operational detail", "Expose fictional exception records for investigation.", "Use descriptive column headers, keyboard-reachable controls, and a constrained mobile layout."],
+              ["Filters and interactions", "Filter date, category, and channel while preserving definition context.", "Give controls visible labels, predictable focus order, and clear reset behavior."],
+              ["Mobile and readability", "Prioritize the KPI, definition, trend, and key exceptions on narrow screens.", "Stack content, allow tables to scroll within their container, and avoid clipped labels."],
+            ],
+          },
+          {
+            type: "callout",
+            title: "Assumptions and limitations",
+            content: "All data is synthetic, no real company is represented, and no measured business impact is claimed. The example demonstrates portfolio structure and reasoning. Missing timestamps, reopened tickets, eligibility rules, and incomplete channel values limit interpretation, and the Resolution Rate measure is only as valid as its documented business definition.",
+            tone: "red",
+          },
+          {
+            type: "list",
+            ordered: true,
+            items: [
+              "Overview",
+              "Business context",
+              "Data and quality",
+              "Model",
+              "Measures",
+              "Visual design",
+              "Findings",
+              "Assumptions and limitations",
+              "Technical appendix",
+            ],
+          },
+          {
+            type: "links",
+            title: "Continue planning the evidence",
+            links: [
+              { label: "Career portfolio websites for data analysts", href: "/services/career-portfolios/data-analysts", description: "Plan analyst evidence around questions, quality, models, measures, and decisions." },
+              { label: "Career portfolio websites for BI developers", href: "/services/career-portfolios/bi-developers", description: "Go deeper on semantic models, DAX, governance, and delivery." },
+              { label: "How to show confidential work", href: "/insights/show-confidential-work-in-career-portfolio", description: "Choose permission, redaction, synthetic data, and access controls responsibly." },
+              { label: "Career portfolio demonstration work", href: "/work/career-portfolio-demo", description: "Review a clearly disclosed fictional demonstration with no downloadable files." },
             ],
           },
         ],

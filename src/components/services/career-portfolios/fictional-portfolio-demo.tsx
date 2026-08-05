@@ -221,8 +221,8 @@ function OverviewView({ onSelect }: { onSelect: (view: PortfolioView) => void })
         </div>
         <div className="mt-7 grid gap-3 md:grid-cols-3">
           {[
-            { view: "work" as const, time: "60 seconds", title: "Scan the evidence", copy: "Compare three decision stories and the proof behind each result." },
-            { view: "dashboard" as const, time: "5 minutes", title: "Operate the model", copy: "Change region, staffing scenario, demand, and the selected metric." },
+            { view: "work" as const, time: "Quick review", title: "Scan the evidence", copy: "Compare three decision stories and the proof behind each result." },
+            { view: "dashboard" as const, time: "Technical deep dive", title: "Operate the model", copy: "Change region, staffing scenario, demand, and the selected metric." },
             { view: "resume" as const, time: "Role fit", title: "Review the résumé", copy: "See how experience, skills, and positioning reinforce the same story." },
           ].map((item) => (
             <button

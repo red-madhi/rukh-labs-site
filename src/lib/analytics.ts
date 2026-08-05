@@ -27,7 +27,11 @@ type AnalyticsEvents = {
     source_page: string;
   };
   project_brief_copy: { project_type: string; source_page: string };
-  project_brief_download: { project_type: string; source_page: string };
+  project_brief_download: {
+    project_type: string;
+    format: "markdown" | "text";
+    source_page: string;
+  };
   project_brief_print: { project_type: string; source_page: string };
   project_brief_contact_click: { project_type: string; source_page: string };
 };

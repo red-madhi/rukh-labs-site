@@ -12,9 +12,9 @@ import { createPageMetadata, siteConfig } from "@/lib/site-config";
 import { workProjects } from "@/lib/work";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Work",
+  title: "Selected Product, Platform & Website Work",
   description:
-    "Explore first-party Rukh Labs platform, product, and fictional service demonstration work without treating internal projects as client case studies.",
+    "Explore Rukh Labs product, platform, website, and clearly identified fictional demonstration work, with each project type labeled plainly.",
   path: "/work",
   image: { url: "/work/opengraph-image", width: 1200, height: 630, alt: "Rukh Labs work" },
 });
@@ -41,7 +41,7 @@ export default function WorkPage() {
             <div className="max-w-4xl">
               <Badge tone="gold">Work</Badge>
               <h1 className="mt-6 text-4xl font-semibold leading-[1.04] tracking-[-0.04em] text-white sm:text-6xl">
-                Work with a clear source and an honest label.
+                Selected product, platform, and demonstration work.
               </h1>
               <p className="mt-6 max-w-3xl text-lg leading-8 text-white/68 sm:text-xl">
                 This is a record of Rukh Labs&apos; own platform work, products, and

@@ -44,7 +44,7 @@ export default async function InsightPage({ params }: PageProps) {
   };
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": insight.schemaType,
+    "@type": insight.schemaType === "TechArticle" ? ["Article", "TechArticle"] : "Article",
     "@id": `${siteConfig.url}${path}#article`,
     headline: insight.title,
     description: insight.description,

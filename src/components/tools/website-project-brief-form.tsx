@@ -163,18 +163,22 @@ export function WebsiteProjectBriefForm() {
     }
   }
 
-  function downloadBrief() {
-    const blob = new Blob([generatedBrief], { type: "text/markdown;charset=utf-8" });
+  function downloadBrief(format: "markdown" | "text") {
+    const isMarkdown = format === "markdown";
+    const content = isMarkdown
+      ? generatedBrief
+      : generatedBrief.replace(/^#{1,6}\s+/gm, "").replace(/^- /gm, "");
+    const blob = new Blob([content], { type: isMarkdown ? "text/markdown;charset=utf-8" : "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "website-project-brief.md";
+    anchor.download = isMarkdown ? "website-project-brief.md" : "website-project-brief.txt";
     document.body.append(anchor);
     anchor.click();
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    setFeedback("Markdown download started.");
-    trackEvent("project_brief_download", { project_type: form.projectType, source_page: "/tools/website-project-brief" });
+    setFeedback(isMarkdown ? "Markdown download started." : "Plain-text download started.");
+    trackEvent("project_brief_download", { project_type: form.projectType, format, source_page: "/tools/website-project-brief" });
   }
 
   function printBrief() {
@@ -226,7 +230,7 @@ export function WebsiteProjectBriefForm() {
         <div className="flex flex-wrap gap-3"><Button type="submit"><Check aria-hidden className="size-4" />Generate brief</Button><Button variant="secondary" onClick={resetBrief}><RotateCcw aria-hidden className="size-4" />Reset</Button></div>
       </form>
 
-      {generatedBrief ? <Card className="mt-10 border-[#16c8ff]/25 p-5 sm:p-7"><div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-2xl font-semibold text-white">Generated project brief</h2><p className="mt-2 text-sm leading-6 text-white/58">Includes your provided responses, selected options, and clear labels for unanswered fields.</p></div><div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={copyBrief}><Clipboard aria-hidden className="size-4" />Copy</Button><Button variant="secondary" onClick={downloadBrief}><Download aria-hidden className="size-4" />Download</Button><Button variant="secondary" onClick={printBrief}><Printer aria-hidden className="size-4" />Print</Button></div></div><pre className="mt-6 overflow-x-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/20 p-5 font-mono text-xs leading-6 text-white/72">{generatedBrief}</pre><TrackedLink href="/contact?inquiry=website" eventName="project_brief_contact_click" eventProperties={{ project_type: form.projectType, source_page: "/tools/website-project-brief" }} className={buttonStyles({ className: "mt-6" })}>Discuss this project with Rukh Labs</TrackedLink></Card> : null}
+      {generatedBrief ? <Card className="mt-10 border-[#16c8ff]/25 p-5 sm:p-7"><div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"><div><h2 className="text-2xl font-semibold text-white">Generated project brief</h2><p className="mt-2 text-sm leading-6 text-white/58">Includes your provided responses, selected options, and clear labels for unanswered fields.</p></div><div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={copyBrief}><Clipboard aria-hidden className="size-4" />Copy</Button><Button variant="secondary" onClick={() => downloadBrief("markdown")}><Download aria-hidden className="size-4" />Download Markdown</Button><Button variant="secondary" onClick={() => downloadBrief("text")}><Download aria-hidden className="size-4" />Download plain text</Button><Button variant="secondary" onClick={printBrief}><Printer aria-hidden className="size-4" />Print</Button></div></div><pre className="mt-6 overflow-x-auto whitespace-pre-wrap rounded-xl border border-white/10 bg-black/20 p-5 font-mono text-xs leading-6 text-white/72">{generatedBrief}</pre><TrackedLink href="/contact?inquiry=website" eventName="project_brief_contact_click" eventProperties={{ project_type: form.projectType, source_page: "/tools/website-project-brief" }} className={buttonStyles({ className: "mt-6" })}>Discuss this project with Rukh Labs</TrackedLink></Card> : null}
       <p className="mt-6 text-sm leading-6 text-white/50">Privacy note: this generator runs in your browser. It does not submit, store, email, or send your brief text to Rukh Labs or analytics.</p>
     </div>
   );

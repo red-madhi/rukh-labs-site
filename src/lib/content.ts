@@ -24,6 +24,20 @@ export type ContentBlock =
       rows: readonly (readonly string[])[];
       caption?: string;
     }
+  | {
+      type: "model";
+      caption: string;
+      dimensions: readonly string[];
+      fact: string;
+      description: string;
+    }
+  | {
+      type: "code";
+      title: string;
+      language: string;
+      content: string;
+      description?: string;
+    }
   | { type: "links"; title?: string; links: readonly ContentLink[] };
 
 export type ContentSection = {

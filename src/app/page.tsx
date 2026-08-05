@@ -80,6 +80,13 @@ const farzinBullets = [
 ];
 
 export default function Home() {
+  const featuredWorkProjects = ["rukh-labs-website", "career-portfolio-demo"].map((slug) => {
+    const project = workProjects.find((candidate) => candidate.slug === slug);
+    if (!project) throw new Error(`Missing featured Work project: ${slug}`);
+    return project;
+  });
+  const featuredProduct = products.find((product) => product.slug === "farzin");
+
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -215,10 +222,10 @@ export default function Home() {
               <div>
                 <Badge tone="gold">Selected work</Badge>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  First-party work, labeled plainly.
+                  Selected work from the lab.
                 </h2>
                 <p className="mt-4 max-w-2xl text-lg leading-8 text-white/64">
-                  Explore the Rukh Labs platform, products, and a clearly labeled fictional service demonstration.
+                  Explore the Rukh Labs platform, original products, and a clearly identified fictional career-portfolio demonstration.
                 </p>
               </div>
               <Link href="/work" className={buttonStyles({ variant: "ghost", className: "self-start sm:self-auto" })}>
@@ -227,7 +234,8 @@ export default function Home() {
             </div>
           </Reveal>
           <div className="mt-10 grid gap-5 lg:grid-cols-3">
-            {workProjects.slice(0, 3).map((project, index) => <Reveal key={project.slug} delay={index * 0.05}><WorkCard project={project} /></Reveal>)}
+            {featuredWorkProjects.map((project, index) => <Reveal key={project.slug} delay={index * 0.05}><WorkCard project={project} /></Reveal>)}
+            {featuredProduct ? <Reveal delay={0.1}><ProductCard product={featuredProduct} cta="View Farzin" /></Reveal> : null}
           </div>
         </Container>
       </Section>
@@ -263,8 +271,8 @@ export default function Home() {
                   Original software built with sharper standards.
                 </h2>
                 <p className="mt-4 max-w-2xl text-lg leading-8 text-white/64">
-                  Glass Squares OS and Farzin apply the same standards Rukh Labs
-                  brings to client work: clarity, control, and distinctive design.
+                  Glass Squares OS and Farzin apply the same standards used across
+                  Rukh Labs services and products: clarity, control, and distinctive design.
                 </p>
               </div>
               <Link

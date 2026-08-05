@@ -213,22 +213,22 @@ export default function CareerPortfoliosPage() {
               <div className="flex items-center justify-between border-b border-white/10 pb-5">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#8aeaff]">
-                    Recruiter scan
+                    Designed for several levels of review
                   </p>
-                  <p className="mt-2 text-sm text-white/48">What becomes clear, fast</p>
+                  <p className="mt-2 text-sm text-white/48">A clear path from overview to technical detail</p>
                 </div>
                 <Eye aria-hidden className="size-5 text-[#a78bfa]" />
               </div>
               <div className="mt-5 grid gap-3">
                 {[
-                  ["10 sec", "Who you are and where you fit"],
-                  ["60 sec", "The outcomes and strengths worth remembering"],
-                  ["5 min", "How you approached real, difficult work"],
-                  ["Deep dive", "Artifacts, demos, methods, and technical detail"],
+                  ["At a glance", "Who you are and where you fit"],
+                  ["Quick review", "The outcomes and strengths worth remembering"],
+                  ["Project review", "How you approached difficult work"],
+                  ["Technical deep dive", "Artifacts, demos, methods, and technical detail"],
                 ].map(([time, value], index) => (
                   <div
                     key={time}
-                    className="grid grid-cols-[5rem_1fr] gap-4 rounded-xl border border-white/9 bg-white/[0.025] p-4"
+                    className="grid gap-3 rounded-xl border border-white/9 bg-white/[0.025] p-4 sm:grid-cols-[8.5rem_1fr] sm:gap-4"
                   >
                     <span className="font-mono text-xs font-semibold text-[#67e8f9]">{time}</span>
                     <div>
