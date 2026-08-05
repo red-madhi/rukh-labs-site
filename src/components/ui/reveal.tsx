@@ -1,7 +1,4 @@
-"use client";
-
-import type { ReactNode } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import type { CSSProperties, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type RevealProps = {
@@ -10,22 +7,15 @@ type RevealProps = {
   delay?: number;
 };
 
+type RevealStyle = CSSProperties & { "--reveal-delay": string };
+
 export function Reveal({ children, className, delay = 0 }: RevealProps) {
-  const reduceMotion = useReducedMotion();
-
-  if (reduceMotion) {
-    return <div className={className}>{children}</div>;
-  }
-
   return (
-    <motion.div
-      className={cn(className)}
-      initial={{ opacity: 0, y: 18 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ duration: 0.55, ease: "easeOut", delay }}
+    <div
+      className={cn("reveal-enter", className)}
+      style={{ "--reveal-delay": `${delay}s` } as RevealStyle}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }

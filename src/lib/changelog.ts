@@ -1,5 +1,3 @@
-import { FARZIN_GOOGLE_PLAY_URL } from "@/lib/site-config";
-
 export type ChangelogEntry = {
   date: string;
   product: "Rukh Labs" | "Glass Squares OS" | "Farzin" | "Lab";
@@ -26,8 +24,8 @@ export const changelogEntries: ChangelogEntry[] = [
     description:
       "The first production release of Farzin is now available for Android through Google Play.",
     status: "Published",
-    href: FARZIN_GOOGLE_PLAY_URL,
-    linkLabel: "Get Farzin on Google Play",
+    href: "/products/farzin",
+    linkLabel: "Read about Farzin 1.0.0",
   },
   {
     date: "2026-07-06",
@@ -68,8 +66,8 @@ export const changelogEntries: ChangelogEntry[] = [
     description:
       "Early concept work for game review, move analysis, and focused chess study.",
     status: "Prototype",
-    href: FARZIN_GOOGLE_PLAY_URL,
-    linkLabel: "See Farzin on Google Play",
+    href: "/products/farzin",
+    linkLabel: "Explore Farzin",
   },
   {
     date: "2026-06-24",

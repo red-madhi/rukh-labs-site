@@ -28,8 +28,7 @@ export const siteConfig = {
     { label: "Glass Squares OS", href: "/products/glass-squares-os" },
     {
       label: "Farzin",
-      href: FARZIN_GOOGLE_PLAY_URL,
-      external: true,
+      href: "/products/farzin",
     },
     { label: "Changelog", href: "/changelog" },
     { label: "Security", href: "/security" },
@@ -42,8 +41,7 @@ export const siteConfig = {
       { label: "Glass Squares OS", href: "/products/glass-squares-os" },
       {
         label: "Farzin",
-        href: FARZIN_GOOGLE_PLAY_URL,
-        external: true,
+        href: "/products/farzin",
       },
       { label: "Download", href: "/download" },
     ],
@@ -55,10 +53,7 @@ export const siteConfig = {
       { label: "Security", href: "/security" },
       { label: "Contact", href: "/contact" },
     ],
-    legal: [
-      { label: "Privacy", href: "/legal/privacy" },
-      { label: "Terms", href: "/legal/terms" },
-    ],
+    legal: [{ label: "Privacy", href: "/legal/privacy" }],
   },
   productInterestOptions: ["Everything Rukh Labs", "Glass Squares OS"],
   contactReasons: [
@@ -76,16 +71,55 @@ type MetadataInput = {
   title: string;
   description: string;
   path?: string;
+  image?: {
+    url: string;
+    width?: number;
+    height?: number;
+    alt: string;
+  };
+  robots?: Metadata["robots"];
+  type?: "website" | "article";
+  publishedTime?: string;
+  modifiedTime?: string;
+  authors?: string[];
+  keywords?: string[];
 };
 
 export function createPageMetadata({
   title,
   description,
   path = "/",
+  image,
+  robots,
+  type = "website",
+  publishedTime,
+  modifiedTime,
+  authors,
+  keywords,
 }: MetadataInput): Metadata {
   const fullTitle =
-    title === siteConfig.name ? siteConfig.name : `${title} | ${siteConfig.name}`;
+    title.includes(siteConfig.name) ? title : `${title} | ${siteConfig.name}`;
   const url = new URL(path, siteConfig.url).toString();
+
+  const openGraph: NonNullable<Metadata["openGraph"]> = {
+    title: fullTitle,
+    description,
+    url,
+    siteName: siteConfig.name,
+    type,
+  };
+
+  if (image) {
+    openGraph.images = [image];
+  }
+
+  if (type === "article") {
+    Object.assign(openGraph, {
+      publishedTime,
+      modifiedTime,
+      authors,
+    });
+  }
 
   return {
     title: fullTitle,
@@ -94,26 +128,15 @@ export function createPageMetadata({
     alternates: {
       canonical: url,
     },
-    openGraph: {
-      title: fullTitle,
-      description,
-      url,
-      siteName: siteConfig.name,
-      type: "website",
-      images: [
-        {
-          url: "/brand/rukh-labs-primary.png",
-          width: 1549,
-          height: 690,
-          alt: "Rukh Labs",
-        },
-      ],
-    },
+    openGraph,
     twitter: {
       card: "summary_large_image",
       title: fullTitle,
       description,
-      images: ["/brand/rukh-labs-primary.png"],
+      images: image ? [image.url] : undefined,
     },
+    robots,
+    authors: authors?.map((name) => ({ name })),
+    keywords,
   };
 }

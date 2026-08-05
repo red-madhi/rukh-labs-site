@@ -33,7 +33,7 @@ export default function ProductsPage() {
                     product.slug === "lab"
                       ? "Follow the Changelog"
                       : product.slug === "farzin"
-                        ? "Get Farzin on Google Play"
+                        ? "Explore Farzin"
                         : `View ${product.name}`
                   }
                 />

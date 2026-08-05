@@ -6,8 +6,11 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/portfolio/brett-gallaher/"],
       },
     ],
+    sitemap: "https://rukhlabs.com/sitemap.xml",
   };
 }
+
+// The unlisted portfolio remains crawlable so robots can see its noindex tags.
+// Noindex is a search directive, not access control or authentication.

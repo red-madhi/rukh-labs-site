@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { DesignPreview } from "@/components/services/web-development/design-preview";
 import { WebsiteHeroVisual } from "@/components/services/web-development/website-hero-visual";
+import { TrackedAnchor, TrackedLink } from "@/components/analytics/tracked-link";
+import { StructuredData } from "@/components/seo/structured-data";
 import { CareerPortfolioTeaser } from "@/components/sections/career-portfolio-teaser";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
@@ -41,7 +43,7 @@ const pageDescription =
   "Rukh Labs provides distinctive website design and development for businesses, products, creators, and organizations, from focused launch pages to custom builds.";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Website Design & Development",
+  title: "Custom Website Design for Businesses & Creators",
   description: pageDescription,
   path: "/services/web-development",
 });
@@ -124,8 +126,13 @@ function PackageCard({ websitePackage }: { websitePackage: WebsitePackage }) {
           </li>
         ))}
       </ul>
-      <Link
+      <TrackedLink
         href={getWebsiteProjectHref({ packageId: websitePackage.id })}
+        eventName="website_package_click"
+        eventProperties={{
+          package_id: websitePackage.id,
+          source_page: "/services/web-development",
+        }}
         className={buttonStyles({
           variant: websitePackage.recommended ? "primary" : "secondary",
           className: "mt-8 w-full sm:w-auto sm:self-start",
@@ -133,7 +140,7 @@ function PackageCard({ websitePackage }: { websitePackage: WebsitePackage }) {
       >
         Discuss {websitePackage.name}
         <ArrowRight aria-hidden className="size-4" />
-      </Link>
+      </TrackedLink>
     </article>
   );
 }
@@ -148,18 +155,29 @@ export default function WebDevelopmentPage() {
     url: `${siteConfig.url}/services/web-development`,
     provider: {
       "@type": "Organization",
+      "@id": `${siteConfig.url}/#organization`,
       name: siteConfig.name,
       url: siteConfig.url,
       email: websiteProjectEmail,
     },
+    audience: {
+      "@type": "Audience",
+      audienceType: "Businesses, products, creators, and organizations",
+    },
+    serviceOutput: "A responsive website and approved project deliverables",
+    offers: websitePackages.map((websitePackage) => ({
+      "@type": "Offer",
+      name: websitePackage.name,
+      priceCurrency: "USD",
+      price: websitePackage.price.replace(/[^0-9]/g, ""),
+      description: `${websitePackage.summary} ${websitePackage.priceNote}`,
+      url: `${siteConfig.url}${getWebsiteProjectHref({ packageId: websitePackage.id })}`,
+    })),
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <StructuredData data={structuredData} />
 
       <section className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f0001c_42%,#f7f0dd_74%,transparent)]" />
@@ -256,8 +274,13 @@ export default function WebDevelopmentPage() {
                       ))}
                     </ul>
                     <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <Link
+                      <TrackedLink
                         href={direction.sampleHref}
+                        eventName="sample_site_open"
+                        eventProperties={{
+                          design_direction: direction.slug,
+                          source_page: "/services/web-development",
+                        }}
                         className={buttonStyles({
                           variant: "secondary",
                           size: "sm",
@@ -265,7 +288,7 @@ export default function WebDevelopmentPage() {
                       >
                         Open full sample
                         <ArrowRight aria-hidden className="size-4" />
-                      </Link>
+                      </TrackedLink>
                       <Link
                         href={direction.href}
                         className={buttonStyles({
@@ -459,18 +482,20 @@ export default function WebDevelopmentPage() {
                     Start a Project
                     <ArrowRight aria-hidden className="size-4" />
                   </Link>
-                  <a
+                  <TrackedAnchor
                     href={`mailto:${websiteProjectEmail}`}
+                    eventName="email_click"
+                    eventProperties={{ source_page: "/services/web-development" }}
                     className={buttonStyles({ variant: "secondary", size: "lg" })}
                   >
                     <Mail aria-hidden className="size-4" />
                     Email Rukh Labs
-                  </a>
+                  </TrackedAnchor>
                   <Link
-                    href="#designs"
+                    href="/about"
                     className={buttonStyles({ variant: "ghost", size: "lg" })}
                   >
-                    Back to designs
+                    Meet the founder
                   </Link>
                 </div>
               </div>

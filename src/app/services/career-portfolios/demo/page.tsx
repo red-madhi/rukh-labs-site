@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, ShieldCheck } from "lucide-react";
 import { FictionalPortfolioDemo } from "@/components/services/career-portfolios/fictional-portfolio-demo";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -10,16 +11,28 @@ import { Section } from "@/components/ui/section";
 import { careerPortfolioInquiryHref } from "@/lib/career-portfolios";
 import { createPageMetadata } from "@/lib/site-config";
 
+// This conversion demo remains noindex until a future example page has enough
+// original editorial context to serve as a useful search landing page.
 export const metadata: Metadata = createPageMetadata({
   title: "Career Portfolio Demo",
   description:
     "Explore a fictional, privacy-safe demonstration of a custom career portfolio from Rukh Labs.",
   path: "/services/career-portfolios/demo",
+  robots: { index: false, follow: true },
 });
 
 export default function CareerPortfolioDemoPage() {
   return (
     <>
+      <div className="border-b border-white/10 bg-black/15">
+        <Container className="py-4">
+          <Breadcrumbs items={[
+            { name: "Home", path: "/" },
+            { name: "Career portfolios", path: "/services/career-portfolios" },
+            { name: "Fictional demo", path: "/services/career-portfolios/demo" },
+          ]} />
+        </Container>
+      </div>
       <section className="relative overflow-hidden border-b border-white/10">
         <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#16c8ff_40%,#8b5cf6_72%,transparent)]" />
         <Container className="relative py-16 sm:py-20 lg:py-24">

@@ -12,7 +12,9 @@ import {
   Zap,
 } from "lucide-react";
 import { BrandBanner } from "@/components/brand/brand-banner";
+import { TrackedAnchor } from "@/components/analytics/tracked-link";
 import { RukhMark } from "@/components/brand/rukh-mark";
+import { StructuredData } from "@/components/seo/structured-data";
 import { ProductCard } from "@/components/sections/product-card";
 import { WebsiteStudioTeaser } from "@/components/sections/website-studio-teaser";
 import { CareerPortfolioTeaser } from "@/components/sections/career-portfolio-teaser";
@@ -29,7 +31,7 @@ import { labProduct, products } from "@/lib/products";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Websites, Career Portfolios & Software",
+  title: "Custom Websites, Career Portfolios & Software",
   description:
     "Rukh Labs is an independent digital studio and software lab creating distinctive websites, recruiter-ready career portfolios, and original software including Glass Squares OS and Farzin.",
 });
@@ -74,8 +76,78 @@ const farzinBullets = [
 ];
 
 export default function Home() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteConfig.url}/#organization`,
+        name: siteConfig.name,
+        url: siteConfig.url,
+        logo: {
+          "@type": "ImageObject",
+          url: `${siteConfig.url}/brand/rukh-labs-primary.png`,
+        },
+        email: siteConfig.contactEmail,
+        description: "An independent digital studio and software lab.",
+        founder: {
+          "@type": "Person",
+          "@id": `${siteConfig.url}/about#brett-gallaher`,
+          name: "Brett Gallaher",
+        },
+        hasOfferCatalog: {
+          "@type": "OfferCatalog",
+          name: "Rukh Labs services and software",
+          itemListElement: [
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: "Website design and development",
+                url: `${siteConfig.url}/services/web-development`,
+              },
+            },
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: "Career portfolio website design",
+                url: `${siteConfig.url}/services/career-portfolios`,
+              },
+            },
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "SoftwareApplication",
+                name: "Farzin",
+                url: `${siteConfig.url}/products/farzin`,
+              },
+            },
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "SoftwareApplication",
+                name: "Glass Squares OS",
+                url: `${siteConfig.url}/products/glass-squares-os`,
+              },
+            },
+          ],
+        },
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${siteConfig.url}/#website`,
+        name: siteConfig.name,
+        url: siteConfig.url,
+        publisher: { "@id": `${siteConfig.url}/#organization` },
+        inLanguage: "en-US",
+      },
+    ],
+  };
+
   return (
     <>
+      <StructuredData data={structuredData} />
       <section className="relative overflow-hidden border-b border-white/10">
         <div className="absolute left-[-7rem] top-24 hidden opacity-[0.08] lg:block">
           <RukhMark size="hero" glow container={false} decorative />
@@ -268,13 +340,23 @@ export default function Home() {
                   </li>
                 ))}
               </ul>
-              <a
-                href={siteConfig.links.farzinGooglePlay}
-                aria-label="Get Farzin 1.0.0 on Google Play"
-                className={buttonStyles({ variant: "secondary", className: "mt-8" })}
-              >
-                Get Farzin on Google Play
-              </a>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/products/farzin"
+                  className={buttonStyles({ variant: "secondary" })}
+                >
+                  Explore Farzin
+                </Link>
+                <TrackedAnchor
+                  href={siteConfig.links.farzinGooglePlay}
+                  eventName="google_play_click"
+                  eventProperties={{ product: "farzin", source_page: "/" }}
+                  aria-label="Get Farzin 1.0.0 on Google Play"
+                  className={buttonStyles({ variant: "ghost" })}
+                >
+                  Install on Google Play
+                </TrackedAnchor>
+              </div>
             </div>
           </Reveal>
         </Container>
