@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { DesignPreview } from "@/components/services/web-development/design-preview";
+import { FictionalDemoDisclosure } from "@/components/services/web-development/fictional-demo-disclosure";
 import { WebsiteHeroVisual } from "@/components/services/web-development/website-hero-visual";
 import { TrackedAnchor, TrackedLink } from "@/components/analytics/tracked-link";
 import { StructuredData } from "@/components/seo/structured-data";
@@ -242,6 +243,8 @@ export default function WebDevelopmentPage() {
             </div>
           </Reveal>
 
+          <FictionalDemoDisclosure className="mt-8" />
+
           <div className="mt-12 grid gap-6 lg:grid-cols-2">
             {designDirections.map((direction, index) => (
               <Reveal key={direction.slug} delay={(index % 2) * 0.06}>
@@ -431,6 +434,30 @@ export default function WebDevelopmentPage() {
 
       <CareerPortfolioTeaser />
 
+      <Section className="border-y border-white/10 bg-white/[0.018]">
+        <Container>
+          <Reveal>
+            <div className="max-w-3xl">
+              <Badge tone="blue">Website planning resources</Badge>
+              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
+                Plan the scope before the build starts.
+              </h2>
+              <p className="mt-5 text-lg leading-8 text-white/62">
+                Explore focused website pages, a practical cost guide, and a browser-based project brief generator before choosing a direction.
+              </p>
+            </div>
+          </Reveal>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              ["Small-business website design", "/services/web-development/small-business", "Clarify services, mobile actions, and practical ownership."],
+              ["Professional-services website design", "/services/web-development/professional-services", "Explain complex work for decision-makers."],
+              ["Small-business website cost guide", "/insights/small-business-website-cost-guide", "Compare scope before comparing proposals."],
+              ["Create a website project brief", "/tools/website-project-brief", "Turn planning inputs into a shareable brief."],
+            ].map(([title, href, copy]) => <Card key={href} className="h-full p-5"><h3 className="font-semibold text-white">{title}</h3><p className="mt-3 text-sm leading-6 text-white/56">{copy}</p><Link href={href} className="mt-5 inline-flex text-sm font-semibold text-[#ff9aa4] underline-offset-4 hover:underline">{title}</Link></Card>)}
+          </div>
+        </Container>
+      </Section>
+
       <Section className="border-y border-white/10 bg-white/[0.02]">
         <Container className="grid gap-10 lg:grid-cols-[0.7fr_1.3fr]">
           <Reveal>
@@ -495,7 +522,7 @@ export default function WebDevelopmentPage() {
                     href="/about"
                     className={buttonStyles({ variant: "ghost", size: "lg" })}
                   >
-                    Meet the founder
+                    About Rukh Labs
                   </Link>
                 </div>
               </div>

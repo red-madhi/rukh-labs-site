@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight, Check, Palette } from "lucide-react";
 import { DesignPreview } from "@/components/services/web-development/design-preview";
+import { FictionalDemoDisclosure } from "@/components/services/web-development/fictional-demo-disclosure";
 import { TrackedLink } from "@/components/analytics/tracked-link";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Badge } from "@/components/ui/badge";
@@ -121,6 +122,7 @@ export default async function DesignDirectionPage({
       <Section className="pb-12 sm:pb-14">
         <Container>
           <Reveal>
+            <FictionalDemoDisclosure className="mb-5" />
             <DesignPreview slug={direction.slug} size="full" />
             <div className="mt-5 flex flex-col gap-5 rounded-[1.15rem] border border-white/12 bg-white/[0.03] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
               <div>

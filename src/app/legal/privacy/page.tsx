@@ -77,7 +77,7 @@ export default function PrivacyPage() {
         <Container>
           <div className="mb-6 rounded-lg border border-[#d6ad5b]/20 bg-[#d6ad5b]/8 p-5 text-sm leading-7 text-white/68">
             <p className="font-medium text-[color:var(--brand-bronze)]">
-              Last updated: August 4, 2026
+              Last updated: August 5, 2026
             </p>
             <p className="mt-2">
               Looking for the Android app policy? Read the{" "}

@@ -303,6 +303,15 @@ export default function FarzinPage() {
                 View the changelog
               </Link>
             </Card>
+            <Card className="p-5">
+              <h3 className="font-semibold text-white">Product work</h3>
+              <p className="mt-3 text-sm leading-6 text-white/56">
+                See the first-party product work and design direction behind Farzin.
+              </p>
+              <Link href="/work/farzin" className={buttonStyles({ variant: "ghost", size: "sm", className: "mt-4" })}>
+                Explore the Farzin product work
+              </Link>
+            </Card>
           </div>
         </Container>
       </Section>

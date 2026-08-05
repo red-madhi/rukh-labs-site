@@ -7,35 +7,38 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Section } from "@/components/ui/section";
 import { createPageMetadata } from "@/lib/site-config";
 
-// This interim notice must be reviewed and replaced by qualified legal counsel.
-// It is intentionally noindexed and is not presented as attorney-reviewed terms.
+// Qualified legal review is required before these limited website-use terms are expanded or restored to public footer navigation.
 export const metadata: Metadata = createPageMetadata({
-  title: "Website and Service Terms",
-  description: "Current service and product terms information for Rukh Labs.",
+  title: "Website Terms of Use",
+  description: "Terms for using the Rukh Labs website and its public information.",
   path: "/legal/terms",
   robots: { index: false, follow: true },
 });
 
 const terms = [
   {
-    title: "Website information",
-    copy: "The website describes current services, released products, and development direction in general terms. It does not guarantee that every proposed feature, compatibility path, or roadmap item will be delivered.",
+    title: "Using this website",
+    copy: "Rukh Labs provides this website for general information about its services, products, and work. Please use the site lawfully and do not interfere with its operation or misuse information made available here.",
   },
   {
-    title: "Client services",
-    copy: "Website and career portfolio projects are governed by a written proposal, scope, payment terms, and client agreement accepted before work begins. Those project documents control if they differ from this general notice.",
+    title: "External links",
+    copy: "This website may link to third-party websites or services for convenience. Rukh Labs does not control those sites or their content, availability, or practices.",
   },
   {
-    title: "Products and early access",
-    copy: "Product-specific terms may vary. Development builds, beta access, and experimental features may change, be limited, or be withdrawn as product work continues.",
+    title: "Rukh Labs intellectual property",
+    copy: "The Rukh Labs name, product identities, original software, website design, and other original materials on this site belong to Rukh Labs or their respective owners. Do not reuse them in a way that suggests affiliation or permission without approval.",
   },
   {
-    title: "Intellectual property and third parties",
-    copy: "Rukh Labs retains rights in its name, product identities, original software, and reusable materials unless a written agreement states otherwise. Third-party platforms, software, fonts, media, and services remain subject to their own terms and licenses.",
+    title: "Product and roadmap information",
+    copy: "Public product descriptions, release notes, and roadmap information describe the current direction of work. They are not a promise that a proposed feature, integration, compatibility path, or product will be released.",
   },
   {
-    title: "Professional review pending",
-    copy: "This page is a limited operational notice, not a complete set of legal terms and not legal advice. Project agreements and final website terms should be reviewed by qualified counsel.",
+    title: "Project services",
+    copy: "Services for a specific project are defined by the written agreement, proposal, scope, and other documents accepted for that project. This website does not change those project-specific arrangements.",
+  },
+  {
+    title: "Questions and updates",
+    copy: "For questions about this website, contact hello@rukhlabs.com. Rukh Labs may update these website terms as the site, products, and services change.",
   },
 ] as const;
 
@@ -46,15 +49,14 @@ export default function TermsPage() {
         <Container className="py-4">
           <Breadcrumbs items={[
             { name: "Home", path: "/" },
-            { name: "Privacy policy", path: "/legal/privacy" },
             { name: "Terms", path: "/legal/terms" },
           ]} />
         </Container>
       </div>
       <PageHeader
         eyebrow="Legal"
-        title="Website and Service Terms"
-        description="Project-specific services are governed by written agreements, and product terms may vary by release or platform."
+        title="Website Terms of Use"
+        description="Information for using the Rukh Labs website and understanding public product and service information."
       />
       <Section>
         <Container>

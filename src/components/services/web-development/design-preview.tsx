@@ -192,18 +192,18 @@ function SignalPreview({ size }: DirectionPreviewProps) {
         </div>
         <aside className="grid content-start border-l border-[#10213d]/16 pl-3">
           <span className={cn("uppercase tracking-[0.14em] text-[#10213d]/48", mini ? "text-[5px]" : full ? "text-[8px]" : "text-[6px]")}>
-            Selected outcomes
+            Design focus
           </span>
           <div className="mt-2 border-t border-[#10213d]/18 py-2">
-            <strong className={cn("block tracking-[-0.04em]", mini ? "text-base" : full ? "text-3xl" : "text-xl")}>37</strong>
+            <strong className={cn("block tracking-[-0.04em]", mini ? "text-[7px]" : full ? "text-base" : "text-[9px]")}>Clearer structure</strong>
             <span className={cn("text-[#10213d]/54", mini ? "text-[5px]" : full ? "text-[9px]" : "text-[6px]")}>
-              Growth engagements
+              Service-led navigation
             </span>
           </div>
           <div className="border-t border-[#10213d]/18 py-2">
-            <strong className={cn("block tracking-[-0.04em]", mini ? "text-base" : full ? "text-3xl" : "text-xl")}>4.8×</strong>
+            <strong className={cn("block tracking-[-0.04em]", mini ? "text-[7px]" : full ? "text-base" : "text-[9px]")}>Focused path</strong>
             <span className={cn("text-[#10213d]/54", mini ? "text-[5px]" : full ? "text-[9px]" : "text-[6px]")}>
-              Median client return
+              Audience-focused content
             </span>
           </div>
           {!mini ? (
@@ -381,8 +381,8 @@ function MainStreetPreview({ size }: DirectionPreviewProps) {
           mini ? "text-[5px]" : full ? "text-[9px]" : "text-[6px]",
         )}
       >
-        <span>184 Pine Street</span>
-        <span className="text-[#d9673f]">See today&apos;s menu →</span>
+        <span>Service-led navigation</span>
+        <span className="text-[#d9673f]">Browse the menu →</span>
       </footer>
     </div>
   );
@@ -395,21 +395,21 @@ function SpotlightPreview({ size }: DirectionPreviewProps) {
     {
       platform: "REEL",
       title: "48 hours in Lisbon",
-      views: "1.8M",
+      detail: "Short-form story",
       tone:
         "bg-[radial-gradient(circle_at_72%_18%,rgba(255,255,255,0.44),transparent_18%),linear-gradient(155deg,#ffb09f,#ff5a71_48%,#7b61ff)]",
     },
     {
       platform: "TIKTOK",
       title: "3 pieces I wear on repeat",
-      views: "842K",
+      detail: "Style edit",
       tone:
         "bg-[radial-gradient(circle_at_30%_22%,rgba(255,255,255,0.28),transparent_20%),linear-gradient(155deg,#8b7bff,#5144d8_46%,#171526)]",
     },
     {
       platform: "SHORT",
       title: "Actually worth the save",
-      views: "614K",
+      detail: "Saved recommendation",
       tone:
         "bg-[radial-gradient(circle_at_68%_22%,rgba(255,255,255,0.4),transparent_19%),linear-gradient(155deg,#ffd7c9,#ff9877_48%,#ff4f88)]",
     },
@@ -548,7 +548,7 @@ function SpotlightPreview({ size }: DirectionPreviewProps) {
                     mini ? "text-[4px]" : full ? "text-[7px]" : "text-[5px]",
                   )}
                 >
-                  ▶ {reel.views}
+                  ▶ {reel.detail}
                 </span>
               </div>
             </div>
