@@ -280,7 +280,7 @@ export default function CareerPortfoliosPage() {
         </Container>
       </Section>
 
-      <Section className="border-y border-white/10 bg-white/[0.018]">
+      <Section id="packages" className="border-y border-white/10 bg-white/[0.018]">
         <Container className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-center">
           <Reveal>
             <div>
@@ -425,6 +425,31 @@ export default function CareerPortfoliosPage() {
       <Section className="border-y border-white/10 bg-white/[0.018]">
         <Container>
           <Reveal>
+            <div className="max-w-3xl">
+              <Badge tone="blue">Career portfolio resources</Badge>
+              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
+                Make the evidence easier to review.
+              </h2>
+              <p className="mt-5 text-lg leading-8 text-white/62">
+                Explore focused portfolio pages for analytics roles, practical guides, and the work behind the fictional demonstration.
+              </p>
+            </div>
+          </Reveal>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {[
+              ["Career portfolios for data analysts", "/services/career-portfolios/data-analysts", "Show context, analysis, and technical evidence."],
+              ["Career portfolios for BI developers", "/services/career-portfolios/bi-developers", "Explain models, measures, and governed delivery."],
+              ["Data analyst career portfolio guide", "/insights/data-analyst-career-portfolio-guide", "Build a stronger project-page structure."],
+              ["How to show confidential work", "/insights/show-confidential-work-in-career-portfolio", "Protect sensitive details while keeping the story useful."],
+            ].map(([title, href, copy]) => <Card key={href} className="h-full p-5"><h3 className="font-semibold text-white">{title}</h3><p className="mt-3 text-sm leading-6 text-white/56">{copy}</p><Link href={href} className="mt-5 inline-flex text-sm font-semibold text-[#8aeaff] underline-offset-4 hover:underline">{title}</Link></Card>)}
+          </div>
+          <Link href="/work/career-portfolio-demo" className={buttonStyles({ variant: "ghost", className: "mt-7" })}>Explore the career portfolio demonstration work</Link>
+        </Container>
+      </Section>
+
+      <Section className="border-y border-white/10 bg-white/[0.018]">
+        <Container>
+          <Reveal>
             <Badge tone="red">Process</Badge>
             <h2 className="mt-5 max-w-3xl text-3xl font-semibold text-white sm:text-5xl">
               Built from evidence outward.
@@ -503,7 +528,7 @@ export default function CareerPortfoliosPage() {
                   <Sparkles aria-hidden className="size-4" />
                 </Link>
                 <Link href="/about" className={buttonStyles({ variant: "ghost", size: "sm" })}>
-                  Meet the founder
+                  About Rukh Labs
                 </Link>
               </div>
             </div>

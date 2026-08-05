@@ -363,6 +363,21 @@ export default function GlassSquaresOSPage() {
         </Container>
       </Section>
 
+      <Section className="border-y border-white/10 bg-white/[0.02]">
+        <Container>
+          <Reveal>
+            <div className="flex flex-col gap-5 rounded-xl border border-[#16c8ff]/20 bg-[#16c8ff]/[0.04] p-6 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <Badge tone="blue">Product work</Badge>
+                <h2 className="mt-4 text-2xl font-semibold text-white">See the work behind the Glass Squares OS direction.</h2>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-white/58">The Work page separates the existing concept, active prototype direction, research, and roadmap boundaries.</p>
+              </div>
+              <Link href="/work/glass-squares-os" className={buttonStyles({ variant: "secondary", className: "shrink-0" })}>Explore Glass Squares OS work</Link>
+            </div>
+          </Reveal>
+        </Container>
+      </Section>
+
       <Section className="pt-0">
         <Container>
           <Reveal>

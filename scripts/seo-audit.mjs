@@ -8,6 +8,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const { seoRoutes, seoRedirects } = await import(
   pathToFileURL(path.join(root, "src/lib/seo-routes.ts")).href
 );
+const { insights } = await import(
+  pathToFileURL(path.join(root, "src/lib/insights.ts")).href
+);
+const { workProjects } = await import(
+  pathToFileURL(path.join(root, "src/lib/work.ts")).href
+);
 const port = Number(process.env.SEO_AUDIT_PORT || 3417);
 const localOrigin = `http://127.0.0.1:${port}`;
 const canonicalOrigin = "https://rukhlabs.com";
@@ -214,6 +220,28 @@ try {
   }
   check(socialImages.size === socialRoutes.length, "Primary landing pages use unique social images");
 
+  const phaseTwoSocialRoutes = [
+    "/work",
+    ...workProjects.map((project) => `/work/${project.slug}`),
+    "/insights",
+    ...insights.map((insight) => `/insights/${insight.slug}`),
+    "/tools/website-project-brief",
+    "/services/career-portfolios/data-analysts",
+    "/services/career-portfolios/bi-developers",
+    "/services/web-development/small-business",
+    "/services/web-development/professional-services",
+  ];
+  for (const route of phaseTwoSocialRoutes) {
+    const page = pages.get(route);
+    const image = getMeta(page?.html ?? "", "property", "og:image");
+    const twitterImage = getMeta(page?.html ?? "", "name", "twitter:image");
+    check(Boolean(image && twitterImage), `${route} has Phase 2 Open Graph and Twitter images`);
+    if (image) {
+      const response = await fetch(image.replace(canonicalOrigin, localOrigin));
+      check(response.status === 200, `${route} Open Graph image returns 200`);
+    }
+  }
+
   for (const redirect of seoRedirects) {
     const response = await fetch(localOrigin + redirect.source, { redirect: "manual" });
     const location = response.headers.get("location") ?? "";
@@ -243,6 +271,49 @@ try {
       check(response.status >= 200 && response.status < 300, `Internal link ${href} resolves without a redirect`);
     }
   }
+
+  const publicRoutes = seoRoutes.filter((item) => item.classification !== "private-noindex-nofollow");
+  for (const route of publicRoutes) {
+    const html = pages.get(route.path)?.html ?? "";
+    check(!/brett\s+gallaher/i.test(html), `${route.path} does not expose a personal name`);
+    check(!/rukh\.labs@gmail\.com/i.test(html), `${route.path} does not expose the internal Gmail address`);
+    check(!/\bTODO\b|Lorem ipsum|Coming soon/iu.test(html), `${route.path} contains no placeholder production copy`);
+  }
+
+  check(
+    (pages.get("/contact")?.html ?? "").includes("hello@rukhlabs.com"),
+    "Contact page exposes the public hello@rukhlabs.com address",
+  );
+
+  for (const insight of insights) {
+    const route = `/insights/${insight.slug}`;
+    const page = pages.get(route);
+    const jsonLd = (page?.jsonLd ?? []).map((value) => {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return null;
+      }
+    });
+    check(
+      new RegExp(`dateTime=\"${insight.publishedOn}\"`, "i").test(page?.html ?? ""),
+      `${route} exposes its publication date`,
+    );
+    check(
+      new RegExp(`dateTime=\"${insight.modifiedOn}\"`, "i").test(page?.html ?? ""),
+      `${route} exposes its modified date`,
+    );
+    check(jsonLd.some((value) => value?.["@type"] === insight.schemaType), `${route} emits ${insight.schemaType} structured data`);
+  }
+
+  for (const project of workProjects) {
+    const route = `/work/${project.slug}`;
+    check((pages.get(route)?.html ?? "").includes(project.projectType), `${route} clearly identifies its project type`);
+  }
+
+  const briefTool = pages.get("/tools/website-project-brief")?.html ?? "";
+  check(briefTool.includes("does not submit, store, email, or send your brief text"), "Project brief privacy wording matches the browser-only implementation");
+  check(briefTool.includes("Website Project Brief Generator"), "Project brief tool exists and is indexable");
 } finally {
   server.kill("SIGTERM");
   await Promise.race([

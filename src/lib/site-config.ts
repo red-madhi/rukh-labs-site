@@ -22,18 +22,12 @@ export const siteConfig = {
     "Independent digital studio and software lab.",
   ],
   navItems: [
-    { label: "Products", href: "/products" },
     { label: "Websites", href: "/services/web-development" },
     { label: "Career Portfolios", href: "/services/career-portfolios" },
-    { label: "Glass Squares OS", href: "/products/glass-squares-os" },
-    {
-      label: "Farzin",
-      href: "/products/farzin",
-    },
-    { label: "Changelog", href: "/changelog" },
-    { label: "Security", href: "/security" },
+    { label: "Work", href: "/work" },
+    { label: "Products", href: "/products" },
+    { label: "Insights", href: "/insights" },
     { label: "About", href: "/about" },
-    { label: "Contact", href: "/contact" },
   ],
   footer: {
     products: [
@@ -48,6 +42,8 @@ export const siteConfig = {
     company: [
       { label: "Web Development", href: "/services/web-development" },
       { label: "Career Portfolios", href: "/services/career-portfolios" },
+      { label: "Work", href: "/work" },
+      { label: "Insights", href: "/insights" },
       { label: "About", href: "/about" },
       { label: "Changelog", href: "/changelog" },
       { label: "Security", href: "/security" },

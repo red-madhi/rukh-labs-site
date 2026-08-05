@@ -12,6 +12,8 @@ import {
   Zap,
 } from "lucide-react";
 import { BrandBanner } from "@/components/brand/brand-banner";
+import { InsightCard } from "@/components/content/insight-card";
+import { WorkCard } from "@/components/content/work-card";
 import { TrackedAnchor } from "@/components/analytics/tracked-link";
 import { RukhMark } from "@/components/brand/rukh-mark";
 import { StructuredData } from "@/components/seo/structured-data";
@@ -28,7 +30,9 @@ import { ChessMockup } from "@/components/visuals/chess-mockup";
 import { HeroVisual } from "@/components/visuals/hero-visual";
 import { OSMockup } from "@/components/visuals/os-mockup";
 import { labProduct, products } from "@/lib/products";
+import { insights } from "@/lib/insights";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
+import { workProjects } from "@/lib/work";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Custom Websites, Career Portfolios & Software",
@@ -203,6 +207,51 @@ export default function Home() {
 
       <WebsiteStudioTeaser />
       <CareerPortfolioTeaser />
+
+      <Section className="border-y border-white/10 bg-white/[0.02]">
+        <Container>
+          <Reveal>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <Badge tone="gold">Selected work</Badge>
+                <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
+                  First-party work, labeled plainly.
+                </h2>
+                <p className="mt-4 max-w-2xl text-lg leading-8 text-white/64">
+                  Explore the Rukh Labs platform, products, and a clearly labeled fictional service demonstration.
+                </p>
+              </div>
+              <Link href="/work" className={buttonStyles({ variant: "ghost", className: "self-start sm:self-auto" })}>
+                Explore all work <ArrowRight aria-hidden className="size-4" />
+              </Link>
+            </div>
+          </Reveal>
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {workProjects.slice(0, 3).map((project, index) => <Reveal key={project.slug} delay={index * 0.05}><WorkCard project={project} /></Reveal>)}
+          </div>
+        </Container>
+      </Section>
+
+      <Section>
+        <Container>
+          <Reveal>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <Badge tone="blue">Featured insights</Badge>
+                <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
+                  Practical guidance for the work ahead.
+                </h2>
+              </div>
+              <Link href="/insights" className={buttonStyles({ variant: "ghost", className: "self-start sm:self-auto" })}>
+                Explore insights <ArrowRight aria-hidden className="size-4" />
+              </Link>
+            </div>
+          </Reveal>
+          <div className="mt-10 grid gap-5 lg:grid-cols-3">
+            {insights.map((insight, index) => <Reveal key={insight.slug} delay={index * 0.05}><InsightCard insight={insight} /></Reveal>)}
+          </div>
+        </Container>
+      </Section>
 
       <Section>
         <Container>
