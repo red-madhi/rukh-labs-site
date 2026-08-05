@@ -12,6 +12,9 @@ import {
   ScanSearch,
 } from "lucide-react";
 import { ProductBrandLockup } from "@/components/brand/product-brand-lockup";
+import { TrackedAnchor } from "@/components/analytics/tracked-link";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { StructuredData } from "@/components/seo/structured-data";
 import { ComparisonTable } from "@/components/sections/comparison-table";
 import { FeatureGrid } from "@/components/sections/feature-grid";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +27,7 @@ import { ChessMockup } from "@/components/visuals/chess-mockup";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Farzin — Chess Training App for Android",
+  title: "Farzin Chess Training App for Android",
   description:
     "Farzin is a premium Android chess training app for focused game review, opening preparation, tactical practice, and progress tracking.",
   path: "/products/farzin",
@@ -104,7 +107,8 @@ const comparisonRows = [
 export default function FarzinPage() {
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "MobileApplication",
+    "@type": "SoftwareApplication",
+    "@id": `${siteConfig.url}/products/farzin#software`,
     name: "Farzin",
     description:
       "Farzin is a premium Android chess training app for focused game review, opening preparation, tactical practice, and progress tracking.",
@@ -115,6 +119,7 @@ export default function FarzinPage() {
     downloadUrl: siteConfig.links.farzinGooglePlay,
     publisher: {
       "@type": "Organization",
+      "@id": `${siteConfig.url}/#organization`,
       name: "Rukh Labs",
       url: siteConfig.url,
     },
@@ -122,10 +127,18 @@ export default function FarzinPage() {
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-      />
+      <StructuredData data={structuredData} />
+      <div className="border-b border-white/10 bg-black/15">
+        <Container className="py-4">
+          <Breadcrumbs
+            items={[
+              { name: "Home", path: "/" },
+              { name: "Products", path: "/products" },
+              { name: "Farzin", path: "/products/farzin" },
+            ]}
+          />
+        </Container>
+      </div>
       <section className="relative overflow-hidden border-b border-[#f4bd43]/15 bg-[radial-gradient(circle_at_82%_22%,rgba(244,189,67,0.1),transparent_30%)]">
         <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f4bd43,#fff0b5,transparent)]" />
         <Container className="grid items-center gap-12 py-20 sm:py-24 lg:grid-cols-[0.9fr_1.1fr]">
@@ -144,14 +157,16 @@ export default function FarzinPage() {
                 and less wasted time.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a
+                <TrackedAnchor
                   href={siteConfig.links.farzinGooglePlay}
+                  eventName="google_play_click"
+                  eventProperties={{ product: "farzin", source_page: "/products/farzin" }}
                   aria-label="Get Farzin 1.0.0 on Google Play"
                   className={buttonStyles({ variant: "gold", size: "lg" })}
                 >
                   Get Farzin on Google Play
                   <ArrowUpRight aria-hidden className="size-4" />
-                </a>
+                </TrackedAnchor>
                 <Link
                   href="#features"
                   className={buttonStyles({ variant: "secondary", size: "lg" })}
@@ -246,6 +261,52 @@ export default function FarzinPage() {
         </Container>
       </Section>
 
+      <Section className="border-y border-white/10 bg-white/[0.02]">
+        <Container>
+          <Reveal>
+            <div className="max-w-3xl">
+              <Badge tone="gold">Current release</Badge>
+              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
+                Farzin 1.0.0 is available on Google Play.
+              </h2>
+              <p className="mt-5 text-lg leading-8 text-white/62">
+                Version 1.0.0 is the current known Android release. Rukh Labs
+                publishes product updates and support information on this site.
+              </p>
+            </div>
+          </Reveal>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            <Card className="p-5">
+              <h3 className="font-semibold text-white">Privacy</h3>
+              <p className="mt-3 text-sm leading-6 text-white/56">
+                Read the app-specific privacy policy for Farzin.
+              </p>
+              <Link href="/products/farzin/privacy" className={buttonStyles({ variant: "ghost", size: "sm", className: "mt-4" })}>
+                Farzin privacy policy
+              </Link>
+            </Card>
+            <Card className="p-5">
+              <h3 className="font-semibold text-white">Support</h3>
+              <p className="mt-3 text-sm leading-6 text-white/56">
+                Contact Rukh Labs with a question, bug report, or product feedback.
+              </p>
+              <Link href="/contact" className={buttonStyles({ variant: "ghost", size: "sm", className: "mt-4" })}>
+                Contact Farzin support
+              </Link>
+            </Card>
+            <Card className="p-5">
+              <h3 className="font-semibold text-white">Release notes</h3>
+              <p className="mt-3 text-sm leading-6 text-white/56">
+                Follow Rukh Labs product updates and version notes.
+              </p>
+              <Link href="/changelog" className={buttonStyles({ variant: "ghost", size: "sm", className: "mt-4" })}>
+                View the changelog
+              </Link>
+            </Card>
+          </div>
+        </Container>
+      </Section>
+
       <Section className="border-t border-white/10 bg-white/[0.025]">
         <Container>
           <Reveal>
@@ -253,8 +314,10 @@ export default function FarzinPage() {
               <h2 className="text-3xl font-semibold text-white sm:text-5xl">
                 Train like your rating matters.
               </h2>
-              <a
+              <TrackedAnchor
                 href={siteConfig.links.farzinGooglePlay}
+                eventName="google_play_click"
+                eventProperties={{ product: "farzin", source_page: "/products/farzin" }}
                 aria-label="Get Farzin 1.0.0 on Google Play"
                 className={buttonStyles({
                   variant: "gold",
@@ -264,7 +327,7 @@ export default function FarzinPage() {
               >
                 Get Farzin on Google Play
                 <ArrowUpRight aria-hidden className="size-4" />
-              </a>
+              </TrackedAnchor>
             </div>
           </Reveal>
         </Container>

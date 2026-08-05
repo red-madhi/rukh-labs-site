@@ -18,6 +18,8 @@ import {
   Terminal,
 } from "lucide-react";
 import { ProductBrandLockup } from "@/components/brand/product-brand-lockup";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { StructuredData } from "@/components/seo/structured-data";
 import { FeatureGrid } from "@/components/sections/feature-grid";
 import { RoadmapTimeline } from "@/components/sections/roadmap-timeline";
 import { Badge } from "@/components/ui/badge";
@@ -27,10 +29,10 @@ import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/ui/reveal";
 import { Section } from "@/components/ui/section";
 import { OSMockup } from "@/components/visuals/os-mockup";
-import { createPageMetadata } from "@/lib/site-config";
+import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Glass Squares OS — Linux Desktop OS",
+  title: "Glass Squares OS: A Low-Bloat Linux Desktop",
   description:
     "Glass Squares OS is a Linux-based desktop operating system built around glassy surfaces, square-based layouts, low bloat, and practical compatibility.",
   path: "/products/glass-squares-os",
@@ -169,8 +171,38 @@ const roadmap = [
 ];
 
 export default function GlassSquaresOSPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": `${siteConfig.url}/products/glass-squares-os#software`,
+    name: "Glass Squares OS",
+    description:
+      "Glass Squares OS is a Linux-based desktop operating system in development, built around glassy surfaces, square-based layouts, low bloat, and practical compatibility.",
+    applicationCategory: "OperatingSystem",
+    operatingSystem: "Linux",
+    url: `${siteConfig.url}/products/glass-squares-os`,
+    publisher: {
+      "@type": "Organization",
+      "@id": `${siteConfig.url}/#organization`,
+      name: siteConfig.name,
+      url: siteConfig.url,
+    },
+  };
+
   return (
     <>
+      <StructuredData data={structuredData} />
+      <div className="border-b border-white/10 bg-black/15">
+        <Container className="py-4">
+          <Breadcrumbs
+            items={[
+              { name: "Home", path: "/" },
+              { name: "Products", path: "/products" },
+              { name: "Glass Squares OS", path: "/products/glass-squares-os" },
+            ]}
+          />
+        </Container>
+      </div>
       <section className="relative overflow-hidden border-b border-[#16c8ff]/15 bg-[radial-gradient(circle_at_82%_22%,rgba(22,200,255,0.11),transparent_28%),radial-gradient(circle_at_72%_72%,rgba(109,49,255,0.1),transparent_30%)]">
         <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#16c8ff,#6d31ff,transparent)]" />
         <Container className="grid items-center gap-12 py-20 sm:py-24 lg:grid-cols-[0.9fr_1.1fr]">
@@ -178,7 +210,7 @@ export default function GlassSquaresOSPage() {
             <div>
               <ProductBrandLockup product="Glass Squares OS" />
               <Badge tone="blue" className="mt-6">
-                Glass Squares OS
+                In development
               </Badge>
               <h1 className="mt-6 text-4xl font-semibold leading-[1.05] text-white sm:text-6xl">
                 A cleaner desktop made of glass, speed, and control.
@@ -187,6 +219,11 @@ export default function GlassSquaresOSPage() {
                 Glass Squares OS is a Linux-based desktop operating system built
                 around glassy surfaces, square-based layouts, low bloat, practical
                 compatibility, and a familiar workflow.
+              </p>
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-[#8aeaff]">
+                Current work includes the brand system and desktop shell prototype.
+                Installer, compatibility, beta-image, and public-preview work remain
+                roadmap direction, not completed releases.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/download" className={buttonStyles({ variant: "glass", size: "lg" })}>

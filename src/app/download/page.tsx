@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, Download, FileCheck2, ShieldCheck } from "lucide-react";
 import { WaitlistForm } from "@/components/forms/waitlist-form";
+import { TrackedAnchor } from "@/components/analytics/tracked-link";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -61,8 +62,10 @@ export default function DownloadPage() {
                     <h2 className="mt-5 text-lg font-semibold text-white">{item.title}</h2>
                     <p className="mt-3 text-sm leading-6 text-white/58">{item.copy}</p>
                     {item.href ? (
-                      <a
+                      <TrackedAnchor
                         href={item.href}
+                        eventName="google_play_click"
+                        eventProperties={{ product: "farzin", source_page: "/download" }}
                         aria-label="Get Farzin 1.0.0 on Google Play"
                         className={buttonStyles({
                           variant: "secondary",
@@ -72,7 +75,7 @@ export default function DownloadPage() {
                       >
                         {item.cta}
                         <ArrowUpRight aria-hidden className="size-4" />
-                      </a>
+                      </TrackedAnchor>
                     ) : null}
                   </Card>
                 </Reveal>

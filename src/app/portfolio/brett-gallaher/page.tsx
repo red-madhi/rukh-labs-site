@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
+import { createPageMetadata } from "@/lib/site-config";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Brett Gallaher — Analytics Systems Portfolio",
   description:
-    "Private recruiter portfolio for Brett Gallaher, BI Developer and Analytics Engineer.",
+    "Unlisted recruiter portfolio for Brett Gallaher, BI Developer and Analytics Engineer.",
+  path: "/portfolio/brett-gallaher",
   robots: {
     index: false,
     follow: false,
     nocache: true,
+    noarchive: true,
+    nosnippet: true,
+    noimageindex: true,
     googleBot: {
       index: false,
       follow: false,
@@ -17,7 +22,7 @@ export const metadata: Metadata = {
       "max-video-preview": 0,
     },
   },
-};
+});
 
 export default function BrettGallaherPortfolioPage() {
   return (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, BriefcaseBusiness, Check, Clock3, Globe2, Mail, Sparkles } from "lucide-react";
 import { ContactForm } from "@/components/forms/contact-form";
+import { TrackedAnchor } from "@/components/analytics/tracked-link";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { Section } from "@/components/ui/section";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Contact & Project Inquiry",
+  title: "Contact Rukh Labs for a Website or Career Portfolio",
   description:
     "Start a website or career portfolio project with Rukh Labs, or get in touch about products, partnerships, press, and security.",
   path: "/contact",
@@ -124,12 +125,14 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
                   <Mail aria-hidden className="size-4 text-[#ff8b96]" />
                   Prefer a plain email?
                 </div>
-                <a
+                <TrackedAnchor
                   href={siteConfig.links.email}
+                  eventName="email_click"
+                  eventProperties={{ source_page: "/contact" }}
                   className="mt-2 inline-flex text-sm text-white/56 underline decoration-white/20 underline-offset-4 transition hover:text-white"
                 >
                   {siteConfig.contactEmail}
-                </a>
+                </TrackedAnchor>
               </div>
             </Reveal>
           </div>
