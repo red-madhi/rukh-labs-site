@@ -35,7 +35,7 @@ const pageDescription =
   "Rukh Labs creates recruiter-ready career portfolio websites for job searches, turning professional experience into credible case studies and visible proof.";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Career Portfolio Websites for Analysts & Technical Professionals",
+  title: "Career Portfolio Websites for Technical Careers",
   description: pageDescription,
   path: "/services/career-portfolios",
 });
