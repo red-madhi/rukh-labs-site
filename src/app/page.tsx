@@ -33,7 +33,7 @@ import { createPageMetadata, siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Custom Websites, Career Portfolios & Software",
   description:
-    "Rukh Labs is an independent digital studio and software lab creating distinctive websites, recruiter-ready career portfolios, and original software including Glass Squares OS and Farzin.",
+    "Rukh Labs creates distinctive websites, recruiter-ready career portfolios, and original software including Farzin and Glass Squares OS.",
 });
 
 const philosophy = [
