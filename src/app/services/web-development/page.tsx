@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { DesignPreview } from "@/components/services/web-development/design-preview";
+import { FictionalDemoDisclosure } from "@/components/services/web-development/fictional-demo-disclosure";
 import { WebsiteHeroVisual } from "@/components/services/web-development/website-hero-visual";
 import { TrackedAnchor, TrackedLink } from "@/components/analytics/tracked-link";
 import { StructuredData } from "@/components/seo/structured-data";
@@ -241,6 +242,8 @@ export default function WebDevelopmentPage() {
               </p>
             </div>
           </Reveal>
+
+          <FictionalDemoDisclosure className="mt-8" />
 
           <div className="mt-12 grid gap-6 lg:grid-cols-2">
             {designDirections.map((direction, index) => (

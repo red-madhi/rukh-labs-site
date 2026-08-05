@@ -36,6 +36,12 @@ export default async function InsightPage({ params }: PageProps) {
   const insight = getInsight((await params).slug);
   if (!insight) notFound();
   const path = `/insights/${insight.slug}`;
+  const organization = {
+    "@type": "Organization",
+    "@id": `${siteConfig.url}/#organization`,
+    name: siteConfig.name,
+    url: `${siteConfig.url}/about`,
+  };
   const structuredData = {
     "@context": "https://schema.org",
     "@type": insight.schemaType,
@@ -45,8 +51,8 @@ export default async function InsightPage({ params }: PageProps) {
     url: `${siteConfig.url}${path}`,
     datePublished: insight.publishedOn,
     dateModified: insight.modifiedOn,
-    author: { "@type": "Organization", "@id": `${siteConfig.url}/#organization`, name: siteConfig.name },
-    publisher: { "@type": "Organization", "@id": `${siteConfig.url}/#organization`, name: siteConfig.name },
+    author: organization,
+    publisher: organization,
     mainEntityOfPage: { "@type": "WebPage", "@id": `${siteConfig.url}${path}` },
   };
 

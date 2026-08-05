@@ -10,7 +10,7 @@ export function formatPublicationDate(value: string) {
 export function PublicationMeta({
   publishedOn,
   modifiedOn,
-  byline = "Rukh Labs Editorial",
+  byline = "Rukh Labs",
 }: {
   publishedOn: string;
   modifiedOn: string;

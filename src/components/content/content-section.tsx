@@ -47,11 +47,16 @@ export function ContentSection({ section }: { section: ContentSectionData }) {
           return (
             <div key={index} className="grid gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-5">
               {block.title ? <h3 className="font-semibold text-white">{block.title}</h3> : null}
-              {block.links.map((link) => (
-                <Link key={link.href} href={link.href} className="group rounded-md text-sm leading-6 text-[#9feaff] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[color:var(--brand-red)]">
-                  <span className="font-medium">{link.label}</span>{link.description ? <span className="text-white/52"> — {link.description}</span> : null}
-                </Link>
-              ))}
+              {block.links.map((link) => {
+                const className = "group rounded-md text-sm leading-6 text-[#9feaff] underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[color:var(--brand-red)]";
+                const content = <><span className="font-medium">{link.label}</span>{link.description ? <span className="text-white/52"> — {link.description}</span> : null}</>;
+
+                return link.external ? (
+                  <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className={className}>{content}</a>
+                ) : (
+                  <Link key={link.href} href={link.href} className={className}>{content}</Link>
+                );
+              })}
             </div>
           );
         })}

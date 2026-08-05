@@ -39,6 +39,7 @@ Use the existing organization ID `https://rukhlabs.com/#organization`. Do not ad
 - Keep the private recruiter portfolio unlisted and out of the sitemap and public internal links.
 - Use `hello@rukhlabs.com` publicly. Do not expose an internal forwarding address.
 - Label fictional and synthetic demonstrations clearly. Noindex is not access control.
+- The public `/legal/terms` route is intentionally noindex and excluded from public footer navigation. Its limited website-use copy requires qualified legal review before it is expanded or restored to navigation.
 
 ## Image and source rules
 

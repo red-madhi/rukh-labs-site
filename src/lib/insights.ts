@@ -91,6 +91,74 @@ export const insights: readonly Insight[] = [
         ],
       },
       {
+        id: "market-ranges",
+        title: "Current cost ranges: treat them as planning references",
+        blocks: [
+          {
+            type: "paragraph",
+            content:
+              "These current figures are broad planning references, not quotes. Scope, geography, content readiness, integrations, provider, and billing cycle can all change the total. Use them to understand the routes available, then ask each provider what the figure includes and excludes.",
+          },
+          {
+            type: "table",
+            caption: "Current market and platform reference ranges in U.S. dollars",
+            columns: ["Route", "Current reference", "What the figure does and does not cover"],
+            rows: [
+              ["DIY website builder", "Official platform examples run from $0 for WordPress.com’s free plan to $39/month for Wix Business with annual billing.", "Platform software only; it does not include custom strategy, content, design, or implementation help."],
+              ["Template-led freelancer project", "Upwork lists $20–$50+/hour for CMS web design as a current market reference.", "A broad hourly market estimate, not a fixed project price or a guarantee of scope."],
+              ["Independent custom design", "Upwork lists $45–$75+/hour for full custom website design as a current market reference.", "A broad hourly market estimate; discovery, content, integrations, and support can be separate."],
+              ["Agency project", "Clutch reports a $2,000–$100,000 project range, with most reviewed projects under $10,000.", "A wide agency-market reference; project type and operating context materially affect total cost."],
+              ["Ecommerce or integration-heavy project", "Shopify annual-billing plans currently run $29–$299/month before third-party apps, implementation, content, and payment charges.", "Subscription pricing is separate from the work needed to plan, build, test, and operate the store or integrations."],
+            ],
+          },
+          {
+            type: "links",
+            title: "Sources for these current reference ranges",
+            links: [
+              { label: "WordPress.com Pricing", href: "https://wordpress.com/pricing/?locale=en_us", description: "Official free-plan and paid-plan reference.", external: true },
+              { label: "Wix Premium Plans", href: "https://www.wix.com/blog/wix-premium-plans", description: "Official annual-billing plan reference.", external: true },
+              { label: "Upwork web designer cost", href: "https://www.upwork.com/hire/web-designers/cost/", description: "Current freelancer hourly market references.", external: true },
+              { label: "Clutch web design pricing", href: "https://clutch.co/web-designers/pricing", description: "Current agency project-range reference.", external: true },
+              { label: "Shopify Pricing", href: "https://www.shopify.com/pricing", description: "Official ecommerce subscription reference.", external: true },
+            ],
+          },
+        ],
+      },
+      {
+        id: "recurring-costs",
+        title: "Recurring costs to model separately",
+        blocks: [
+          {
+            type: "paragraph",
+            content:
+              "A project quote and the cost to operate a website are different budgets. Keep recurring software, domain, payment, and maintenance costs visible so an initial build does not hide the work required after launch.",
+          },
+          {
+            type: "table",
+            caption: "Recurring costs to itemize with the provider",
+            columns: ["Cost", "Current reference", "Planning note"],
+            rows: [
+              ["Domain registration", "Price depends on the top-level domain. Cloudflare Registrar describes cost pricing based on registry and ICANN charges, without a registrar markup.", "Confirm account ownership, renewal price, and who receives renewal notices."],
+              ["Hosting or platform subscription", "WordPress.com lists paid plans starting at $4/month with annual billing; Wix lists $17–$159/month with annual billing; Shopify includes hosting in its plans.", "Compare the feature set, billing term, and any usage limits rather than treating hosting as one generic price."],
+              ["Payment processing", "Stripe lists 2.9% + 30¢ for a successful U.S. domestic card transaction. Shopify Basic lists the same online card rate on its current pricing page.", "Rates vary by payment method, country, plan, and transaction type; validate the rate that applies to the business."],
+              ["Maintenance", "Provider- and scope-dependent; request an explicit recurring scope.", "Clarify updates, security, backups, content support, monitoring, response time, and what is billed separately."],
+              ["Premium plugins or services", "May add subscriptions or usage charges.", "Itemize required apps, forms, booking, email, analytics, accessibility, and integration services before launch."],
+            ],
+          },
+          {
+            type: "links",
+            title: "Sources for recurring platform and transaction references",
+            links: [
+              { label: "Cloudflare Registrar documentation", href: "https://developers.cloudflare.com/registrar/", description: "Official domain-pricing model reference.", external: true },
+              { label: "WordPress.com Pricing", href: "https://wordpress.com/pricing/?locale=en_us", description: "Official platform subscription reference.", external: true },
+              { label: "Wix Premium Plans", href: "https://www.wix.com/blog/wix-premium-plans", description: "Official platform subscription reference.", external: true },
+              { label: "Shopify Pricing", href: "https://www.shopify.com/pricing", description: "Official ecommerce subscription and card-rate reference.", external: true },
+              { label: "Stripe Pricing", href: "https://stripe.com/pricing", description: "Official payment-processing reference.", external: true },
+            ],
+          },
+        ],
+      },
+      {
         id: "scope-options",
         title: "One page, templates, and custom work",
         blocks: [
@@ -112,7 +180,7 @@ export const insights: readonly Insight[] = [
       },
       {
         id: "rukh-packages",
-        title: "Use published packages as a transparent example",
+        title: "Where Rukh Labs’ current packages fit",
         blocks: [
           {
             type: "paragraph",
@@ -179,11 +247,60 @@ export const insights: readonly Insight[] = [
     },
     sources: [
       {
+        title: "WordPress.com Pricing",
+        publisher: "WordPress.com",
+        href: "https://wordpress.com/pricing/?locale=en_us",
+        accessedOn: publishedOn,
+        reason: "Used for the current free-plan and paid platform-subscription references.",
+      },
+      {
+        title: "Wix Premium Plans",
+        publisher: "Wix",
+        href: "https://www.wix.com/blog/wix-premium-plans",
+        accessedOn: publishedOn,
+        reason: "Used for the current annual-billing platform subscription references.",
+      },
+      {
+        title: "Shopify Pricing",
+        publisher: "Shopify",
+        href: "https://www.shopify.com/pricing",
+        accessedOn: publishedOn,
+        reason: "Used for current ecommerce plan and online card-rate references.",
+      },
+      {
+        title: "Stripe Pricing",
+        publisher: "Stripe",
+        href: "https://stripe.com/pricing",
+        accessedOn: publishedOn,
+        reason: "Used for the current U.S. domestic card-processing reference.",
+      },
+      {
+        title: "Cloudflare Registrar documentation",
+        publisher: "Cloudflare",
+        href: "https://developers.cloudflare.com/registrar/",
+        accessedOn: publishedOn,
+        reason: "Used for the domain-registration pricing-model reference.",
+      },
+      {
+        title: "Web Designer Cost",
+        publisher: "Upwork",
+        href: "https://www.upwork.com/hire/web-designers/cost/",
+        accessedOn: publishedOn,
+        reason: "Used for current freelancer hourly market references; these are broad estimates, not project quotes.",
+      },
+      {
+        title: "Web Design Pricing",
+        publisher: "Clutch",
+        href: "https://clutch.co/web-designers/pricing",
+        accessedOn: publishedOn,
+        reason: "Used for the current agency project-range reference; it is presented as a broad estimate.",
+      },
+      {
         title: "Rukh Labs website design and development",
         publisher: "Rukh Labs",
         href: "https://rukhlabs.com/services/web-development",
         accessedOn: publishedOn,
-        reason: "Used only to reference Rukh Labs' own published package examples; no market-wide pricing claims are made.",
+        reason: "Used only to reference Rukh Labs’ own published package examples; no market-wide pricing claims are made.",
       },
     ],
   },

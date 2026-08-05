@@ -72,6 +72,20 @@ function jsonLdValues(html) {
   );
 }
 
+function renderedText(html) {
+  return decodeHtml(html.replace(/<[^>]*>/g, "").replace(/\s+/g, " "));
+}
+
+function parsedJsonLd(values) {
+  return values.flatMap((value) => {
+    try {
+      return [JSON.parse(value)];
+    } catch {
+      return [];
+    }
+  });
+}
+
 function internalAnchorUrls(html) {
   const urls = new Set();
   for (const tag of html.match(/<a\b[^>]*>/gi) ?? []) {
@@ -285,16 +299,75 @@ try {
     "Contact page exposes the public hello@rukhlabs.com address",
   );
 
+  const fictionalDemoHeading = "Fictional working website demonstrations";
+  const fictionalDemoDisclosure = "All names, businesses, addresses, audiences, testimonials, and results shown in these demonstrations are invented for design and functionality examples.";
+  const indexableDemoRoutes = [
+    "/",
+    "/services/web-development",
+    ...seoRoutes
+      .filter((route) => route.indexable && /^\/services\/web-development\/designs\/[^/]+$/.test(route.path))
+      .map((route) => route.path),
+  ];
+  const fictionalPreviewNames = ["NORTHSTAR", "CEDAR/STRATEGY", "Mara Bell", "Juniper &amp; Pine", "Mika Rowe", "Lena Ortiz"];
+  const fictionalPreviewPerformance = [
+    "Growth engagements",
+    "Median client return",
+    "184 Pine Street",
+    "1.8M views",
+    "842K views",
+    "614K views",
+  ];
+
+  for (const route of seoRoutes.filter((item) => item.indexable)) {
+    const page = pages.get(route.path);
+    const html = page?.html ?? "";
+    const hasFictionalDemoDisclosure = html.includes(fictionalDemoHeading) && html.includes(fictionalDemoDisclosure);
+    check(
+      fictionalPreviewPerformance.every((value) => !html.includes(value) || hasFictionalDemoDisclosure),
+      `${route.path} only permits known fictional preview performance content with an explicit demonstration disclosure`,
+    );
+    check(
+      fictionalPreviewNames.every((value) => !html.includes(value) || hasFictionalDemoDisclosure),
+      `${route.path} gives fictional preview identities an explicit demonstration disclosure`,
+    );
+
+    const structuredData = (page?.jsonLd ?? []).join("\n");
+    check(
+      [...fictionalPreviewNames, ...fictionalPreviewPerformance].every((value) => !structuredData.includes(value)),
+      `${route.path} structured data excludes fictional preview content`,
+    );
+  }
+
+  for (const route of indexableDemoRoutes) {
+    const html = pages.get(route)?.html ?? "";
+    check(
+      html.includes(fictionalDemoHeading) && html.includes(fictionalDemoDisclosure),
+      `${route} visibly labels its fictional website demonstrations`,
+    );
+  }
+
+  const termsPage = pages.get("/legal/terms")?.html ?? "";
+  check(!/Placeholder|Pre-launch|Temporary production copy|Professional review pending|reviewed by qualified counsel/iu.test(termsPage), "Terms page avoids visible placeholder or unreviewed-document language");
+  check(termsPage.includes("Project services") && termsPage.includes("hello@rukhlabs.com"), "Terms page contains limited website-use and project-agreement guidance");
+  check(!(pages.get("/")?.html ?? "").includes('href="/legal/terms"'), "Public footer does not link to the noindex terms page");
+
+  const costGuide = pages.get("/insights/small-business-website-cost-guide")?.html ?? "";
+  for (const value of [
+    "Current cost ranges: treat them as planning references",
+    "Recurring costs to model separately",
+    "Where Rukh Labs’ current packages fit",
+    "$2,000–$100,000",
+    "2.9% + 30¢",
+    "https://www.upwork.com/hire/web-designers/cost/",
+    "https://stripe.com/pricing",
+  ]) {
+    check(costGuide.includes(value), `Cost guide visibly includes current sourced reference: ${value}`);
+  }
+
   for (const insight of insights) {
     const route = `/insights/${insight.slug}`;
     const page = pages.get(route);
-    const jsonLd = (page?.jsonLd ?? []).map((value) => {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return null;
-      }
-    });
+    const jsonLd = parsedJsonLd(page?.jsonLd ?? []);
     check(
       new RegExp(`dateTime=\"${insight.publishedOn}\"`, "i").test(page?.html ?? ""),
       `${route} exposes its publication date`,
@@ -304,6 +377,18 @@ try {
       `${route} exposes its modified date`,
     );
     check(jsonLd.some((value) => value?.["@type"] === insight.schemaType), `${route} emits ${insight.schemaType} structured data`);
+    check(renderedText(page?.html ?? "").includes("By Rukh Labs"), `${route} visibly uses the Rukh Labs byline`);
+    check(getMeta(page?.html ?? "", "name", "author") === "Rukh Labs", `${route} metadata author is Rukh Labs`);
+    const article = jsonLd.find((value) => value?.["@type"] === insight.schemaType);
+    for (const role of ["author", "publisher"]) {
+      check(
+        article?.[role]?.["@type"] === "Organization" &&
+          article?.[role]?.["@id"] === "https://rukhlabs.com/#organization" &&
+          article?.[role]?.name === "Rukh Labs" &&
+          article?.[role]?.url === "https://rukhlabs.com/about",
+        `${route} ${role} structured data uses the Rukh Labs Organization`,
+      );
+    }
   }
 
   for (const project of workProjects) {

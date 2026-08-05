@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { DesignPreview } from "@/components/services/web-development/design-preview";
+import { FictionalDemoDisclosure } from "@/components/services/web-development/fictional-demo-disclosure";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
@@ -58,25 +59,28 @@ export function WebsiteStudioTeaser() {
         </div>
 
         <Reveal delay={0.08}>
-          <div className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 xl:grid-cols-6">
-            {designDirections.map((direction) => (
-              <Link
-                key={direction.slug}
-                href={direction.href}
-                aria-label={`Explore the ${direction.name} website direction`}
-                className="group w-[78vw] max-w-sm shrink-0 snap-start rounded-[1.25rem] border border-white/10 bg-white/[0.025] p-2 transition hover:-translate-y-1 hover:border-[color:var(--brand-red)]/38 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--brand-red)] lg:w-auto lg:max-w-none"
-              >
-                <DesignPreview slug={direction.slug} size="mini" />
-                <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-3">
-                  <span className="text-sm font-semibold text-white">{direction.name}</span>
-                  <ArrowRight
-                    aria-hidden
-                    className="size-4 text-white/40 transition group-hover:translate-x-0.5 group-hover:text-[#ffb4b8]"
-                  />
-                </div>
-              </Link>
-            ))}
-          </div>
+          <>
+            <FictionalDemoDisclosure className="mt-8" />
+            <div className="mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-4 lg:grid lg:grid-cols-3 lg:overflow-visible lg:pb-0 xl:grid-cols-6">
+              {designDirections.map((direction) => (
+                <Link
+                  key={direction.slug}
+                  href={direction.href}
+                  aria-label={`Explore the ${direction.name} website direction`}
+                  className="group w-[78vw] max-w-sm shrink-0 snap-start rounded-[1.25rem] border border-white/10 bg-white/[0.025] p-2 transition hover:-translate-y-1 hover:border-[color:var(--brand-red)]/38 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--brand-red)] lg:w-auto lg:max-w-none"
+                >
+                  <DesignPreview slug={direction.slug} size="mini" />
+                  <div className="flex items-center justify-between gap-3 px-2 pb-1 pt-3">
+                    <span className="text-sm font-semibold text-white">{direction.name}</span>
+                    <ArrowRight
+                      aria-hidden
+                      className="size-4 text-white/40 transition group-hover:translate-x-0.5 group-hover:text-[#ffb4b8]"
+                    />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </>
         </Reveal>
       </Container>
     </Section>
