@@ -38,10 +38,10 @@ import {
 } from "@/lib/web-development";
 
 const pageDescription =
-  "Rukh Labs designs and builds distinctive, responsive websites for businesses, products, creators, and organizations.";
+  "Rukh Labs provides distinctive website design and development for businesses, products, creators, and organizations, from focused launch pages to custom builds.";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Web Development",
+  title: "Website Design & Development",
   description: pageDescription,
   path: "/services/web-development",
 });
@@ -175,9 +175,9 @@ export default function WebDevelopmentPage() {
                 <span className="text-[#ff6d7b]">intentional.</span>
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-8 text-white/68 sm:text-xl">
-                Distinctive, responsive websites for businesses, products,
-                creators, and organizations. Start with a proven visual system
-                or commission something entirely original—without agency-sized
+                Distinctive website design and development for businesses,
+                products, creators, and organizations. Start with a proven visual
+                direction or commission something original—without agency-sized
                 overhead.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
@@ -414,7 +414,7 @@ export default function WebDevelopmentPage() {
             <div>
               <Badge tone="gold">FAQ</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                The useful questions, answered.
+                Website design questions, answered.
               </h2>
             </div>
           </Reveal>

@@ -30,9 +30,9 @@ import { OSMockup } from "@/components/visuals/os-mockup";
 import { createPageMetadata } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Glass Squares OS",
+  title: "Glass Squares OS — Linux Desktop OS",
   description:
-    "Glass Squares OS is a Linux-based desktop experience built around glassy surfaces, square-based layouts, low bloat, and practical compatibility.",
+    "Glass Squares OS is a Linux-based desktop operating system built around glassy surfaces, square-based layouts, low bloat, and practical compatibility.",
   path: "/products/glass-squares-os",
 });
 
@@ -184,10 +184,9 @@ export default function GlassSquaresOSPage() {
                 A cleaner desktop made of glass, speed, and control.
               </h1>
               <p className="mt-6 max-w-3xl text-lg leading-8 text-white/68">
-                Glass Squares OS is a Linux-based desktop experience built around
-                glassy surfaces, square-based layouts, low bloat, practical
-                compatibility, and a familiar workflow that does not force normal
-                users to live in a terminal.
+                Glass Squares OS is a Linux-based desktop operating system built
+                around glassy surfaces, square-based layouts, low bloat, practical
+                compatibility, and a familiar workflow.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link href="/download" className={buttonStyles({ variant: "glass", size: "lg" })}>
@@ -317,7 +316,7 @@ export default function GlassSquaresOSPage() {
             <div>
               <Badge tone="blue">Roadmap</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                From brand system to public preview.
+                Roadmap to a public preview.
               </h2>
             </div>
           </Reveal>

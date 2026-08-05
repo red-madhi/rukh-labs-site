@@ -14,26 +14,26 @@ import { createPageMetadata, siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Download",
   description:
-    "Get Farzin 1.0.0 on Google Play and join the Glass Squares OS beta list.",
+    "Access Farzin on Google Play, register for the Glass Squares OS beta, and follow future Rukh Labs downloads and release notes.",
   path: "/download",
 });
 
 const releaseCards = [
   {
-    title: "Glass Squares OS beta",
-    copy: "Early images will focus on install research, glass-panel desktop experience, default apps, and compatibility testing.",
+    title: "Glass Squares OS beta registration",
+    copy: "No public OS download is available yet. Register below for beta access as qualified testing opens.",
     icon: Download,
   },
   {
-    title: "Farzin 1.0.0",
-    copy: "The production Android release is available now on Google Play.",
+    title: "Farzin on Google Play",
+    copy: "Farzin 1.0.0 is the current production Android release and is available now on Google Play.",
     icon: FileCheck2,
     href: siteConfig.links.farzinGooglePlay,
     cta: "Get Farzin on Google Play",
   },
   {
-    title: "Checksums and release notes",
-    copy: "Public builds will include checksums, version notes, and security-relevant changes before general access.",
+    title: "Future releases and downloads",
+    copy: "Future downloadable builds will include checksums, version notes, and security-relevant changes before general access.",
     icon: ShieldCheck,
   },
 ];
@@ -44,7 +44,7 @@ export default function DownloadPage() {
       <PageHeader
         eyebrow="Downloads & releases"
         title="Get the latest Rukh Labs software."
-        description="Farzin 1.0.0 is available now on Google Play. Glass Squares OS remains in development, with beta access opening separately."
+        description="Farzin 1.0.0 is available now on Google Play. Glass Squares OS remains in development, with beta registration opening separately. No spam. Just product access, release notes, and major updates."
       />
       <Section>
         <Container>

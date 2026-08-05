@@ -24,9 +24,9 @@ import { ChessMockup } from "@/components/visuals/chess-mockup";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Farzin",
+  title: "Farzin — Chess Training App for Android",
   description:
-    "Farzin 1.0.0 is a premium chess training app for Android, available now on Google Play.",
+    "Farzin is a premium Android chess training app for focused game review, opening preparation, tactical practice, and progress tracking.",
   path: "/products/farzin",
 });
 
@@ -107,7 +107,7 @@ export default function FarzinPage() {
     "@type": "MobileApplication",
     name: "Farzin",
     description:
-      "A premium chess training app for cleaner analysis, sharper prep, and focused study.",
+      "Farzin is a premium Android chess training app for focused game review, opening preparation, tactical practice, and progress tracking.",
     applicationCategory: "EducationalApplication",
     operatingSystem: "Android",
     softwareVersion: "1.0.0",
@@ -139,8 +139,9 @@ export default function FarzinPage() {
                 Serious chess training without the circus.
               </h1>
               <p className="mt-6 max-w-3xl text-lg leading-8 text-white/68">
-                Farzin is a premium chess app built for players who want cleaner
-                analysis, sharper prep, and study tools that do not waste their time.
+                Farzin is a premium Android chess training app built for players
+                who want cleaner analysis, sharper preparation, focused practice,
+                and less wasted time.
               </p>
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <a
@@ -172,15 +173,15 @@ export default function FarzinPage() {
             <div>
               <Badge tone="blue">Positioning</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Not another noisy chess playground.
+                Built for focused improvement.
               </h2>
             </div>
           </Reveal>
           <Reveal delay={0.08}>
             <Card className="p-6 sm:p-8">
               <p className="text-lg leading-8 text-white/68">
-                Farzin is for players who care about getting stronger. Less
-                clutter. Better study flow. Cleaner review. More signal.
+                Farzin keeps game review, preparation, and practice organized
+                around the work that helps a player improve.
               </p>
             </Card>
           </Reveal>
@@ -192,18 +193,20 @@ export default function FarzinPage() {
           <Reveal>
             <Card className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[0.7fr_1.3fr] lg:p-10">
               <div>
-                <Badge tone="gold">Master every move.</Badge>
+                <Badge tone="gold">A complete training loop</Badge>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  Why train where your opponents train?
+                  Review. Prepare. Practice. Improve.
                 </h2>
               </div>
               <div>
                 <p className="text-lg leading-8 text-white/68">
-                  Farzin is built for players who want a quieter, sharper, more
-                  serious way to study. Less noise. More signal. More discipline.
+                  Farzin connects game review, opening preparation, tactical
+                  practice, mistake patterns, and progress tracking in one focused
+                  workflow.
                 </p>
                 <p className="mt-5 text-sm font-medium text-[color:var(--brand-bronze)]">
-                  Premium chess training by Rukh Labs.
+                  Move from analysis to the next useful training action without
+                  stitching together disconnected tools.
                 </p>
               </div>
             </Card>
@@ -231,9 +234,9 @@ export default function FarzinPage() {
         <Container>
           <Reveal>
             <div className="max-w-3xl">
-              <Badge tone="blue">Built for focus.</Badge>
+              <Badge tone="blue">Comparison</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Less noise. More signal.
+                A focused alternative to crowded chess apps.
               </h2>
             </div>
           </Reveal>

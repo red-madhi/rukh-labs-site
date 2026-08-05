@@ -31,7 +31,7 @@ import { createPageMetadata, siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Websites, Career Portfolios & Software",
   description:
-    "Rukh Labs designs distinct websites and career portfolios, and builds software products with clarity, security, and character.",
+    "Rukh Labs is an independent digital studio and software lab creating distinctive websites, recruiter-ready career portfolios, and original software including Glass Squares OS and Farzin.",
 });
 
 const philosophy = [
@@ -85,19 +85,18 @@ export default function Home() {
           <Reveal>
             <div className="max-w-3xl">
               <Badge tone="red" className="uppercase tracking-[0.18em]">
-                Digital studio & software lab
+                Independent digital studio & software lab
               </Badge>
-              <h1 className="mt-7 text-5xl font-semibold leading-[1.02] text-white sm:text-7xl">
-                Build a presence that{" "}
+              <h1 className="mt-7 text-5xl font-semibold leading-[1.02] text-white sm:text-6xl 2xl:text-7xl">
+                Websites, career portfolios, and software built to{" "}
                 <span className="bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_45%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent">
-                  does more than exist.
+                  do more than exist.
                 </span>
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-8 text-white/68 sm:text-xl">
-                Rukh Labs designs and builds websites for businesses, brands, and
-                products—plus career portfolios that turn experience into proof.
-                We also create original software, including Glass Squares OS and
-                Farzin.
+                Rukh Labs designs distinctive websites and recruiter-ready career
+                portfolios, and builds original software including Glass Squares
+                OS and Farzin.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
@@ -145,11 +144,11 @@ export default function Home() {
               <div>
                 <Badge tone="slate">Products from the lab</Badge>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  Software we build for ourselves.
+                  Original software built with sharper standards.
                 </h2>
                 <p className="mt-4 max-w-2xl text-lg leading-8 text-white/64">
-                  Our products are where we explore the same standards we bring to
-                  client work: clarity, control, and distinctive design.
+                  Glass Squares OS and Farzin apply the same standards Rukh Labs
+                  brings to client work: clarity, control, and distinctive design.
                 </p>
               </div>
               <Link
@@ -219,9 +218,9 @@ export default function Home() {
                 A desktop OS without the usual mess.
               </h2>
               <p className="mt-6 text-lg leading-8 text-white/64">
-                Glass Squares OS is a Linux-based desktop experience designed
-                around glassy surfaces, square layouts, speed, clarity,
-                compatibility, and control.
+                Glass Squares OS is a Linux-based desktop operating system designed
+                around glassy surfaces, square layouts, speed, compatibility, and
+                control.
               </p>
               <ul className="mt-7 grid gap-3">
                 {osBullets.map((item) => (
@@ -254,11 +253,12 @@ export default function Home() {
             <div>
               <Badge tone="gold">Farzin</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Serious chess training. Less noise.
+                Serious chess training without the circus.
               </h2>
               <p className="mt-6 text-lg leading-8 text-white/64">
-                Farzin is built for players who want sharper review, cleaner
-                study, and an interface that respects their time.
+                Farzin is a premium Android chess training app for focused game
+                review, opening preparation, tactical practice, and progress
+                tracking.
               </p>
               <ul className="mt-7 grid gap-3">
                 {farzinBullets.map((item) => (
@@ -287,7 +287,7 @@ export default function Home() {
               <div>
                 <Badge tone="ivory">Trust</Badge>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  Respect the user. Protect the machine.
+                  How trust shows up in the product.
                 </h2>
               </div>
               <div className="grid gap-5 sm:grid-cols-3">
@@ -332,7 +332,7 @@ export default function Home() {
                 <div>
                   <Badge tone="gold">Start a project</Badge>
                   <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                    Make the next impression count.
+                    Start a project with Rukh Labs.
                   </h2>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">

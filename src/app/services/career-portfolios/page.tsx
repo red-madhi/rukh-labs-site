@@ -30,7 +30,7 @@ import {
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 const pageDescription =
-  "Rukh Labs creates distinctive, recruiter-ready career portfolio websites that turn professional experience into clear, credible proof.";
+  "Rukh Labs creates recruiter-ready career portfolio websites for job searches, turning professional experience into credible case studies and visible proof.";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Career Portfolio Websites",
@@ -170,9 +170,9 @@ export default function CareerPortfoliosPage() {
                 </span>
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-8 text-white/68 sm:text-xl">
-                Custom career sites that help recruiters understand how you
-                think, what you can do, and why your work mattered—before the
-                first interview.
+                Custom career portfolio websites that help recruiters understand
+                how you think, what you can do, and why your work mattered—before
+                the first interview.
               </p>
               <div className="mt-9 flex flex-col gap-3 sm:flex-row">
                 <Link
@@ -304,7 +304,7 @@ export default function CareerPortfoliosPage() {
               <div>
                 <Badge tone="blue">Fictional demonstration</Badge>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  See the idea in motion.
+                  Explore a working career portfolio demo.
                 </h2>
               </div>
               <Link
@@ -354,7 +354,7 @@ export default function CareerPortfoliosPage() {
             <div>
               <Badge tone="gold">Why these prices</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Priced inside the professional market—with a narrower purpose.
+                Professional portfolio design, scoped for a focused hiring goal.
               </h2>
               <p className="mt-5 text-base leading-7 text-white/60">
                 Published benchmarks span cheap DIY tools through large agency
@@ -436,7 +436,7 @@ export default function CareerPortfoliosPage() {
             <div>
               <Badge tone="ivory">Questions</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                The practical details.
+                Career portfolio questions, answered.
               </h2>
               <p className="mt-5 text-base leading-7 text-white/58">
                 Your current domain is usually enough. Privacy and evidence depth
@@ -470,10 +470,10 @@ export default function CareerPortfoliosPage() {
               <div>
                 <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#8aeaff]">
                   <SearchCheck aria-hidden className="size-4" />
-                  Make the next click count
+                  Career portfolio project
                 </p>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  Give the right job a better reason to call.
+                  Turn career claims into visible proof.
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-white/60">
                   Share the roles you are targeting and the proof you already

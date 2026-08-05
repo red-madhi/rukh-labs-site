@@ -34,12 +34,12 @@ export function CareerPortfolioTeaser() {
             <div className="max-w-3xl">
               <Badge tone="blue">Career Portfolio Studio</Badge>
               <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Make your experience easier to believe.
+                A resume says it. A portfolio proves it.
               </h2>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-white/64">
-                Custom portfolio sites for job seekers who need to show how they
-                think, what they built, and why it mattered—without forcing a
-                recruiter to decode a resume alone.
+                Make your experience easier to believe. Custom career portfolio
+                websites show recruiters how you think, what you built, and why
+                it mattered.
               </p>
             </div>
             <Link

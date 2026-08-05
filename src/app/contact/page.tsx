@@ -39,8 +39,8 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
     <>
       <PageHeader
         eyebrow="Contact Rukh Labs"
-        title="Have a project in mind? Let’s talk."
-        description="Start a website or career portfolio project, ask a product question, report a security issue, or discuss a serious partnership. Share the useful details below and get a clear next step."
+        title="Start a project with Rukh Labs."
+        description="Use the form for website projects, career portfolio projects, product questions, partnerships, press inquiries, or security reports. Share the useful details below and get a clear next step."
       />
       <Section>
         <Container className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-start">

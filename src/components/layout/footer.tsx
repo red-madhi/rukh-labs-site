@@ -57,10 +57,11 @@ export function Footer() {
           <div className="max-w-sm">
             <Logo />
             <p className="mt-5 text-sm leading-6 text-white/58">
-              Clean tools. Sharper standards. Beautiful software for people who
-              expect more.
+              Clean tools. Sharper standards.
             </p>
-            <p className="mt-4 text-xs text-white/42">Independent software lab.</p>
+            <p className="mt-4 text-xs text-white/42">
+              Independent digital studio and software lab.
+            </p>
             <a
               href={siteConfig.links.patreon}
               target="_blank"
@@ -82,7 +83,7 @@ export function Footer() {
         </div>
         <div className="mt-12 flex flex-col gap-3 border-t border-[color:var(--brand-red)]/14 pt-6 text-xs text-white/42 sm:flex-row sm:items-center sm:justify-between">
           <span>&copy; 2026 Rukh Labs. All rights reserved.</span>
-          <span>Software should feel powerful again.</span>
+          <span>Websites · Career portfolios · Original software</span>
         </div>
       </Container>
     </footer>

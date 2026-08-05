@@ -24,9 +24,9 @@ export const products: Product[] = [
     category: "Operating System",
     status: "In development",
     shortDescription:
-      "A glassy Linux-based desktop OS focused on speed, privacy, familiar workflows, and a cleaner visual system.",
+      "A Linux-based desktop operating system built around glassy surfaces, square-based layouts, low bloat, and practical compatibility.",
     longDescription:
-      "Glass Squares OS is a Linux-based desktop experience built around glassy surfaces, square-based layouts, low bloat, practical compatibility, and a familiar workflow that does not force normal users to live in a terminal.",
+      "Glass Squares OS is a Linux-based desktop operating system built around glassy surfaces, square-based layouts, low bloat, practical compatibility, and a familiar workflow.",
     features: [
       "Glass shell interface",
       "Square-based layout system",
@@ -40,12 +40,12 @@ export const products: Product[] = [
   {
     slug: "farzin",
     name: "Farzin",
-    category: "Android Chess App",
+    category: "Android Chess Training App",
     status: "Google Play · v1.0.0",
     shortDescription:
-      "A premium chess training app for focused analysis, prep, drills, and serious improvement.",
+      "A premium Android chess training app for focused game review, opening preparation, tactical practice, and progress tracking.",
     longDescription:
-      "Farzin is built for players who want cleaner analysis, sharper prep, and study tools that do not waste their time.",
+      "Farzin is a premium Android chess training app for focused game review, opening preparation, tactical practice, and progress tracking.",
     features: [
       "Game review",
       "Engine-assisted analysis",
@@ -66,7 +66,7 @@ export const labProduct = {
   shortDescription:
     "Experimental tools, utilities, and software ideas from Rukh Labs.",
   longDescription:
-    "Rukh Labs is exploring focused utilities and software ideas that share the same clean, serious product standards.",
+    "Rukh Labs is exploring focused utilities and software ideas alongside its current products.",
   features: ["Research notes", "Utility concepts", "Design experiments"],
   href: "/changelog",
 };

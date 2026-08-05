@@ -10,7 +10,7 @@ import { createPageMetadata } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Products",
   description:
-    "Products from Rukh Labs: Glass Squares OS, Farzin, and future lab projects.",
+    "Explore Rukh Labs software: Glass Squares OS, a Linux desktop OS, and Farzin, an Android chess training app.",
   path: "/products",
 });
 
@@ -19,8 +19,8 @@ export default function ProductsPage() {
     <>
       <PageHeader
         eyebrow="Products"
-        title="Products from Rukh Labs"
-        description="Clean tools for people who are done accepting bloated software."
+        title="Software built with sharper standards."
+        description="Explore Glass Squares OS, Farzin, and future software from Rukh Labs."
       />
       <Section>
         <Container>

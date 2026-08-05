@@ -7,9 +7,9 @@ export const siteConfig = {
   name: "Rukh Labs",
   url: "https://rukhlabs.com",
   contactEmail: "rukh.labs@gmail.com",
-  tagline: "Software should feel powerful again.",
+  tagline: "Clean tools. Sharper standards.",
   description:
-    "Rukh Labs builds clean, secure, beautifully designed software for people who expect more from their tools.",
+    "Rukh Labs is an independent digital studio and software lab creating distinctive websites, recruiter-ready career portfolios, and original software including Glass Squares OS and Farzin.",
   links: {
     patreon: "https://patreon.com/rukhlabs",
     farzinGooglePlay: FARZIN_GOOGLE_PLAY_URL,
@@ -18,11 +18,8 @@ export const siteConfig = {
     careerPortfolioProject: "/contact?inquiry=career-portfolio",
   },
   brandLines: [
-    "Software should feel powerful again.",
-    "Beautiful software for people who expect more.",
-    "Built against bloat.",
     "Clean tools. Sharper standards.",
-    "Independent software lab.",
+    "Independent digital studio and software lab.",
   ],
   navItems: [
     { label: "Products", href: "/products" },

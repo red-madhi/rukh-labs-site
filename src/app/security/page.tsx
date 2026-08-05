@@ -16,9 +16,9 @@ import { Section } from "@/components/ui/section";
 import { createPageMetadata } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Security",
+  title: "Security & Privacy",
   description:
-    "Security, privacy, and trust principles for Rukh Labs products.",
+    "How Rukh Labs approaches privacy, data minimization, permissions, updates, responsible disclosure, and honest security documentation.",
   path: "/security",
 });
 
@@ -61,7 +61,7 @@ export default function SecurityPage() {
       <PageHeader
         eyebrow="Security"
         title="Security is not decoration."
-        description="Rukh Labs products are designed around sane defaults, clear updates, and respect for the user."
+        description="How Rukh Labs approaches privacy, data minimization, permissions, updates, responsible disclosure, and honest security documentation."
       />
       <Section>
         <Container>

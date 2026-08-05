@@ -11,7 +11,7 @@ import { createPageMetadata } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "About",
   description:
-    "Rukh Labs is an independent software lab focused on clean, powerful, privacy-conscious tools.",
+    "Learn how Rukh Labs approaches websites, career portfolios, and original software as an independent digital studio and software lab.",
   path: "/about",
 });
 
@@ -34,7 +34,7 @@ const sections = [
   },
   {
     title: "What we are building",
-    copy: "Glass Squares OS starts with the desktop. Farzin starts with chess training. The lab grows from tools that deserve a higher standard.",
+    copy: "Rukh Labs creates distinctive websites, recruiter-ready career portfolios, Glass Squares OS, Farzin, and future software from the lab.",
   },
 ];
 
@@ -43,8 +43,8 @@ export default function AboutPage() {
     <>
       <PageHeader
         eyebrow="About"
-        title="Rukh Labs builds software with sharper standards."
-        description="Rukh Labs is an independent software lab focused on clean, powerful, privacy-conscious tools. We care about software that feels fast, looks beautiful, and respects the person using it."
+        title="Rukh Labs builds websites, career portfolios, and software with sharper standards."
+        description="An independent digital studio and software lab focused on clear, distinctive, privacy-conscious work that respects the person using it."
       />
       <Section className="pb-0">
         <Container>
