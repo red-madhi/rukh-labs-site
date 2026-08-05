@@ -26,10 +26,10 @@ function StudioTile({ label, meta, tone, children }: StudioTileProps) {
       )}
     >
       <div className="min-h-0 overflow-hidden p-2 sm:p-3">{children}</div>
-      <div className="flex min-w-0 items-center justify-between gap-2 border-t border-white/10 px-2.5 py-2 sm:px-3 sm:py-2.5">
+      <div className="grid min-w-0 gap-0.5 border-t border-white/10 px-2.5 py-2 sm:px-3 sm:py-2.5">
         <span
           className={cn(
-            "truncate text-[9px] font-semibold sm:text-xs",
+            "text-[9px] font-semibold leading-tight sm:text-xs",
             isWeb ? "text-[#93ebff]" : "text-[#c8b9ff]",
           )}
         >
@@ -37,7 +37,7 @@ function StudioTile({ label, meta, tone, children }: StudioTileProps) {
         </span>
         <span
           className={cn(
-            "hidden shrink-0 text-[8px] font-semibold uppercase tracking-[0.16em] sm:inline sm:text-[9px]",
+            "text-[7px] font-semibold uppercase leading-tight tracking-[0.13em] sm:text-[8px]",
             isWeb ? "text-cyan-100/42" : "text-[#d8ceff]/42",
           )}
         >
@@ -88,7 +88,7 @@ export function HeroVisual() {
             <div className="mt-4 flex flex-1 flex-col justify-center sm:mt-5">
               <div className="flex items-center gap-2.5">
                 <span className="grid size-8 place-items-center rounded-full bg-[linear-gradient(135deg,#cabdff,#8255ef)] text-[9px] font-bold text-[#170d2d] sm:size-10 sm:text-xs">
-                  AR
+                  TR
                 </span>
                 <div className="min-w-0">
                   <span className="block h-2.5 w-20 rounded-full bg-white/85" />
