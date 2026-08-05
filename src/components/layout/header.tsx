@@ -65,8 +65,8 @@ export function Header() {
         </nav>
 
         <div className="hidden items-center gap-3 xl:flex">
-          <Link href="/download" className={buttonStyles({ size: "sm" })}>
-            Glass Squares OS Beta
+          <Link href="/contact" className={buttonStyles({ size: "sm" })}>
+            Start a project
           </Link>
         </div>
 
@@ -118,12 +118,12 @@ export function Header() {
               );
             })}
             <Link
-              href="/download"
+              href="/contact"
               tabIndex={open ? undefined : -1}
               onClick={() => setOpen(false)}
               className={buttonStyles({ className: "mt-3 w-full" })}
             >
-              Glass Squares OS Beta
+              Start a project
             </Link>
           </nav>
         </div>
