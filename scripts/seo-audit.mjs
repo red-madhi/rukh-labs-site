@@ -11,6 +11,9 @@ const { seoRoutes, seoRedirects } = await import(
 const { insights } = await import(
   pathToFileURL(path.join(root, "src/lib/insights.ts")).href
 );
+const { shouldShowUpdatedDate } = await import(
+  pathToFileURL(path.join(root, "src/lib/publication.ts")).href
+);
 const { workProjects } = await import(
   pathToFileURL(path.join(root, "src/lib/work.ts")).href
 );
@@ -298,6 +301,8 @@ try {
     (pages.get("/contact")?.html ?? "").includes("hello@rukhlabs.com"),
     "Contact page exposes the public hello@rukhlabs.com address",
   );
+  check(!shouldShowUpdatedDate("2026-08-05", "2026-08-05"), "Publication meta hides the Updated label when dates match");
+  check(shouldShowUpdatedDate("2026-08-05", "2026-08-20"), "Publication meta shows the Updated label when dates differ");
 
   const fictionalDemoHeading = "Fictional working website demonstrations";
   const fictionalDemoDisclosure = "All names, businesses, addresses, audiences, testimonials, and results shown in these demonstrations are invented for design and functionality examples.";
@@ -372,14 +377,24 @@ try {
       new RegExp(`dateTime=\"${insight.publishedOn}\"`, "i").test(page?.html ?? ""),
       `${route} exposes its publication date`,
     );
-    check(
-      new RegExp(`dateTime=\"${insight.modifiedOn}\"`, "i").test(page?.html ?? ""),
-      `${route} exposes its modified date`,
-    );
+    const updatedDateMarkup = `<time dateTime="${insight.modifiedOn}">Updated`;
+    if (insight.modifiedOn === insight.publishedOn) {
+      check(!page?.html.includes(updatedDateMarkup), `${route} hides its same-day Updated label`);
+    } else {
+      check(page?.html.includes(updatedDateMarkup), `${route} exposes its later Updated date`);
+    }
     check(jsonLd.some((value) => value?.["@type"] === insight.schemaType), `${route} emits ${insight.schemaType} structured data`);
     check(renderedText(page?.html ?? "").includes("By Rukh Labs"), `${route} visibly uses the Rukh Labs byline`);
     check(getMeta(page?.html ?? "", "name", "author") === "Rukh Labs", `${route} metadata author is Rukh Labs`);
     const article = jsonLd.find((value) => value?.["@type"] === insight.schemaType);
+    check(
+      Array.isArray(article?.image) &&
+        article.image.length === 1 &&
+        article.image[0] === `${canonicalOrigin}/insights/${insight.slug}/opengraph-image` &&
+        article.inLanguage === "en-US" &&
+        article.isPartOf?.["@id"] === `${canonicalOrigin}/#website`,
+      `${route} structured data includes image, language, and website membership`,
+    );
     for (const role of ["author", "publisher"]) {
       check(
         article?.[role]?.["@type"] === "Organization" &&

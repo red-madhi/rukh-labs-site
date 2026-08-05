@@ -1,3 +1,5 @@
+import { shouldShowUpdatedDate } from "@/lib/publication";
+
 export function formatPublicationDate(value: string) {
   return new Intl.DateTimeFormat("en-US", {
     month: "long",
@@ -21,8 +23,12 @@ export function PublicationMeta({
       <span>By {byline}</span>
       <span aria-hidden>•</span>
       <time dateTime={publishedOn}>Published {formatPublicationDate(publishedOn)}</time>
-      <span aria-hidden>•</span>
-      <time dateTime={modifiedOn}>Updated {formatPublicationDate(modifiedOn)}</time>
+      {shouldShowUpdatedDate(publishedOn, modifiedOn) ? (
+        <>
+          <span aria-hidden>•</span>
+          <time dateTime={modifiedOn}>Updated {formatPublicationDate(modifiedOn)}</time>
+        </>
+      ) : null}
     </p>
   );
 }
