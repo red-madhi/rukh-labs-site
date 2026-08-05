@@ -21,6 +21,7 @@ export type SeoRoute = {
 };
 
 export const SEO_CONTENT_UPDATED = "2026-08-04";
+const SEO_ABOUT_UPDATED = "2026-08-05";
 
 export const seoRoutes: readonly SeoRoute[] = [
   { path: "/", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "weekly", priority: 1, indexable: true, follow: true, classification: "indexable" },
@@ -33,7 +34,7 @@ export const seoRoutes: readonly SeoRoute[] = [
   { path: "/download", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/changelog", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "weekly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/security", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "yearly", priority: 0.5, indexable: true, follow: true, classification: "indexable" },
-  { path: "/about", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "yearly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
+  { path: "/about", lastModified: SEO_ABOUT_UPDATED, changeFrequency: "yearly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/contact", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "yearly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
   { path: "/legal/privacy", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "yearly", priority: 0.3, indexable: true, follow: true, classification: "indexable" },
   { path: "/services/web-development/designs/obsidian", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "yearly", priority: 0.5, indexable: true, follow: true, classification: "indexable" },

@@ -1,18 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { BrandBanner } from "@/components/brand/brand-banner";
-import { StructuredData } from "@/components/seo/structured-data";
 import { Badge } from "@/components/ui/badge";
-import { buttonStyles } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { PageHeader } from "@/components/ui/page-header";
 import { Reveal } from "@/components/ui/reveal";
 import { Section } from "@/components/ui/section";
-import { createPageMetadata, siteConfig } from "@/lib/site-config";
+import { createPageMetadata } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "About Rukh Labs and Founder Brett Gallaher",
+  title: "About Rukh Labs",
   description:
     "Learn how Rukh Labs approaches websites, career portfolios, and original software as an independent digital studio and software lab.",
   path: "/about",
@@ -42,35 +39,8 @@ const sections = [
 ];
 
 export default function AboutPage() {
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    "@id": `${siteConfig.url}/about#brett-gallaher`,
-    name: "Brett Gallaher",
-    url: `${siteConfig.url}/about`,
-    jobTitle: "Founder and operator of Rukh Labs",
-    worksFor: {
-      "@type": "Organization",
-      "@id": `${siteConfig.url}/#organization`,
-      name: siteConfig.name,
-      url: siteConfig.url,
-    },
-    knowsAbout: [
-      "Business intelligence",
-      "Analytics",
-      "Data visualization",
-      "Technical systems",
-      "Power BI",
-      "DAX",
-      "Power Query",
-      "Software development",
-      "Product development",
-    ],
-  };
-
   return (
     <>
-      <StructuredData data={structuredData} />
       <PageHeader
         eyebrow="About"
         title="Rukh Labs builds websites, career portfolios, and software with sharper standards."
@@ -88,32 +58,23 @@ export default function AboutPage() {
           <Reveal>
             <Card className="grid gap-8 border-[#16c8ff]/20 bg-[linear-gradient(135deg,rgba(22,200,255,0.07),rgba(240,0,28,0.05),rgba(255,255,255,0.025))] p-6 sm:p-8 lg:grid-cols-[0.72fr_1.28fr] lg:p-10">
               <div>
-                <Badge tone="blue">Founder and operator</Badge>
+                <Badge tone="blue">Independent studio</Badge>
                 <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  Brett Gallaher
+                  Built around the work.
                 </h2>
               </div>
               <div>
                 <p className="text-lg leading-8 text-white/68">
-                  Rukh Labs is founded and operated by Brett Gallaher. His
-                  professional background spans business intelligence, analytics,
-                  data visualization, and technical systems, including Power BI,
-                  DAX, and Power Query.
+                  Rukh Labs combines analytical thinking, technical systems, and
+                  product craft to make websites and software that are clear,
+                  distinctive, and useful.
                 </p>
                 <p className="mt-5 text-base leading-7 text-white/58">
-                  That analytical foundation now extends into software and product
-                  development: custom websites, career portfolios, Farzin, and
-                  Glass Squares OS. Rukh Labs works with clients remotely and keeps
-                  every engagement founder-led.
+                  The studio works remotely across custom websites, career
+                  portfolios, Farzin, Glass Squares OS, and future software from
+                  the lab. Every project starts with what needs to be understood,
+                  then gives it a sharper shape.
                 </p>
-                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-                  <Link href="/services/web-development" className={buttonStyles({ variant: "secondary" })}>
-                    Website design services
-                  </Link>
-                  <Link href="/services/career-portfolios" className={buttonStyles({ variant: "ghost" })}>
-                    Career portfolio services
-                  </Link>
-                </div>
               </div>
             </Card>
           </Reveal>
