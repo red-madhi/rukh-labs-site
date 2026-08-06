@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { FormEvent, useRef, useState } from "react";
 import {
@@ -254,7 +254,7 @@ export function ContactForm({
       return;
     }
 
-    trackEvent("contact_form_submit", {
+    trackEvent("contact_email_draft_opened", {
       inquiry_type: form.reason,
       source_page: "/contact",
     });
