@@ -1,4 +1,4 @@
-import { track } from "@vercel/analytics";
+﻿import { track } from "@vercel/analytics";
 
 type EventProperties = Record<string, string | number | boolean | null | undefined>;
 
@@ -6,7 +6,7 @@ type AnalyticsEvents = {
   website_package_click: { package_id: string; source_page: string };
   career_package_click: { package_id: string; source_page: string };
   contact_form_start: { inquiry_type: string; source_page: string };
-  contact_form_submit: { inquiry_type: string; source_page: string };
+  contact_email_draft_opened: { inquiry_type: string; source_page: string };
   email_click: { source_page: string };
   google_play_click: { product: "farzin"; source_page: string };
   glass_squares_waitlist_submit: { product: "glass-squares-os"; source_page: string };
