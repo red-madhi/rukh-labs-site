@@ -10,7 +10,7 @@ import { createPageMetadata, siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Free Bluesky Network Explorer",
   description:
-    "Scan a Bluesky account's public follower graph, discover commonly followed accounts, rank them by network overlap and follower reach, and open profiles to follow manually.",
+    "Analyze a Bluesky follower network, discover commonly followed accounts, and rank them by shared connections, overlap percentage, and follower reach.",
   path: "/tools/bluesky-network",
   image: {
     url: "/opengraph-image",
