@@ -1,0 +1,123 @@
+import type { Metadata } from "next";
+import { BlueskyNetworkExplorer } from "@/components/tools/bluesky-network-explorer";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { StructuredData } from "@/components/seo/structured-data";
+import { Badge } from "@/components/ui/badge";
+import { Container } from "@/components/ui/container";
+import { Section } from "@/components/ui/section";
+import { createPageMetadata, siteConfig } from "@/lib/site-config";
+
+export const metadata: Metadata = createPageMetadata({
+  title: "Free Bluesky Network Explorer",
+  description:
+    "Scan a Bluesky account's public follower graph, discover commonly followed accounts, rank them by network overlap and follower reach, and open profiles to follow manually.",
+  path: "/tools/bluesky-network",
+  image: {
+    url: "/opengraph-image",
+    width: 1200,
+    height: 630,
+    alt: "Rukh Labs Bluesky Network Explorer",
+  },
+  keywords: [
+    "Bluesky network explorer",
+    "Bluesky follower analysis",
+    "AT Protocol tool",
+    "Bluesky discovery tool",
+    "social graph analysis",
+  ],
+});
+
+export default function BlueskyNetworkPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "@id": `${siteConfig.url}/tools/bluesky-network#application`,
+    name: "Bluesky Network Explorer",
+    applicationCategory: "UtilitiesApplication",
+    operatingSystem: "Any",
+    url: `${siteConfig.url}/tools/bluesky-network`,
+    description:
+      "A free browser-based tool that analyzes public Bluesky follower connections and ranks second-degree accounts by network overlap and follower reach.",
+    provider: {
+      "@type": "Organization",
+      "@id": `${siteConfig.url}/#organization`,
+      name: siteConfig.name,
+    },
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+    },
+    featureList: [
+      "Public Bluesky follower graph scanning",
+      "Network overlap ranking",
+      "Follower reach ranking",
+      "Local resumable scans",
+      "CSV export",
+      "Manual profile and follow links",
+    ],
+  };
+
+  return (
+    <>
+      <StructuredData data={structuredData} />
+      <div className="border-b border-white/10 bg-black/15">
+        <Container className="py-4">
+          <Breadcrumbs
+            items={[
+              { name: "Home", path: "/" },
+              { name: "Products", path: "/products" },
+              { name: "Bluesky Network Explorer", path: "/tools/bluesky-network" },
+            ]}
+          />
+        </Container>
+      </div>
+
+      <Section className="relative overflow-hidden border-b border-white/10">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f0001c_35%,#16c8ff_65%,transparent)]" />
+        <Container>
+          <div className="max-w-5xl">
+            <Badge tone="blue">Free · No signup · Public Bluesky data</Badge>
+            <h1 className="mt-6 text-4xl font-semibold leading-[1.02] tracking-[-0.045em] text-white sm:text-6xl lg:text-7xl">
+              Find the accounts your network already knows.
+            </h1>
+            <p className="mt-6 max-w-3xl text-lg leading-8 text-white/68 sm:text-xl">
+              Scan an account&apos;s followers, see who those followers follow, and rank the strongest second-degree connections by overlap percentage, shared count, and public follower reach.
+            </p>
+            <div className="mt-8 grid gap-3 text-sm text-white/54 sm:grid-cols-3">
+              <span className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3">
+                No Bluesky password or app password
+              </span>
+              <span className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3">
+                Scan progress stays in your browser
+              </span>
+              <span className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3">
+                Every follow remains your choice
+              </span>
+            </div>
+          </div>
+        </Container>
+      </Section>
+
+      <Section className="bg-white/[0.012]">
+        <Container>
+          <BlueskyNetworkExplorer />
+        </Container>
+      </Section>
+
+      <Section className="border-t border-white/10">
+        <Container className="max-w-4xl">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 text-sm leading-7 text-white/54 sm:p-7">
+            <p className="font-semibold text-white">Important limits and affiliation</p>
+            <p className="mt-3">
+              Full social graphs can be extremely large. Quick and Balanced modes intentionally sample the graph; Complete Graph mode may take substantial browser time and public API traffic. Percentages always use the number of follower accounts successfully scanned, which is shown beside the results.
+            </p>
+            <p className="mt-3">
+              Rukh Labs is not affiliated with Bluesky Social PBC. This tool reads public AT Protocol data and opens official Bluesky profile pages for any follow action. It does not automate bulk follows.
+            </p>
+          </div>
+        </Container>
+      </Section>
+    </>
+  );
+}
