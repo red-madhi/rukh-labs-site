@@ -6,6 +6,7 @@ export type Product = {
     | "In development"
     | "Beta waitlist"
     | "Google Play · v1.0.0"
+    | "Free web app"
     | "Research"
     | "Prototype"
     | "Roadmap";
@@ -57,14 +58,21 @@ export const products: Product[] = [
 ];
 
 export const labProduct = {
-  slug: "lab",
-  name: "More coming",
-  category: "Lab Projects",
-  status: "Research" as const,
+  slug: "bluesky-network",
+  name: "Bluesky Network Explorer",
+  category: "Free Web App",
+  status: "Free web app" as const,
   shortDescription:
-    "Experimental tools, utilities, and software ideas from Rukh Labs.",
+    "Find the accounts your Bluesky followers already know, ranked by network overlap and follower reach.",
   longDescription:
-    "Rukh Labs is exploring focused utilities and software ideas alongside its current products.",
-  features: ["Research notes", "Utility concepts", "Design experiments"],
-  href: "/changelog",
+    "Bluesky Network Explorer is a free browser-based social-graph tool that scans public follower connections, ranks commonly followed accounts, explains every match, and keeps resumable progress on the user's device.",
+  features: [
+    "Second-degree discovery",
+    "Overlap and reach ranking",
+    "Local resumable scans",
+    "Shared-connection explanations",
+    "CSV export",
+    "Manual follow links",
+  ],
+  href: "/tools/bluesky-network",
 };
