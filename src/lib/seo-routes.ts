@@ -39,7 +39,7 @@ export const seoRoutes: readonly SeoRoute[] = [
   { path: "/products/glass-squares-os", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.9, indexable: true, follow: true, classification: "indexable" },
   { path: "/download", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/changelog", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "weekly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
-  { path: "/security", lastModified: SEO_CONTENT_UPDATED, chaneFrequency: "yearly", priority: 0.5, indexable: true, follow: true, classification: "indexable" },
+  { path: "/security", lastModified: SEO_CONTENT_UPDATED,changeFrequency: "yearly", priority: 0.5, indexable: true,follow: true, classification: "indexable" },
   { path: "/about", lastModified: SEO_ABOUT_UPDATED, changeFrequency: "yearly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/contact", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "yearly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
   { path: "/work", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
