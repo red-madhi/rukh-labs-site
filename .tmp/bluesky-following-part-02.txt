@@ -1,0 +1,228 @@
+        "Overlap %",
+        "Discovery score",
+        "Hidden gem score",
+        "Already following",
+        "Profile URL",
+      ],
+      ...filtered.map((item, index) => [
+        index + 1,
+        item.displayName || "",
+        item.handle,
+        item.followersCount ?? 0,
+        item.sharedCount,
+        item.overlapPct.toFixed(4),
+        item.discoveryScore,
+        item.hiddenGemScore,
+        item.alreadyFollowing,
+        `https://bsky.app/profile/${item.handle}`,
+      ]),
+    ];
+    const blob = new Blob([rows.map((row) => row.map(csvCell).join(",")).join("\n")], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${actor?.handle || "bluesky"}-following-network-explorer.csv`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  }
+
+  return (
+    <div className="grid gap-6">
+      <p className="sr-only" aria-live="polite">{message}{error ? ` ${error}` : ""}</p>
+
+      <Card className="p-5 sm:p-7">
+        <form onSubmit={setupScan} className="grid gap-6">
+          <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+            <label className="grid gap-2 text-sm font-medium text-white/78">
+              Bluesky handle or profile URL
+              <div className="relative">
+                <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-white/36">@</span>
+                <input
+                  value={handle}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) => setHandle(event.target.value)}
+                  className={cn(inputClass, "pl-8")}
+                  placeholder="handle.bsky.social"
+                  autoComplete="off"
+                  spellCheck={false}
+                  disabled={running}
+                />
+              </div>
+            </label>
+            <Button type="submit" size="lg" disabled={running}>
+              {phase === "loading" ? (
+                <LoaderCircle aria-hidden className="size-4 animate-spin" />
+              ) : (
+                <Network aria-hidden className="size-4" />
+              )}
+              Analyze following graph
+            </Button>
+          </div>
+
+          <fieldset disabled={running}>
+            <legend className="text-sm font-medium text-white/78">Scan depth</legend>
+            <div className="mt-3 grid gap-3 lg:grid-cols-3">
+              {(Object.keys(SCAN_MODE_COPY) as ScanMode[]).map((key) => {
+                const copy = SCAN_MODE_COPY[key];
+                const selectedMode = key === mode;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setMode(key)}
+                    className={cn(
+                      "rounded-xl border p-4 text-left transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#16c8ff]",
+                      selectedMode
+                        ? "border-[#16c8ff]/55 bg-[#16c8ff]/10"
+                        : "border-white/10 bg-white/[0.025] hover:border-white/20",
+                    )}
+                  >
+                    <span className="flex items-center justify-between gap-3 font-semibold text-white">
+                      {copy.name}
+                      {selectedMode ? <Check aria-hidden className="size-4 text-[#8ce8ff]" /> : null}
+                    </span>
+                    <span className="mt-2 block text-sm leading-6 text-white/56">{copy.description}</span>
+                    <span className="mt-3 block text-xs leading-5 text-white/36">{copy.detail}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <label className="grid max-w-md gap-2 text-sm text-white/68">
+            Minimum shared followed accounts before profile lookup
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={minShared}
+              onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                setMinShared(Math.min(100, Math.max(1, Number(event.target.value) || 1)))
+              }
+              className={inputClass}
+              disabled={running}
+            />
+            <span className="text-xs leading-5 text-white/38">
+              Use 1 for a small or highly varied following list. Higher values emphasize repeated recommendations.
+            </span>
+          </label>
+        </form>
+      </Card>
+
+      {error ? (
+        <div role="alert" className="flex items-start gap-3 rounded-xl border border-[#ff5364]/35 bg-[#ff5364]/10 p-4 text-sm leading-6 text-[#ffd1d5]">
+          <AlertTriangle aria-hidden className="mt-0.5 size-5 shrink-0" />
+          <div><p className="font-semibold">The scan hit a problem.</p><p className="text-[#ffd1d5]/78">{error}</p></div>
+        </div>
+      ) : null}
+      {storageWarning ? (
+        <div className="flex items-start gap-3 rounded-xl border border-[#f4bd43]/25 bg-[#f4bd43]/8 p-4 text-sm leading-6 text-[#ffe4a0]">
+          <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />{storageWarning}
+        </div>
+      ) : null}
+
+      {actor || phase !== "idle" ? (
+        <Card className="p-5 sm:p-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex min-w-0 items-center gap-4">
+              {actor ? <Avatar profile={actor} className="size-14" /> : null}
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#8ce8ff]">
+                  {phase === "complete" ? "Following graph analyzed" : phase === "paused" ? "Scan paused" : "Curated graph scan"}
+                </p>
+                <h2 className="mt-1 truncate text-xl font-semibold text-white">
+                  {actor?.displayName || actor?.handle || "Preparing scan"}
+                </h2>
+                {actor ? <p className="truncate text-sm text-white/46">@{actor.handle}</p> : null}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {running ? (
+                <Button variant="secondary" size="sm" onClick={pause}>
+                  <Pause aria-hidden className="size-4" />{phase === "loading" ? "Cancel" : "Pause"}
+                </Button>
+              ) : null}
+              {(phase === "paused" || phase === "error") && runtime ? (
+                <Button size="sm" onClick={resume}><Play aria-hidden className="size-4" />Resume</Button>
+              ) : null}
+              {failed > 0 && !running ? (
+                <Button variant="secondary" size="sm" onClick={retryFailed}>
+                  <RefreshCw aria-hidden className="size-4" />Retry failed
+                </Button>
+              ) : null}
+              <Button variant="ghost" size="sm" onClick={() => void startOver()}>
+                <Trash2 aria-hidden className="size-4" />Start over
+              </Button>
+            </div>
+          </div>
+          <div className="mt-6">
+            <div className="flex items-center justify-between gap-4 text-xs text-white/46">
+              <span>{message}</span>
+              <span className="shrink-0 tabular-nums">{formatExactCount(attempted)} / {formatExactCount(sources.length)}</span>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className={cn(
+                  "h-full rounded-full bg-gradient-to-r from-[#f0001c] via-[#16c8ff] to-[#9a6dff] transition-[width]",
+                  phase === "loading" && "w-1/3 animate-pulse",
+                )}
+                style={phase === "loading" ? undefined : { width: `${percent}%` }}
+              />
+            </div>
+          </div>
+          <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Metric label="Following scanned" value={`${formatExactCount(processed)} / ${formatExactCount(sources.length)}`} />
+            <Metric label="Candidates found" value={formatExactCount(candidates.length)} />
+            <Metric label="Profiles ranked" value={formatExactCount(ranked.length)} />
+            <Metric label="Public API requests" value={formatExactCount(requests)} />
+          </dl>
+          {runtime ? (
+            <div className="mt-5 flex flex-wrap gap-2 text-xs">
+              <span className="rounded-full border border-[#16c8ff]/25 bg-[#16c8ff]/8 px-3 py-1 text-[#8ce8ff]">
+                Curated graph: people this profile follows
+              </span>
+              <span className={cn(
+                "rounded-full border px-3 py-1",
+                graphComplete
+                  ? "border-[#16c8ff]/30 bg-[#16c8ff]/8 text-[#8ce8ff]"
+                  : "border-white/10 bg-white/[0.035] text-white/52",
+              )}>
+                {graphComplete ? "Complete graph scan" : "Sampled or partial graph scan"}
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1 text-white/52">
+                Overlap denominator: {formatExactCount(processed)} successful followed-account scans
+              </span>
+              {!runtime.targetFollowingComplete ? (
+                <span className="rounded-full border border-[#f4bd43]/25 bg-[#f4bd43]/8 px-3 py-1 text-[#ffe4a0]">
+                  Source list and already-following filter are partial
+                </span>
+              ) : null}
+              {failed ? (
+                <span className="rounded-full border border-[#ff5364]/25 bg-[#ff5364]/8 px-3 py-1 text-[#ffb4b8]">
+                  {formatExactCount(failed)} followed-account scans failed
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {ranked.length ? (
+        <div className="grid gap-5">
+          <Card className="p-5 sm:p-7">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.15em] text-[#8ce8ff]">Ranked people to follow</p>
+                <h2 className="mt-2 text-2xl font-semibold text-white sm:text-3xl">
+                  Accounts your chosen network already knows.
+                </h2>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-white/56">
+                  Each account is recommended by people this profile deliberately follows. Discovery Score weights normalized overlap at 65% and log-scaled reach at 35%, while every raw input remains visible.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {remainingProfiles > 0 && !running ? (
+                  <Button size="sm" onClick={() => void loadMoreProfiles()}>
