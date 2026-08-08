@@ -4,6 +4,12 @@ const DATABASE_NAME = "rukh-labs-network-explorer";
 const STORE_NAME = "scans";
 const DATABASE_VERSION = 1;
 
+export type ScanStorageKey = "followers" | "following";
+
+function storageId(key: ScanStorageKey) {
+  return `latest:${key}`;
+}
+
 function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
     if (!("indexedDB" in window)) {
@@ -48,17 +54,33 @@ async function withStore<T>(
   }
 }
 
-export async function saveScan(snapshot: ScanSnapshot) {
-  await withStore("readwrite", (store) => store.put(snapshot));
+export async function saveScan(
+  snapshot: ScanSnapshot,
+  key: ScanStorageKey = "followers",
+) {
+  await withStore("readwrite", (store) =>
+    store.put({ ...snapshot, id: storageId(key) }),
+  );
 }
 
-export async function loadLatestScan() {
-  const result = await withStore<ScanSnapshot | undefined>("readonly", (store) =>
-    store.get("latest"),
+export async function loadLatestScan(key: ScanStorageKey = "followers") {
+  let result = await withStore<ScanSnapshot | undefined>("readonly", (store) =>
+    store.get(storageId(key)),
   );
+
+  // The first release saved follower scans under the literal key "latest".
+  if (!result && key === "followers") {
+    result = await withStore<ScanSnapshot | undefined>("readonly", (store) =>
+      store.get("latest"),
+    );
+  }
+
   return result ?? null;
 }
 
-export async function deleteLatestScan() {
-  await withStore("readwrite", (store) => store.delete("latest"));
+export async function deleteLatestScan(key: ScanStorageKey = "followers") {
+  await withStore("readwrite", (store) => store.delete(storageId(key)));
+  if (key === "followers") {
+    await withStore("readwrite", (store) => store.delete("latest"));
+  }
 }
