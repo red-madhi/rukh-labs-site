@@ -1,0 +1,309 @@
+"use client";
+
+import {
+  type ChangeEvent,
+  type FormEvent,
+  type MouseEvent as ReactMouseEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Check,
+  Download,
+  Eye,
+  LoaderCircle,
+  Network,
+  Pause,
+  Play,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
+import { Button, buttonStyles } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import {
+  SCAN_MODE_COPY,
+  collectFollows,
+  createScanOptions,
+  csvCell,
+  errorMessage,
+  fetchProfile,
+  fetchProfiles,
+  formatCount,
+  formatExactCount,
+  isAbortError,
+  normalizeActorInput,
+  rankCandidates,
+  type BlueskyProfile,
+  type FailedFollower,
+  type NetworkCandidate,
+  type SavedScanStage,
+  type ScanMode,
+  type ScanOptions,
+  type ScanSnapshot,
+} from "@/lib/bluesky-network";
+import {
+  deleteLatestScan,
+  loadLatestScan,
+  saveScan,
+} from "@/lib/bluesky-network-storage";
+
+const STORAGE_KEY = "following" as const;
+const OWN_FOLLOWS_CAP = 20_000;
+const inputClass =
+  "w-full rounded-lg border border-white/12 bg-[#090707]/80 px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/34 focus:border-[#16c8ff]/65 focus:ring-4 focus:ring-[#16c8ff]/10";
+
+type Phase = "idle" | "loading" | "scanning" | "hydrating" | "paused" | "complete" | "error";
+type SortKey = "score" | "overlap" | "shared" | "followers" | "hidden";
+type Runtime = {
+  actor: BlueskyProfile;
+  options: ScanOptions;
+  sources: BlueskyProfile[];
+  sourcesComplete: boolean;
+  targetFollowing: Set<string>;
+  targetFollowingComplete: boolean;
+  processed: Set<string>;
+  failed: Map<string, FailedFollower>;
+  candidates: Map<string, NetworkCandidate>;
+  createdAt: string;
+};
+
+function fromSnapshot(snapshot: ScanSnapshot): Runtime {
+  return {
+    actor: snapshot.actor,
+    options: { ...snapshot.options, source: "following" },
+    sources: snapshot.followers,
+    sourcesComplete: snapshot.followersComplete,
+    targetFollowing: new Set(snapshot.targetFollowingDids),
+    targetFollowingComplete: snapshot.targetFollowingComplete,
+    processed: new Set(snapshot.processedFollowerDids),
+    failed: new Map(snapshot.failedFollowers.map((item) => [item.did, item])),
+    candidates: new Map(snapshot.candidates.map((item) => [item.did, item])),
+    createdAt: snapshot.createdAt,
+  };
+}
+
+function toSnapshot(runtime: Runtime, stage: SavedScanStage): ScanSnapshot {
+  return {
+    version: 1,
+    id: "latest",
+    actor: runtime.actor,
+    options: runtime.options,
+    followers: runtime.sources,
+    followersComplete: runtime.sourcesComplete,
+    targetFollowingDids: [...runtime.targetFollowing],
+    targetFollowingComplete: runtime.targetFollowingComplete,
+    processedFollowerDids: [...runtime.processed],
+    failedFollowers: [...runtime.failed.values()],
+    candidates: [...runtime.candidates.values()],
+    stage,
+    createdAt: runtime.createdAt,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function selectEvenly(profiles: readonly BlueskyProfile[], maximum: number | null) {
+  if (maximum === null || profiles.length <= maximum) return [...profiles];
+  if (maximum <= 1) return profiles.slice(0, 1);
+  const step = (profiles.length - 1) / (maximum - 1);
+  return Array.from({ length: maximum }, (_, index) => profiles[Math.round(index * step)]);
+}
+
+function mergeCandidate(runtime: Runtime, profile: BlueskyProfile, sourceDid: string) {
+  if (profile.did === runtime.actor.did) return;
+  const current = runtime.candidates.get(profile.did);
+  if (current) {
+    if (!current.sharedBy.includes(sourceDid)) current.sharedBy.push(sourceDid);
+    current.displayName ||= profile.displayName;
+    current.description ||= profile.description;
+    current.avatar ||= profile.avatar;
+    return;
+  }
+  runtime.candidates.set(profile.did, {
+    ...profile,
+    sharedBy: [sourceDid],
+    alreadyFollowing: runtime.targetFollowing.has(profile.did),
+    profileLoaded: false,
+  });
+}
+
+function applyProfile(candidate: NetworkCandidate, profile: BlueskyProfile) {
+  Object.assign(candidate, profile, {
+    sharedBy: candidate.sharedBy,
+    alreadyFollowing: candidate.alreadyFollowing,
+    profileLoaded: true,
+    profileUnavailable: false,
+  });
+}
+
+function Avatar({ profile, className }: { profile: BlueskyProfile; className?: string }) {
+  const label = profile.displayName || profile.handle;
+  const initials = label
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("");
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "grid shrink-0 place-items-center rounded-full border border-white/12 bg-gradient-to-br from-[#16c8ff]/25 to-[#9a6dff]/20 bg-cover bg-center text-xs font-semibold text-white/80",
+        className,
+      )}
+      style={profile.avatar ? { backgroundImage: `url(${profile.avatar})` } : undefined}
+    >
+      {profile.avatar ? null : initials || "?"}
+    </span>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-white/8 bg-black/15 px-3 py-3">
+      <dt className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-white/38">{label}</dt>
+      <dd className="mt-1.5 text-base font-semibold text-white">{value}</dd>
+    </div>
+  );
+}
+
+export function BlueskyFollowingExplorer() {
+  const runtimeRef = useRef<Runtime | null>(null);
+  const controllerRef = useRef<AbortController | null>(null);
+  const pauseRequested = useRef(false);
+  const requestCount = useRef(0);
+
+  const [handle, setHandle] = useState("");
+  const [mode, setMode] = useState<ScanMode>("balanced");
+  const [minShared, setMinShared] = useState(2);
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [actor, setActor] = useState<BlueskyProfile | null>(null);
+  const [sources, setSources] = useState<BlueskyProfile[]>([]);
+  const [candidates, setCandidates] = useState<NetworkCandidate[]>([]);
+  const [processed, setProcessed] = useState(0);
+  const [failed, setFailed] = useState(0);
+  const [requests, setRequests] = useState(0);
+  const [message, setMessage] = useState("Enter a Bluesky handle to begin.");
+  const [error, setError] = useState("");
+  const [storageWarning, setStorageWarning] = useState("");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortKey>("score");
+  const [resultMinShared, setResultMinShared] = useState(2);
+  const [minFollowers, setMinFollowers] = useState(0);
+  const [minOverlap, setMinOverlap] = useState(0);
+  const [hideFollowing, setHideFollowing] = useState(true);
+  const [shown, setShown] = useState(100);
+  const [selectedDid, setSelectedDid] = useState<string | null>(null);
+
+  const running = phase === "loading" || phase === "scanning" || phase === "hydrating";
+  const runtime = runtimeRef.current;
+  const attempted = processed + failed;
+  const percent = sources.length ? Math.min(100, (attempted / sources.length) * 100) : 0;
+
+  function countRequest() {
+    requestCount.current += 1;
+    setRequests(requestCount.current);
+  }
+
+  function sync(nextMessage?: string) {
+    const current = runtimeRef.current;
+    if (!current) return;
+    setActor(current.actor);
+    setSources(current.sources);
+    setCandidates([...current.candidates.values()]);
+    setProcessed(current.processed.size);
+    setFailed(current.failed.size);
+    setRequests(requestCount.current);
+    if (nextMessage) setMessage(nextMessage);
+  }
+
+  async function persist(stage: SavedScanStage) {
+    const current = runtimeRef.current;
+    if (!current) return;
+    try {
+      await saveScan(toSnapshot(current, stage), STORAGE_KEY);
+      setStorageWarning("");
+    } catch {
+      setStorageWarning("Progress could not be stored locally. Keep this tab open until the scan finishes.");
+    }
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadLatestScan(STORAGE_KEY)
+      .then((snapshot) => {
+        if (!snapshot || cancelled) return;
+        const restored = fromSnapshot(snapshot);
+        runtimeRef.current = restored;
+        setHandle(restored.actor.handle);
+        setMode(restored.options.mode);
+        setMinShared(restored.options.minShared);
+        setResultMinShared(restored.options.minShared);
+        setPhase(snapshot.stage === "complete" ? "complete" : "paused");
+        setMessage(
+          snapshot.stage === "complete"
+            ? "Saved following-graph results restored from this browser."
+            : "An unfinished following-graph scan is ready to resume.",
+        );
+        sync();
+      })
+      .catch(() => {
+        if (!cancelled) setStorageWarning("Local resume storage is unavailable in this browser.");
+      });
+    return () => {
+      cancelled = true;
+      controllerRef.current?.abort();
+    };
+  }, []);
+
+
+  useEffect(() => {
+    if (!selectedDid) return;
+    const close = (event: KeyboardEvent) => event.key === "Escape" && setSelectedDid(null);
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [selectedDid]);
+
+  const ranked = useMemo(() => rankCandidates(candidates, processed), [candidates, processed]);
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return ranked
+      .filter((item) => item.sharedCount >= resultMinShared)
+      .filter((item) => (item.followersCount ?? 0) >= minFollowers)
+      .filter((item) => item.overlapPct >= minOverlap)
+      .filter((item) => !hideFollowing || !item.alreadyFollowing)
+      .filter((item) => {
+        if (!query) return true;
+        return [item.displayName, item.handle, item.description]
+          .filter(Boolean)
+          .some((value) => value!.toLowerCase().includes(query));
+      })
+      .sort((a, b) => {
+        if (sort === "overlap") return b.overlapPct - a.overlapPct || b.sharedCount - a.sharedCount;
+        if (sort === "shared") return b.sharedCount - a.sharedCount || b.overlapPct - a.overlapPct;
+        if (sort === "followers") return (b.followersCount ?? 0) - (a.followersCount ?? 0);
+        if (sort === "hidden") return b.hiddenGemScore - a.hiddenGemScore || b.overlapPct - a.overlapPct;
+        return b.discoveryScore - a.discoveryScore || b.overlapPct - a.overlapPct;
+      });
+  }, [ranked, search, resultMinShared, minFollowers, minOverlap, hideFollowing, sort]);
+
+  const sourceByDid = useMemo(() => new Map(sources.map((item) => [item.did, item])), [sources]);
+  const selected = selectedDid ? ranked.find((item) => item.did === selectedDid) ?? null : null;
+  const selectedConnections = selected
+    ? selected.sharedBy
+        .map((did) => sourceByDid.get(did))
+        .filter((item): item is BlueskyProfile => Boolean(item))
+        .slice(0, 250)
+    : [];
+  const remainingProfiles = runtime
+    ? [...runtime.candidates.values()].filter(
+        (item) => item.sharedBy.length >= runtime.options.minShared && !item.profileLoaded,
+      ).length
+    : 0;
+  const graphComplete = Boolean(
