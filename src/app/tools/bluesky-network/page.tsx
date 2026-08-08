@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BlueskyNetworkExplorer } from "@/components/tools/bluesky-network-explorer";
+import { BlueskyNetworkModeExplorer } from "@/components/tools/bluesky-network-mode-explorer";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { StructuredData } from "@/components/seo/structured-data";
 import { Badge } from "@/components/ui/badge";
@@ -110,7 +110,7 @@ export default function BlueskyNetworkPage() {
 
       <Section className="bg-white/[0.012]">
         <Container>
-          <BlueskyNetworkExplorer />
+          <BlueskyNetworkModeExplorer />
         </Container>
       </Section>
 
