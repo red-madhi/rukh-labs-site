@@ -10,7 +10,7 @@ import { createPageMetadata, siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Free Bluesky Network Explorer",
   description:
-    "Analyze a Bluesky follower network, discover commonly followed accounts, and rank them by shared connections, overlap percentage, and follower reach.",
+    "Analyze Bluesky through followers or accounts followed, then rank people to follow by shared connections, overlap percentage, and reach.",
   path: "/tools/bluesky-network",
   image: {
     url: "/opengraph-image",
@@ -21,6 +21,7 @@ export const metadata: Metadata = createPageMetadata({
   keywords: [
     "Bluesky network explorer",
     "Bluesky follower analysis",
+    "Bluesky following analysis",
     "AT Protocol tool",
     "Bluesky discovery tool",
     "social graph analysis",
@@ -37,7 +38,7 @@ export default function BlueskyNetworkPage() {
     operatingSystem: "Any",
     url: `${siteConfig.url}/tools/bluesky-network`,
     description:
-      "A free browser-based tool that analyzes public Bluesky follower connections and ranks second-degree accounts by network overlap and follower reach.",
+      "A free browser-based tool that analyzes public Bluesky follower or following connections and ranks second-degree accounts by network overlap and follower reach.",
     provider: {
       "@type": "Organization",
       "@id": `${siteConfig.url}/#organization`,
@@ -50,6 +51,8 @@ export default function BlueskyNetworkPage() {
     },
     featureList: [
       "Public Bluesky follower graph scanning",
+      "Public Bluesky following graph scanning",
+      "People-to-follow recommendations",
       "Network overlap ranking",
       "Follower reach ranking",
       "Local resumable scans",
@@ -67,7 +70,10 @@ export default function BlueskyNetworkPage() {
             items={[
               { name: "Home", path: "/" },
               { name: "Products", path: "/products" },
-              { name: "Bluesky Network Explorer", path: "/tools/bluesky-network" },
+              {
+                name: "Bluesky Network Explorer",
+                path: "/tools/bluesky-network",
+              },
             ]}
           />
         </Container>
@@ -82,11 +88,14 @@ export default function BlueskyNetworkPage() {
               Find the accounts your network already knows.
             </h1>
             <p className="mt-6 max-w-3xl text-lg leading-8 text-white/68 sm:text-xl">
-              Scan an account&apos;s followers, see who those followers follow, and rank the strongest second-degree connections by overlap percentage, shared count, and public follower reach.
+              Choose followers to see who your audience already knows, or choose
+              following to use the accounts you deliberately follow as human
+              curators. Then rank people by overlap, shared connections, and
+              public reach.
             </p>
             <div className="mt-8 grid gap-3 text-sm text-white/54 sm:grid-cols-3">
               <span className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3">
-                No Bluesky password or app password
+                Followers or following graph
               </span>
               <span className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3">
                 Scan progress stays in your browser
@@ -108,12 +117,25 @@ export default function BlueskyNetworkPage() {
       <Section className="border-t border-white/10">
         <Container className="max-w-4xl">
           <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 text-sm leading-7 text-white/54 sm:p-7">
-            <p className="font-semibold text-white">Important limits and affiliation</p>
-            <p className="mt-3">
-              Full social graphs can be extremely large. Quick and Balanced modes intentionally sample the graph; Complete Graph mode may take substantial browser time and public API traffic. Percentages always use the number of follower accounts successfully scanned, which is shown beside the results.
+            <p className="font-semibold text-white">
+              Important limits and affiliation
             </p>
             <p className="mt-3">
-              Rukh Labs is not affiliated with Bluesky Social PBC. This tool reads public AT Protocol data and opens official Bluesky profile pages for any follow action. It does not automate bulk follows.
+              Full social graphs can be extremely large. Quick and Balanced
+              modes intentionally sample the selected source graph; Complete
+              Graph mode may take substantial browser time and public API
+              traffic. Percentages always use the number of source accounts
+              successfully scanned, which is shown beside the results.
+            </p>
+            <p className="mt-3">
+              This tool recommends accounts, not posts. Follow relationships are
+              useful for people-to-follow discovery, while likes and activity
+              would usually be better signals for ranking individual posts.
+            </p>
+            <p className="mt-3">
+              Rukh Labs is not affiliated with Bluesky Social PBC. This tool
+              reads public AT Protocol data and opens official Bluesky profile
+              pages for any follow action. It does not automate bulk follows.
             </p>
           </div>
         </Container>
