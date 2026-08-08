@@ -22,9 +22,11 @@ export type NetworkCandidate = BlueskyProfile & {
   profileUnavailable?: boolean;
 };
 
+export type ScanSource = "followers" | "following";
 export type ScanMode = "quick" | "balanced" | "complete";
 
 export type ScanOptions = {
+  source: ScanSource;
   mode: ScanMode;
   maxFollowers: number | null;
   maxFollowsPerFollower: number | null;
@@ -46,6 +48,8 @@ export type ScanSnapshot = {
   id: "latest";
   actor: BlueskyProfile;
   options: ScanOptions;
+  // These legacy field names are intentionally retained so scans saved by the
+  // first release can still be restored. They represent source accounts now.
   followers: BlueskyProfile[];
   followersComplete: boolean;
   targetFollowingDids: string[];
@@ -65,9 +69,36 @@ export type RankedCandidate = NetworkCandidate & {
   hiddenGemScore: number;
 };
 
+export const SCAN_SOURCE_COPY: Record<
+  ScanSource,
+  {
+    name: string;
+    eyebrow: string;
+    description: string;
+    detail: string;
+  }
+> = {
+  followers: {
+    name: "People who follow this profile",
+    eyebrow: "Audience graph",
+    description:
+      "Find accounts that are common across the people who follow this profile.",
+    detail:
+      "Best for seeing who the audience already knows and where community overlap is strongest.",
+  },
+  following: {
+    name: "People this profile follows",
+    eyebrow: "Curated graph",
+    description:
+      "Use the accounts this profile deliberately follows as human curators.",
+    detail:
+      "Best for finding people trusted or repeatedly followed by the network you intentionally chose.",
+  },
+};
+
 export const SCAN_PRESETS: Record<
   ScanMode,
-  Omit<ScanOptions, "mode" | "minShared">
+  Omit<ScanOptions, "source" | "mode" | "minShared">
 > = {
   quick: {
     maxFollowers: 50,
@@ -96,17 +127,17 @@ export const SCAN_MODE_COPY: Record<
   quick: {
     name: "Quick",
     description: "Fast signal from a smaller slice of the network.",
-    detail: "Up to 50 followers · first 300 follows per person · 500 detailed profiles",
+    detail: "Up to 50 source accounts · first 300 follows each · 500 detailed profiles",
   },
   balanced: {
     name: "Balanced",
     description: "The practical default for most accounts.",
-    detail: "Up to 250 followers · first 1,000 follows per person · 1,500 detailed profiles",
+    detail: "Up to 250 source accounts · first 1,000 follows each · 1,500 detailed profiles",
   },
   complete: {
     name: "Complete graph",
-    description: "Scan every available follower and every account they follow.",
-    detail: "All followers · all follows · 2,500 detailed profiles per batch",
+    description: "Scan every available source account and every account they follow.",
+    detail: "All available sources · all follows · 2,500 detailed profiles per batch",
   },
 };
 
@@ -279,10 +310,12 @@ export function normalizeActorInput(input: string) {
 export function createScanOptions(
   mode: ScanMode,
   minShared: number,
+  source: ScanSource = "followers",
   profileBatchSize?: number,
 ): ScanOptions {
   const preset = SCAN_PRESETS[mode];
   return {
+    source,
     mode,
     ...preset,
     minShared: Math.min(100, Math.max(1, Math.floor(minShared || 1))),
@@ -400,12 +433,12 @@ export async function fetchProfiles(
 
 export function rankCandidates(
   candidates: readonly NetworkCandidate[],
-  scannedFollowerCount: number,
+  scannedSourceCount: number,
 ): RankedCandidate[] {
   const loaded = candidates.filter(
     (candidate) => candidate.profileLoaded && !candidate.profileUnavailable,
   );
-  const denominator = Math.max(1, scannedFollowerCount);
+  const denominator = Math.max(1, scannedSourceCount);
   const maxOverlap = loaded.reduce(
     (maximum, candidate) =>
       Math.max(maximum, candidate.sharedBy.length / denominator),

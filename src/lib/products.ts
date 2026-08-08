@@ -63,16 +63,16 @@ export const labProduct = {
   category: "Free Web App",
   status: "Free web app" as const,
   shortDescription:
-    "Find the accounts your Bluesky followers already know, ranked by network overlap and follower reach.",
+    "Discover who to follow through either your followers or the accounts you follow, ranked by overlap and reach.",
   longDescription:
-    "Bluesky Network Explorer is a free browser-based social-graph tool that scans public follower connections, ranks commonly followed accounts, explains every match, and keeps resumable progress on the user's device.",
+    "Bluesky Network Explorer is a free browser-based social-graph tool that can use followers or the accounts a profile follows as its recommendation source, rank commonly followed accounts, explain every match, and keep resumable progress on the user's device.",
   features: [
-    "Second-degree discovery",
+    "Follower or following sources",
+    "Second-degree account discovery",
     "Overlap and reach ranking",
     "Local resumable scans",
     "Shared-connection explanations",
     "CSV export",
-    "Manual follow links",
   ],
   href: "/tools/bluesky-network",
 };
