@@ -1,0 +1,53 @@
+name: Materialize Bluesky following explorer
+
+on:
+  push:
+    branches:
+      - feature/bluesky-following-source
+    paths:
+      - ".tmp/bluesky-following-*"
+      - ".github/workflows/materialize-bluesky-following.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  materialize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/bluesky-following-source
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Materialize component
+        run: |
+          mkdir -p src/components/tools
+          cat .tmp/bluesky-following-part-*.txt > src/components/tools/bluesky-following-explorer.tsx
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Commit validated source
+        run: |
+          rm -f .tmp/bluesky-following-*
+          rmdir .tmp 2>/dev/null || true
+          rm -f .github/workflows/materialize-bluesky-following.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add following-based Bluesky discovery mode"
+          git push origin HEAD:feature/bluesky-following-source
