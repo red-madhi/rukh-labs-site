@@ -1,5 +1,14 @@
 export const BLUESKY_PUBLIC_API = "https://public.api.bsky.app/xrpc";
 
+export type BlueskyLabel = {
+  val: string;
+  neg?: boolean;
+  src?: string;
+  uri?: string;
+  cid?: string;
+  cts?: string;
+};
+
 export type BlueskyProfile = {
   did: string;
   handle: string;
@@ -13,6 +22,11 @@ export type BlueskyProfile = {
   postsCount?: number;
   createdAt?: string;
   indexedAt?: string;
+  labels?: BlueskyLabel[];
+  lastActivityAt?: string | null;
+  activityChecked?: boolean;
+  activityUnavailable?: boolean;
+  recentAdultContent?: boolean;
 };
 
 export type NetworkCandidate = BlueskyProfile & {
@@ -68,6 +82,14 @@ export type RankedCandidate = NetworkCandidate & {
   discoveryScore: number;
   hiddenGemScore: number;
 };
+
+export const INACTIVE_ACCOUNT_DAYS = 90;
+
+const ADULT_LABELS = new Set(["porn", "sexual", "nudity"]);
+const BOT_IDENTITY_PATTERN = /(^|[\s._-])bot($|[\s._-])/i;
+const BOT_DESCRIPTION_PATTERN =
+  /\b(?:automated account|automated feed|automation account|auto[- ]?posting|posts? automatically|rss (?:feed|mirror)|feed mirror)\b/i;
+const NOT_A_BOT_PATTERN = /\bnot\s+(?:a\s+)?bot\b/i;
 
 export const SCAN_SOURCE_COPY: Record<
   ScanSource,
@@ -162,6 +184,23 @@ type GetFollowsResponse = {
 
 type GetProfilesResponse = {
   profiles: BlueskyProfile[];
+};
+
+type AuthorFeedItem = {
+  post: {
+    indexedAt?: string;
+    labels?: BlueskyLabel[];
+    author?: {
+      did?: string;
+    };
+  };
+  reason?: {
+    indexedAt?: string;
+  };
+};
+
+type GetAuthorFeedResponse = {
+  feed: AuthorFeedItem[];
 };
 
 type RequestHooks = {
@@ -280,6 +319,124 @@ async function requestJson<T>(
   }
 
   throw new BlueskyApiError("Bluesky did not return a usable response.");
+}
+
+function hasActiveLabel(profile: BlueskyProfile, values: ReadonlySet<string>) {
+  return Boolean(
+    profile.labels?.some(
+      (label) => !label.neg && values.has(label.val.toLowerCase()),
+    ),
+  );
+}
+
+function labelsContainAdultContent(labels: readonly BlueskyLabel[] | undefined) {
+  return Boolean(
+    labels?.some(
+      (label) => !label.neg && ADULT_LABELS.has(label.val.toLowerCase()),
+    ),
+  );
+}
+
+export function hasAdultContentSignal(profile: BlueskyProfile) {
+  return Boolean(profile.recentAdultContent || hasActiveLabel(profile, ADULT_LABELS));
+}
+
+export function isLikelyBot(profile: BlueskyProfile) {
+  if (hasActiveLabel(profile, new Set(["bot"]))) return true;
+
+  const identity = `${profile.displayName ?? ""} ${profile.handle}`;
+  const description = profile.description ?? "";
+  const text = `${identity} ${description}`;
+  if (NOT_A_BOT_PATTERN.test(text)) return false;
+
+  return BOT_IDENTITY_PATTERN.test(identity) || BOT_DESCRIPTION_PATTERN.test(description);
+}
+
+export function isInactiveProfile(
+  profile: BlueskyProfile,
+  inactiveDays = INACTIVE_ACCOUNT_DAYS,
+) {
+  if (!profile.activityChecked || profile.activityUnavailable) return false;
+  if (!profile.lastActivityAt) return true;
+
+  const timestamp = Date.parse(profile.lastActivityAt);
+  if (!Number.isFinite(timestamp)) return false;
+  const threshold = Date.now() - Math.max(1, inactiveDays) * 86_400_000;
+  return timestamp < threshold;
+}
+
+export function shouldExcludeRecommendedAccount(profile: BlueskyProfile) {
+  return (
+    hasAdultContentSignal(profile) ||
+    isLikelyBot(profile) ||
+    isInactiveProfile(profile)
+  );
+}
+
+async function fetchAuthorSignals(
+  profile: BlueskyProfile,
+  hooks: RequestHooks = {},
+): Promise<Pick<
+  BlueskyProfile,
+  "lastActivityAt" | "activityChecked" | "activityUnavailable" | "recentAdultContent"
+>> {
+  if ((profile.postsCount ?? 0) === 0) {
+    return {
+      lastActivityAt: null,
+      activityChecked: true,
+      activityUnavailable: false,
+      recentAdultContent: false,
+    };
+  }
+
+  const response = await requestJson<GetAuthorFeedResponse>(
+    "app.bsky.feed.getAuthorFeed",
+    { actor: profile.did, limit: 5 },
+    hooks,
+  );
+
+  if (!response.feed.length) {
+    return {
+      activityChecked: true,
+      activityUnavailable: true,
+      recentAdultContent: false,
+    };
+  }
+
+  const latest = response.feed[0];
+  const recentAdultContent = response.feed.some(
+    (item) =>
+      item.post.author?.did === profile.did &&
+      labelsContainAdultContent(item.post.labels),
+  );
+
+  return {
+    lastActivityAt: latest.reason?.indexedAt || latest.post.indexedAt || null,
+    activityChecked: true,
+    activityUnavailable: false,
+    recentAdultContent,
+  };
+}
+
+async function enrichProfileSignals(
+  profile: BlueskyProfile,
+  hooks: RequestHooks = {},
+): Promise<BlueskyProfile> {
+  if (hasAdultContentSignal(profile) || isLikelyBot(profile)) {
+    return profile;
+  }
+
+  try {
+    const signals = await fetchAuthorSignals(profile, hooks);
+    return { ...profile, ...signals };
+  } catch (error) {
+    if (isAbortError(error)) throw error;
+    return {
+      ...profile,
+      activityChecked: true,
+      activityUnavailable: true,
+    };
+  }
 }
 
 export function normalizeActorInput(input: string) {
@@ -428,7 +585,18 @@ export async function fetchProfiles(
     { actors },
     hooks,
   );
-  return response.profiles;
+
+  const enriched: BlueskyProfile[] = [];
+  const signalConcurrency = 5;
+  for (let index = 0; index < response.profiles.length; index += signalConcurrency) {
+    const batch = response.profiles.slice(index, index + signalConcurrency);
+    const profiles = await Promise.all(
+      batch.map((profile) => enrichProfileSignals(profile, hooks)),
+    );
+    enriched.push(...profiles);
+  }
+
+  return enriched;
 }
 
 export function rankCandidates(
@@ -436,7 +604,10 @@ export function rankCandidates(
   scannedSourceCount: number,
 ): RankedCandidate[] {
   const loaded = candidates.filter(
-    (candidate) => candidate.profileLoaded && !candidate.profileUnavailable,
+    (candidate) =>
+      candidate.profileLoaded &&
+      !candidate.profileUnavailable &&
+      !shouldExcludeRecommendedAccount(candidate),
   );
   const denominator = Math.max(1, scannedSourceCount);
   const maxOverlap = loaded.reduce(
