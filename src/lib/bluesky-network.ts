@@ -85,11 +85,41 @@ export type RankedCandidate = NetworkCandidate & {
 
 export const INACTIVE_ACCOUNT_DAYS = 90;
 
+export type AccountQualityFilters = {
+  excludeAdultContent: boolean;
+  excludeInactive: boolean;
+  excludeBots: boolean;
+  inactiveDays: number;
+};
+
+export const DEFAULT_ACCOUNT_QUALITY_FILTERS: AccountQualityFilters = {
+  excludeAdultContent: true,
+  excludeInactive: true,
+  excludeBots: true,
+  inactiveDays: INACTIVE_ACCOUNT_DAYS,
+};
+
+let activeAccountQualityFilters: AccountQualityFilters = {
+  ...DEFAULT_ACCOUNT_QUALITY_FILTERS,
+};
+
 const ADULT_LABELS = new Set(["porn", "sexual", "nudity"]);
+const BOT_LABELS = new Set(["bot"]);
 const BOT_IDENTITY_PATTERN = /(^|[\s._-])bot($|[\s._-])/i;
 const BOT_DESCRIPTION_PATTERN =
   /\b(?:automated account|automated feed|automation account|auto[- ]?posting|posts? automatically|rss (?:feed|mirror)|feed mirror)\b/i;
 const NOT_A_BOT_PATTERN = /\bnot\s+(?:a\s+)?bot\b/i;
+
+export function setAccountQualityFilters(filters: AccountQualityFilters) {
+  activeAccountQualityFilters = {
+    ...filters,
+    inactiveDays: Math.max(1, Math.floor(filters.inactiveDays || INACTIVE_ACCOUNT_DAYS)),
+  };
+}
+
+export function getAccountQualityFilters() {
+  return { ...activeAccountQualityFilters };
+}
 
 export const SCAN_SOURCE_COPY: Record<
   ScanSource,
@@ -342,7 +372,7 @@ export function hasAdultContentSignal(profile: BlueskyProfile) {
 }
 
 export function isLikelyBot(profile: BlueskyProfile) {
-  if (hasActiveLabel(profile, new Set(["bot"]))) return true;
+  if (hasActiveLabel(profile, BOT_LABELS)) return true;
 
   const identity = `${profile.displayName ?? ""} ${profile.handle}`;
   const description = profile.description ?? "";
@@ -366,10 +396,11 @@ export function isInactiveProfile(
 }
 
 export function shouldExcludeRecommendedAccount(profile: BlueskyProfile) {
+  const filters = activeAccountQualityFilters;
   return (
-    hasAdultContentSignal(profile) ||
-    isLikelyBot(profile) ||
-    isInactiveProfile(profile)
+    (filters.excludeAdultContent && hasAdultContentSignal(profile)) ||
+    (filters.excludeBots && isLikelyBot(profile)) ||
+    (filters.excludeInactive && isInactiveProfile(profile, filters.inactiveDays))
   );
 }
 
@@ -422,10 +453,6 @@ async function enrichProfileSignals(
   profile: BlueskyProfile,
   hooks: RequestHooks = {},
 ): Promise<BlueskyProfile> {
-  if (hasAdultContentSignal(profile) || isLikelyBot(profile)) {
-    return profile;
-  }
-
   try {
     const signals = await fetchAuthorSignals(profile, hooks);
     return { ...profile, ...signals };
