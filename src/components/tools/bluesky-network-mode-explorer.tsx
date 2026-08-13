@@ -5,7 +5,11 @@ import { Check } from "lucide-react";
 import { BlueskyFollowingExplorer } from "@/components/tools/bluesky-following-explorer";
 import { BlueskyNetworkExplorer } from "@/components/tools/bluesky-network-explorer";
 import { Card } from "@/components/ui/card";
-import { SCAN_SOURCE_COPY, type ScanSource } from "@/lib/bluesky-network";
+import {
+  INACTIVE_ACCOUNT_DAYS,
+  SCAN_SOURCE_COPY,
+  type ScanSource,
+} from "@/lib/bluesky-network";
 import { cn } from "@/lib/utils";
 
 export function BlueskyNetworkModeExplorer() {
@@ -67,6 +71,16 @@ export function BlueskyNetworkModeExplorer() {
               Follow relationships are a strong signal for account discovery.
               Likes and activity are generally better signals for deciding which
               posts belong in a feed.
+            </p>
+          </div>
+          <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-white/58">
+            <p className="font-semibold text-white">Recommendation cleanup is automatic.</p>
+            <p className="mt-1">
+              Results remove adult-content accounts identified by Bluesky labels,
+              accounts identified as bots or clearly automated, and accounts with
+              no public author-feed activity in the last {INACTIVE_ACCOUNT_DAYS} days.
+              If Bluesky cannot verify activity, the account stays in the results
+              rather than being hidden on a guess.
             </p>
           </div>
         </fieldset>
