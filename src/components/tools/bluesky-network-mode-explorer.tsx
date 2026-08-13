@@ -6,14 +6,27 @@ import { BlueskyFollowingExplorer } from "@/components/tools/bluesky-following-e
 import { BlueskyNetworkExplorer } from "@/components/tools/bluesky-network-explorer";
 import { Card } from "@/components/ui/card";
 import {
-  INACTIVE_ACCOUNT_DAYS,
+  DEFAULT_ACCOUNT_QUALITY_FILTERS,
   SCAN_SOURCE_COPY,
+  setAccountQualityFilters,
+  type AccountQualityFilters,
   type ScanSource,
 } from "@/lib/bluesky-network";
 import { cn } from "@/lib/utils";
 
 export function BlueskyNetworkModeExplorer() {
   const [source, setSource] = useState<ScanSource>("followers");
+  const [filters, setFilters] = useState<AccountQualityFilters>(() => ({
+    ...DEFAULT_ACCOUNT_QUALITY_FILTERS,
+  }));
+  const [filterRevision, setFilterRevision] = useState(0);
+
+  function updateFilters(patch: Partial<AccountQualityFilters>) {
+    const next = { ...filters, ...patch };
+    setFilters(next);
+    setAccountQualityFilters(next);
+    setFilterRevision((revision) => revision + 1);
+  }
 
   return (
     <div className="grid gap-6">
@@ -63,6 +76,7 @@ export function BlueskyNetworkModeExplorer() {
               );
             })}
           </div>
+
           <div className="mt-3 rounded-xl border border-[#16c8ff]/18 bg-[#16c8ff]/6 p-4 text-sm leading-6 text-white/58">
             <p className="font-semibold text-white">
               This recommends people to follow—not individual posts.
@@ -73,23 +87,79 @@ export function BlueskyNetworkModeExplorer() {
               posts belong in a feed.
             </p>
           </div>
-          <div className="mt-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-sm leading-6 text-white/58">
-            <p className="font-semibold text-white">Recommendation cleanup is automatic.</p>
-            <p className="mt-1">
-              Results remove adult-content accounts identified by Bluesky labels,
-              accounts identified as bots or clearly automated, and accounts with
-              no public author-feed activity in the last {INACTIVE_ACCOUNT_DAYS} days.
-              If Bluesky cannot verify activity, the account stays in the results
-              rather than being hidden on a guess.
+
+          <div className="mt-5 border-t border-white/10 pt-5">
+            <p className="text-sm font-semibold text-white">Recommendation cleanup</p>
+            <p className="mt-1 text-xs leading-5 text-white/42">
+              Set these before starting a scan. All three are enabled by default.
+              Unknown activity status stays visible instead of being guessed inactive.
             </p>
+
+            <div className="mt-4 grid gap-3 lg:grid-cols-3">
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-left">
+                <input
+                  type="checkbox"
+                  checked={filters.excludeAdultContent}
+                  onChange={(event) => updateFilters({ excludeAdultContent: event.target.checked })}
+                  className="mt-1 size-4 shrink-0 accent-[#16c8ff]"
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-white">Hide adult-content accounts</span>
+                  <span className="mt-1 block text-xs leading-5 text-white/42">Uses Bluesky&apos;s native content labels.</span>
+                </span>
+              </label>
+
+              <div className="rounded-xl border border-white/10 bg-white/[0.025] p-4">
+                <label className="flex cursor-pointer items-start gap-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={filters.excludeInactive}
+                    onChange={(event) => updateFilters({ excludeInactive: event.target.checked })}
+                    className="mt-1 size-4 shrink-0 accent-[#16c8ff]"
+                  />
+                  <span>
+                    <span className="block text-sm font-semibold text-white">Hide inactive accounts</span>
+                    <span className="mt-1 block text-xs leading-5 text-white/42">Checks public author-feed activity.</span>
+                  </span>
+                </label>
+                <label className="mt-3 grid gap-1.5 text-xs text-white/46">
+                  Inactive after
+                  <select
+                    value={filters.inactiveDays}
+                    disabled={!filters.excludeInactive}
+                    onChange={(event) => updateFilters({ inactiveDays: Number(event.target.value) })}
+                    className="rounded-lg border border-white/12 bg-[#090707]/80 px-3 py-2 text-sm text-white outline-none disabled:opacity-45"
+                  >
+                    <option value={30}>30 days</option>
+                    <option value={60}>60 days</option>
+                    <option value={90}>90 days</option>
+                    <option value={180}>180 days</option>
+                    <option value={365}>365 days</option>
+                  </select>
+                </label>
+              </div>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-white/10 bg-white/[0.025] p-4 text-left">
+                <input
+                  type="checkbox"
+                  checked={filters.excludeBots}
+                  onChange={(event) => updateFilters({ excludeBots: event.target.checked })}
+                  className="mt-1 size-4 shrink-0 accent-[#16c8ff]"
+                />
+                <span>
+                  <span className="block text-sm font-semibold text-white">Hide bots</span>
+                  <span className="mt-1 block text-xs leading-5 text-white/42">Uses Bluesky&apos;s bot label plus conservative automation signals.</span>
+                </span>
+              </label>
+            </div>
           </div>
         </fieldset>
       </Card>
 
       {source === "followers" ? (
-        <BlueskyNetworkExplorer key="followers" />
+        <BlueskyNetworkExplorer key={`followers-${filterRevision}`} />
       ) : (
-        <BlueskyFollowingExplorer key="following" />
+        <BlueskyFollowingExplorer key={`following-${filterRevision}`} />
       )}
     </div>
   );
