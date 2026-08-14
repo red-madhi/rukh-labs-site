@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+const WEBSITE_REASON = "Website design project";
+const CAREER_REASON = "Career portfolio project";
+const MAX_FIELD = 300;
+const MAX_MESSAGE = 1800;
+const MAX_BODY_BYTES = 24_000;
+const IP_LIMIT = 6;
+const IP_WINDOW_MS = 10 * 60 * 1000;
+const EMAIL_LIMIT = 5;
+
+const ipWindows = new Map<string, { count: number; resetAt: number }>();
+
 type ContactPayload = {
   name?: string;
   email?: string;
@@ -22,8 +33,11 @@ type ContactPayload = {
   website?: string;
 };
 
-const MAX_FIELD = 300;
-const MAX_MESSAGE = 1800;
+type NeonQueryResponse = {
+  fields?: Array<{ name?: string }>;
+  rows?: Array<Array<string | null>>;
+  rowCount?: number;
+};
 
 function clean(value: unknown, max = MAX_FIELD) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -42,71 +56,129 @@ function escapeHtml(value: string) {
   });
 }
 
-async function redisCommand(command: unknown[]) {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+function getNeonEndpoint(connectionString: string) {
+  const parsed = new URL(connectionString);
+  const hostParts = parsed.hostname.split(".");
+  if (hostParts.length < 2) {
+    throw new Error("Database connection host is invalid.");
+  }
+  hostParts[0] = "api";
+  return `https://${hostParts.join(".")}/sql`;
+}
 
-  if (!url || !token) {
+async function neonQuery(query: string, params: Array<string | null> = []) {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
     throw new Error("Lead storage is not configured.");
   }
 
-  const response = await fetch(url, {
+  const response = await fetch(getNeonEndpoint(connectionString), {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      "Neon-Connection-String": connectionString,
+      "Neon-Raw-Text-Output": "true",
+      "Neon-Array-Mode": "true",
     },
-    body: JSON.stringify(command),
+    body: JSON.stringify({ query, params }),
     cache: "no-store",
   });
 
   if (!response.ok) {
-    throw new Error(`Lead storage failed with ${response.status}.`);
+    throw new Error(`Lead storage query failed with ${response.status}.`);
   }
 
-  return response.json() as Promise<{ result?: unknown; error?: string }>;
+  return (await response.json()) as NeonQueryResponse;
 }
 
-async function redisPipeline(commands: unknown[][]) {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+function getRequestIp(request: NextRequest) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip")?.trim() ||
+    "unknown"
+  );
+}
 
-  if (!url || !token) {
-    throw new Error("Lead storage is not configured.");
+function withinIpLimit(request: NextRequest) {
+  const now = Date.now();
+  const ip = getRequestIp(request);
+  const current = ipWindows.get(ip);
+
+  if (!current || current.resetAt <= now) {
+    ipWindows.set(ip, { count: 1, resetAt: now + IP_WINDOW_MS });
+    return true;
   }
 
-  const response = await fetch(`${url.replace(/\/$/, "")}/pipeline`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(commands),
-    cache: "no-store",
-  });
+  current.count += 1;
+  if (current.count > IP_LIMIT) return false;
+  return true;
+}
 
-  if (!response.ok) {
-    throw new Error(`Lead storage pipeline failed with ${response.status}.`);
-  }
+async function withinEmailLimit(email: string) {
+  const result = await neonQuery(
+    "SELECT COUNT(*)::int FROM public.contact_leads WHERE email = $1 AND submitted_at > now() - interval '10 minutes'",
+    [email],
+  );
+  const count = Number(result.rows?.[0]?.[0] ?? 0);
+  return count < EMAIL_LIMIT;
+}
 
-  const result = (await response.json()) as Array<{ result?: unknown; error?: string }>;
-  if (result.some((item) => item.error)) {
-    throw new Error("Lead storage pipeline returned an error.");
+function isAllowedOrigin(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  if (!origin) return true;
+
+  try {
+    const hostname = new URL(origin).hostname.toLowerCase();
+    return (
+      hostname === "rukhlabs.com" ||
+      hostname === "www.rukhlabs.com" ||
+      hostname.endsWith(".vercel.app") ||
+      hostname === "localhost" ||
+      hostname === "127.0.0.1"
+    );
+  } catch {
+    return false;
   }
 }
 
-async function enforceRateLimit(request: NextRequest) {
-  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const ip = forwarded || "unknown";
-  const key = `rukh:contact:rate:${ip}`;
-  const increment = await redisCommand(["INCR", key]);
-  const count = Number(increment.result ?? 0);
+async function storeLead(lead: Record<string, unknown>) {
+  await neonQuery(
+    `INSERT INTO public.contact_leads (
+      id, submitted_at, name, email, phone, reason, organization, project_type,
+      package_id, design_direction, current_website, budget, timeline, referral,
+      message, source_page, referrer, utm
+    ) VALUES (
+      $1::uuid, $2::timestamptz, $3, $4, $5, $6, $7, $8,
+      $9, $10, $11, $12, $13, $14, $15, $16, $17, $18::jsonb
+    )`,
+    [
+      String(lead.id),
+      String(lead.submittedAt),
+      String(lead.name),
+      String(lead.email),
+      String(lead.phone || "") || null,
+      String(lead.reason),
+      String(lead.organization || "") || null,
+      String(lead.projectType || "") || null,
+      String(lead.packageId || "") || null,
+      String(lead.designDirection || "") || null,
+      String(lead.currentWebsite || "") || null,
+      String(lead.budget || "") || null,
+      String(lead.timeline || "") || null,
+      String(lead.referral || "") || null,
+      String(lead.message),
+      String(lead.sourcePage || "/contact"),
+      String(lead.referrer || "") || null,
+      JSON.stringify(lead.utm ?? {}),
+    ],
+  );
+}
 
-  if (count === 1) {
-    await redisCommand(["EXPIRE", key, 600]);
-  }
-
-  return count <= 6;
+async function markNotificationSent(id: string) {
+  await neonQuery(
+    "UPDATE public.contact_leads SET notification_sent = true, updated_at = now() WHERE id = $1::uuid",
+    [id],
+  );
 }
 
 async function sendNotification(lead: Record<string, unknown>) {
@@ -163,6 +235,15 @@ async function sendNotification(lead: Record<string, unknown>) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isAllowedOrigin(request)) {
+      return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
+    }
+
+    const contentLength = Number(request.headers.get("content-length") || 0);
+    if (contentLength > MAX_BODY_BYTES) {
+      return NextResponse.json({ error: "Submission is too large." }, { status: 413 });
+    }
+
     const body = (await request.json()) as ContactPayload;
 
     // Honeypot field. Real users never see or fill this.
@@ -174,6 +255,8 @@ export async function POST(request: NextRequest) {
     const email = clean(body.email, 180).toLowerCase();
     const message = clean(body.message, MAX_MESSAGE);
     const reason = clean(body.reason, 120);
+    const organization = clean(body.organization, 180);
+    const isProject = reason === WEBSITE_REASON || reason === CAREER_REASON;
 
     if (!name) {
       return NextResponse.json({ error: "Enter your name." }, { status: 400 });
@@ -181,12 +264,25 @@ export async function POST(request: NextRequest) {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json({ error: "Enter a valid email address." }, { status: 400 });
     }
+    if (!reason) {
+      return NextResponse.json({ error: "Choose an inquiry type." }, { status: 400 });
+    }
+    if (isProject && !organization) {
+      return NextResponse.json(
+        {
+          error:
+            reason === CAREER_REASON
+              ? "Enter your current role or the role you are targeting."
+              : "Enter your business, brand, or project name.",
+        },
+        { status: 400 },
+      );
+    }
     if (message.length < 20) {
       return NextResponse.json({ error: "Add a little more detail to your message." }, { status: 400 });
     }
 
-    const withinLimit = await enforceRateLimit(request);
-    if (!withinLimit) {
+    if (!withinIpLimit(request) || !(await withinEmailLimit(email))) {
       return NextResponse.json(
         { error: "Too many submissions. Try again in a few minutes." },
         { status: 429 },
@@ -209,7 +305,7 @@ export async function POST(request: NextRequest) {
       email,
       phone: clean(body.phone, 80),
       reason,
-      organization: clean(body.organization, 180),
+      organization,
       projectType: clean(body.projectType, 180),
       packageId: clean(body.packageId, 120),
       designDirection: clean(body.designDirection, 120),
@@ -223,16 +319,18 @@ export async function POST(request: NextRequest) {
       utm,
     };
 
-    const serialized = JSON.stringify(lead);
-    await redisPipeline([
-      ["SET", `rukh:lead:${id}`, serialized],
-      ["LPUSH", "rukh:leads", id],
-      ["LTRIM", "rukh:leads", 0, 9999],
-    ]);
+    await storeLead(lead);
 
     let notificationSent = false;
     try {
       notificationSent = await sendNotification(lead);
+      if (notificationSent) {
+        try {
+          await markNotificationSent(id);
+        } catch (statusError) {
+          console.error("Contact notification status update failed", statusError);
+        }
+      }
     } catch (notificationError) {
       console.error("Contact notification failed", notificationError);
     }
