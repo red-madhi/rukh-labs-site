@@ -23,7 +23,7 @@ export type SeoRoute = {
 export const SEO_CONTENT_UPDATED = "2026-08-04";
 const SEO_ABOUT_UPDATED = "2026-08-05";
 export const SEO_PHASE_TWO_DEPLOYMENT_DATE = "2026-08-05";
-export const SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE = "2026-08-07";
+export const SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE = "2026-08-14";
 
 export const seoRoutes: readonly SeoRoute[] = [
   { path: "/", lastModified: SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE, changeFrequency: "weekly", priority: 1, indexable: true, follow: true, classification: "indexable" },
@@ -53,7 +53,7 @@ export const seoRoutes: readonly SeoRoute[] = [
   { path: "/insights/show-confidential-work-in-career-portfolio", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
   { path: "/tools/website-project-brief", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/tools/bluesky-network", lastModified: SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE, changeFrequency: "weekly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
-  { path: "/legal/privacy", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "yearly", priority: 0.3, indexable: true, follow: true, classification: "indexable" },
+  { path: "/legal/privacy", lastModified: SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE, changeFrequency: "yearly", priority: 0.3, indexable: true, follow: true, classification: "indexable" },
   { path: "/services/web-development/designs/obsidian", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "yearly", priority: 0.5, indexable: true, follow: true, classification: "indexable" },
   { path: "/services/web-development/designs/signal", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "yearly", priority: 0.5, indexable: true, follow: true, classification: "indexable" },
   { path: "/services/web-development/designs/atelier", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "yearly", priority: 0.5, indexable: true, follow: true, classification: "indexable" },

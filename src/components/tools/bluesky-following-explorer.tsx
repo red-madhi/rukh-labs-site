@@ -24,7 +24,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { Button, buttonStyles } from "@/components/ui/button";
+import { BlueskyFollowButton } from "@/components/tools/bluesky-oauth";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
@@ -969,14 +970,7 @@ export function BlueskyFollowingExplorer() {
                   <Button variant="secondary" size="sm" onClick={() => setSelectedDid(item.did)}>
                     <Eye aria-hidden className="size-4" />Why this account
                   </Button>
-                  <a
-                    href={`https://bsky.app/profile/${item.handle}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={buttonStyles({ size: "sm", className: "flex-1" })}
-                  >
-                    Open & follow<ArrowUpRight aria-hidden className="size-4" />
-                  </a>
+                  <BlueskyFollowButton did={item.did} handle={item.handle} className="flex-1" />
                 </div>
               </Card>
             ))}

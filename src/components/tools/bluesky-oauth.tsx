@@ -168,10 +168,14 @@ export function BlueskyOAuthProvider({ children }: { children: ReactNode }) {
     setPhase("authenticating");
     setError("");
     try {
+      const redirectUri =
+        window.location.hostname.toLowerCase() === "www.rukhlabs.com"
+          ? "https://www.rukhlabs.com/tools/bluesky-network"
+          : "https://rukhlabs.com/tools/bluesky-network";
       const session = await client.signIn(handle, {
         display: "popup",
         prompt: "login",
-        redirect_uri: `${window.location.origin}/tools/bluesky-network`,
+        redirect_uri: redirectUri,
       });
       const agent = new Agent(session);
       const accountDid = agent.accountDid;
