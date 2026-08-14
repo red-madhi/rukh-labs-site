@@ -13,6 +13,7 @@ import {
   UserPlus,
   UsersRound,
 } from "lucide-react";
+import { AdvancedNetworkFollowButton } from "@/components/tools/advanced-network-follow-button";
 import { AdvancedNetworkLiveMap } from "@/components/tools/advanced-network-live-map";
 import {
   RequiredBlueskyConnection,
@@ -490,8 +491,8 @@ export function AdvancedNetworkDashboard() {
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-white/48">
                     {recon.discovery
-                      ? "These are fresh large endpoints found by expanding your existing warm graph. Run Advanced Analysis to turn them into the ranked people-to-follow list."
-                      : "These targets passed the cheap validation step. The next button performs the reciprocal bestie/bridge crawl and builds the ranked follow list."}
+                      ? "These are fresh large endpoints found by expanding your existing warm graph. Follow any useful endpoint directly, or run Advanced Analysis to turn them into the ranked people-to-follow list."
+                      : "These targets passed the cheap validation step. You can follow a target directly or run the reciprocal bestie/bridge crawl to build the ranked follow list."}
                   </p>
                 </div>
                 <p className="text-sm text-white/42">{recon.deferredCount} deferred</p>
@@ -558,6 +559,22 @@ export function AdvancedNetworkDashboard() {
                         Warm routes: {target.warmPathHandles.map((handle) => `@${handle}`).join(" · ")}
                       </p>
                     ) : null}
+                    <div className="mt-4 flex flex-wrap items-center gap-3">
+                      <AdvancedNetworkFollowButton
+                        did={target.did}
+                        handle={target.handle}
+                        following={target.relationship.following}
+                      />
+                      <a
+                        href={`https://bsky.app/profile/${target.handle}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-xs font-medium text-white/55 transition hover:border-white/20 hover:text-white"
+                      >
+                        <ExternalLink className="size-3.5" aria-hidden />
+                        Open profile
+                      </a>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -614,7 +631,7 @@ export function AdvancedNetworkDashboard() {
                       Accounts to follow next
                     </h2>
                     <p className="mt-3 max-w-3xl text-sm leading-6 text-white/48">
-                      Ranked by reciprocal proximity, independent paths, repeated interaction strength, target-cluster overlap, influence, reciprocity potential, and mass-follow penalties. Accounts you already follow are tracked in the run but removed from this follow-now list.
+                      Ranked by reciprocal proximity, independent paths, repeated interaction strength, target-cluster overlap, influence, reciprocity potential, and mass-follow penalties. Follow buttons write directly through your connected Bluesky OAuth session; accounts already followed are tracked in run history.
                     </p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs text-white/42">
@@ -716,7 +733,13 @@ export function AdvancedNetworkDashboard() {
                             <p className="mt-1 text-xs leading-5 text-white/45">{item.strategy}</p>
                           </div>
 
-                          <div className="mt-5 flex flex-wrap items-center gap-3">
+                          <div className="mt-5 flex flex-wrap items-start gap-3">
+                            <AdvancedNetworkFollowButton
+                              did={item.did}
+                              handle={item.handle}
+                              following={item.following}
+                              campaignId={analysis.campaignId}
+                            />
                             <a
                               href={item.profileUrl}
                               target="_blank"
@@ -726,7 +749,7 @@ export function AdvancedNetworkDashboard() {
                               <ExternalLink className="size-3.5" aria-hidden />
                               Open on Bluesky
                             </a>
-                            <span className="text-[11px] text-white/28">
+                            <span className="self-center text-[11px] text-white/28">
                               Toward {item.targetHandles.slice(0, 3).map((handle) => `@${handle}`).join(", ")}
                               {item.targetHandles.length > 3 ? ` +${item.targetHandles.length - 3}` : ""}
                             </span>
