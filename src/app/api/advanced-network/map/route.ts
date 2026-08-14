@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 const XRPC = "https://public.api.bsky.app/xrpc";
 const MAX_STARTING_NODES = 20;
 const MAX_TARGETS = 6;
+const PROFILE_BATCH_SIZE = 25;
 
 type Profile = {
   did: string;
@@ -83,6 +84,20 @@ async function getFollowers(actor: string) {
   return followers;
 }
 
+async function getProfiles(actors: string[]) {
+  const profiles: Profile[] = [];
+  const uniqueActors = Array.from(new Set(actors.filter(Boolean)));
+  for (let index = 0; index < uniqueActors.length; index += PROFILE_BATCH_SIZE) {
+    const params = new URLSearchParams();
+    for (const actor of uniqueActors.slice(index, index + PROFILE_BATCH_SIZE)) {
+      params.append("actors", actor);
+    }
+    const payload = await xrpc<{ profiles?: Profile[] }>("app.bsky.actor.getProfiles", params);
+    profiles.push(...(payload.profiles ?? []));
+  }
+  return profiles;
+}
+
 async function getRelationships(actor: string, others: string[]) {
   const relationships: Relationship[] = [];
   for (let index = 0; index < others.length; index += 30) {
@@ -117,8 +132,16 @@ export async function POST(request: NextRequest) {
 
     const scope = body.scope === "mutuals-only" ? "mutuals-only" : "all-followers";
     const actor = await getProfile(actorInput);
-    const followers = await getFollowers(actor.did);
-    const followerDids = followers.map((profile) => profile.did).filter(Boolean);
+
+    // app.bsky.graph.getFollowers returns lightweight profile views and does not
+    // reliably include follower/following counts. Hydrate every follower through
+    // app.bsky.actor.getProfiles before scoring or displaying them.
+    const followerStubs = await getFollowers(actor.did);
+    const followerDids = followerStubs.map((profile) => profile.did).filter(Boolean);
+    const hydratedProfiles = followerDids.length ? await getProfiles(followerDids) : [];
+    const hydratedByDid = new Map(hydratedProfiles.map((profile) => [profile.did, profile]));
+    const followers = followerStubs.map((stub) => ({ ...stub, ...(hydratedByDid.get(stub.did) ?? {}) }));
+
     const followerRelationships = followerDids.length ? await getRelationships(actor.did, followerDids) : [];
     const relationByDid = new Map(followerRelationships.map((relationship) => [relationship.did, relationship]));
 
@@ -233,7 +256,7 @@ export async function POST(request: NextRequest) {
       },
       nodes,
       edges,
-      note: "Every visible account and edge in this response comes from live Bluesky profile or relationship data. The map intentionally omits deeper bestie/second-wave edges until those are verified by the recursive worker.",
+      note: "Every visible account and edge in this response comes from live Bluesky profile or relationship data. Follower counts are hydrated from full app.bsky.actor.getProfiles records. The map intentionally omits deeper bestie/second-wave edges until those are verified by the recursive worker.",
     });
   } catch (error) {
     console.error("Advanced Network live map failed", error);
