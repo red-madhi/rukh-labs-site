@@ -74,6 +74,10 @@ auditSource = auditSource.replace(
   '  const deploymentDatedRoutes = [\n',
 );
 auditSource = auditSource.replace(
+  '    "/legal/terms",\n    "/legal/privacy",\n    "/services/web-development/designs/obsidian",',
+  '    "/legal/terms",\n    "/services/web-development/designs/obsidian",',
+);
+auditSource = auditSource.replace(
   'check(seoRoutes.every((route) => route.lastModified <= SEO_PHASE_TWO_DEPLOYMENT_DATE), "No route date is later than the intended deployment date");',
   'check(seoRoutes.every((route) => route.lastModified <= SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE), "No route date is later than the intended deployment date");',
 );
