@@ -36,11 +36,11 @@ const modeCopy: Record<AdvancedTargetMode, { label: string; description: string 
   },
   categories: {
     label: "Categories",
-    description: "Let the engine discover influential accounts in selected areas.",
+    description: "Discover fresh influential endpoints from your graph, weighted toward selected areas.",
   },
   hybrid: {
     label: "Hybrid",
-    description: "Use named anchors plus category discovery around them.",
+    description: "Use named anchors while category relevance influences deeper scoring.",
   },
   suggested: {
     label: "Suggested direction",
@@ -110,6 +110,28 @@ type AnalysisResponse = {
   error?: string;
 };
 
+type DiscoveryTarget = ReconResponse["targets"][number] & {
+  source?: "expanded-graph";
+  warmPathHandles?: string[];
+  warmPathCount?: number;
+  categoryMatches?: string[];
+  discoveryReason?: string;
+};
+
+type ExtendedReconResponse = Omit<ReconResponse, "targets"> & {
+  targets: DiscoveryTarget[];
+  discovery?: {
+    mode: "expanded-graph";
+    scope: StartingNetworkScope;
+    observableFollowers: number;
+    startingAnchorsScanned: number;
+    reciprocalInteractionEndpoints: number;
+    freshLargeDirections: number;
+    existingTargetsExcluded: number;
+  };
+  error?: string;
+};
+
 const typeLabels: Record<string, string> = {
   "warm-follower-bridge": "Warm follower bridge",
   "target-bestie": "Target bestie",
@@ -140,7 +162,7 @@ export function AdvancedNetworkDashboard() {
   const [mode, setMode] = useState<AdvancedTargetMode>("hybrid");
   const [targetText, setTargetText] = useState("");
   const [categories, setCategories] = useState<string[]>(["gaming", "software"]);
-  const [recon, setRecon] = useState<ReconResponse | null>(null);
+  const [recon, setRecon] = useState<ExtendedReconResponse | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState("");
   const [working, setWorking] = useState(false);
@@ -166,6 +188,7 @@ export function AdvancedNetworkDashboard() {
     () => (recon?.targets ?? []).filter((target) => target.disposition === "deep-analysis"),
     [recon],
   );
+  const discoveryMode = mode === "suggested" || mode === "categories";
 
   useEffect(() => {
     if (!storageKey) return;
@@ -185,10 +208,7 @@ export function AdvancedNetworkDashboard() {
 
   useEffect(() => {
     if (!storageKey) return;
-    window.localStorage.setItem(
-      storageKey,
-      JSON.stringify({ mode, targetText, categories }),
-    );
+    window.localStorage.setItem(storageKey, JSON.stringify({ mode, targetText, categories }));
   }, [storageKey, mode, targetText, categories]);
 
   function invalidateAnalysis() {
@@ -205,17 +225,28 @@ export function AdvancedNetworkDashboard() {
     setAnalysis(null);
     setAnalysisError("");
     try {
-      const response = await fetch("/api/advanced-network/recon", {
+      const endpoint = discoveryMode
+        ? "/api/advanced-network/suggest"
+        : "/api/advanced-network/recon";
+      const body = discoveryMode
+        ? {
+            actor: oauth.did,
+            categories,
+            scope: getStartingScope(oauth.did),
+            deepTargetLimit: DEFAULT_DEEP_TARGETS,
+          }
+        : {
+            actor: oauth.did,
+            targets,
+            categories,
+            deepTargetLimit: DEFAULT_DEEP_TARGETS,
+          };
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          actor: oauth.did,
-          targets,
-          categories,
-          deepTargetLimit: DEFAULT_DEEP_TARGETS,
-        }),
+        body: JSON.stringify(body),
       });
-      const result = (await response.json()) as ReconResponse & { error?: string };
+      const result = (await response.json()) as ExtendedReconResponse;
       if (!response.ok) throw new Error(result.error || "Reconnaissance failed.");
       setRecon(result);
     } catch (caught) {
@@ -250,6 +281,20 @@ export function AdvancedNetworkDashboard() {
     }
   }
 
+  const primaryActionLabel = working
+    ? discoveryMode
+      ? "Expanding graph…"
+      : "Running reconnaissance…"
+    : mode === "suggested"
+      ? "Discover expanded directions"
+      : mode === "categories"
+        ? "Discover category directions"
+        : "Run cheap reconnaissance";
+
+  const primaryActionNote = discoveryMode
+    ? "Expands verified warm neighborhoods and finds fresh large endpoints."
+    : "First pass: validates and cost-ranks named targets.";
+
   return (
     <div className="grid gap-6">
       <RequiredBlueskyConnection />
@@ -260,9 +305,9 @@ export function AdvancedNetworkDashboard() {
             {[
               {
                 icon: Target,
-                label: "Named targets",
-                value: String(targets.length),
-                note: `up to ${MAX_EXPLICIT_TARGETS}`,
+                label: discoveryMode ? "Discovery mode" : "Named targets",
+                value: discoveryMode ? "Graph" : String(targets.length),
+                note: discoveryMode ? "fresh endpoints" : `up to ${MAX_EXPLICIT_TARGETS}`,
               },
               {
                 icon: GitBranch,
@@ -305,7 +350,7 @@ export function AdvancedNetworkDashboard() {
                   Tell the engine where you want to move.
                 </h2>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-white/52">
-                  Named accounts are anchor nodes. Reconnaissance validates them cheaply first; the Advanced Analysis button then crawls reciprocal bridge and bestie neighborhoods and returns the accounts worth following.
+                  Named accounts can be explicit anchors, or the engine can expand your existing reciprocal neighborhoods and discover the strongest fresh directions itself.
                 </p>
               </div>
             </div>
@@ -325,9 +370,7 @@ export function AdvancedNetworkDashboard() {
                       : "border-white/10 bg-white/[0.02] hover:border-white/20"
                   }`}
                 >
-                  <span className="block text-sm font-semibold text-white">
-                    {modeCopy[key].label}
-                  </span>
+                  <span className="block text-sm font-semibold text-white">{modeCopy[key].label}</span>
                   <span className="mt-2 block text-xs leading-5 text-white/40">
                     {modeCopy[key].description}
                   </span>
@@ -394,9 +437,16 @@ export function AdvancedNetworkDashboard() {
             ) : null}
 
             {mode === "suggested" ? (
-              <div className="mt-6 rounded-xl border border-[#e6bd73]/18 bg-[#e6bd73]/[0.045] p-4 text-sm leading-6 text-white/54">
+              <div className="mt-6 rounded-xl border border-[#e6bd73]/22 bg-[#e6bd73]/[0.05] p-4 text-sm leading-6 text-white/58">
                 <Sparkles className="mb-2 size-4 text-[#e6bd73]" aria-hidden />
-                Suggested-direction discovery is still being expanded. Named target analysis below is live and persists its recommendations and runs.
+                <span className="font-semibold text-[#f1d49a]">Expanded-direction discovery is live.</span>{" "}
+                It starts from your current {oauth.did ? (getStartingScope(oauth.did) === "mutuals-only" ? "mutual" : "follower") : "follower"} pool, samples the strongest starting accounts, verifies reciprocal interaction neighborhoods, excludes targets you already saved, and ranks fresh large accounts by warm-path strength, influence, category fit, and crawl cost. Category chips are ranking signals, not hard filters.
+              </div>
+            ) : null}
+
+            {mode === "categories" ? (
+              <div className="mt-6 rounded-xl border border-[#16c8ff]/18 bg-[#16c8ff]/[0.04] p-4 text-sm leading-6 text-white/54">
+                Category mode uses the same expanded-graph discovery, but gives stronger ranking weight to the selected category signals instead of requiring a named anchor.
               </div>
             ) : null}
 
@@ -411,14 +461,14 @@ export function AdvancedNetworkDashboard() {
               >
                 {working ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : discoveryMode ? (
+                  <Sparkles className="size-4" aria-hidden />
                 ) : (
                   <Radar className="size-4" aria-hidden />
                 )}
-                {working ? "Running reconnaissance…" : "Run cheap reconnaissance"}
+                {primaryActionLabel}
               </Button>
-              <span className="text-xs text-white/34">
-                First pass: validates and cost-ranks named targets.
-              </span>
+              <span className="text-xs text-white/34">{primaryActionNote}</span>
             </div>
             {error ? (
               <p role="alert" className="mt-3 text-sm text-[#ffb4b8]">
@@ -432,17 +482,36 @@ export function AdvancedNetworkDashboard() {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
-                    Reconnaissance result
+                    {recon.discovery ? "Expanded direction result" : "Reconnaissance result"}
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-white">
-                    {deepTargets.length} selected for deep analysis
+                    {deepTargets.length}{" "}
+                    {recon.discovery ? "fresh directions selected" : "selected for deep analysis"}
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-white/48">
-                    These targets passed the cheap validation step. The next button performs the reciprocal bestie/bridge crawl and builds the ranked follow list.
+                    {recon.discovery
+                      ? "These are fresh large endpoints found by expanding your existing warm graph. Run Advanced Analysis to turn them into the ranked people-to-follow list."
+                      : "These targets passed the cheap validation step. The next button performs the reciprocal bestie/bridge crawl and builds the ranked follow list."}
                   </p>
                 </div>
                 <p className="text-sm text-white/42">{recon.deferredCount} deferred</p>
               </div>
+
+              {recon.discovery ? (
+                <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    ["Observable followers", recon.discovery.observableFollowers],
+                    ["Anchors scanned", recon.discovery.startingAnchorsScanned],
+                    ["Warm endpoints", recon.discovery.reciprocalInteractionEndpoints],
+                    ["Fresh directions", recon.discovery.freshLargeDirections],
+                  ].map(([label, value]) => (
+                    <div key={String(label)} className="rounded-xl border border-white/8 bg-black/20 px-3 py-3">
+                      <p className="text-[10px] uppercase tracking-[0.1em] text-white/30">{label}</p>
+                      <p className="mt-1 text-lg font-semibold text-white">{Number(value).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
 
               <div className="mt-6 grid gap-3 lg:grid-cols-2">
                 {recon.targets.map((target) => (
@@ -451,14 +520,14 @@ export function AdvancedNetworkDashboard() {
                     className="rounded-xl border border-white/10 bg-white/[0.02] p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-semibold text-white">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-white">
                           {target.displayName || `@${target.handle}`}
                         </p>
-                        <p className="mt-1 text-xs text-white/40">@{target.handle}</p>
+                        <p className="mt-1 truncate text-xs text-white/40">@{target.handle}</p>
                       </div>
                       <span
-                        className={`rounded-full border px-2.5 py-1 text-[11px] ${
+                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] ${
                           target.disposition === "deep-analysis"
                             ? "border-emerald-300/20 bg-emerald-300/8 text-emerald-100"
                             : "border-white/10 text-white/42"
@@ -481,6 +550,14 @@ export function AdvancedNetworkDashboard() {
                         <span className="text-white/35">cost</span>
                       </span>
                     </div>
+                    {target.discoveryReason ? (
+                      <p className="mt-4 text-xs leading-5 text-white/48">{target.discoveryReason}</p>
+                    ) : null}
+                    {target.warmPathHandles?.length ? (
+                      <p className="mt-3 text-[11px] text-[#b9f1ff]/70">
+                        Warm routes: {target.warmPathHandles.map((handle) => `@${handle}`).join(" · ")}
+                      </p>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -663,7 +740,7 @@ export function AdvancedNetworkDashboard() {
                 <div className="px-6 py-12 text-center">
                   <p className="text-sm font-semibold text-white">No new follows survived the filters.</p>
                   <p className="mt-2 text-xs text-white/38">
-                    The useful candidates found in this run are already accounts you follow. Try another target or broaden the starting network.
+                    The useful candidates found in this run are already accounts you follow. Try another direction or broaden the starting network.
                   </p>
                 </div>
               )}
