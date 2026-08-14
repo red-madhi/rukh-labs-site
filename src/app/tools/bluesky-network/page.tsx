@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { BlueskyNetworkModeExplorer } from "@/components/tools/bluesky-network-mode-explorer";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { StructuredData } from "@/components/seo/structured-data";
 import { Badge } from "@/components/ui/badge";
+import { buttonStyles } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
@@ -111,6 +114,32 @@ export default function BlueskyNetworkPage() {
       <Section className="bg-white/[0.012]">
         <Container>
           <BlueskyNetworkModeExplorer />
+        </Container>
+      </Section>
+
+      <Section className="border-t border-[#16c8ff]/15 bg-[radial-gradient(circle_at_90%_10%,rgba(22,200,255,0.09),transparent_35%),rgba(255,255,255,0.008)]">
+        <Container className="max-w-5xl">
+          <div className="flex flex-col gap-6 rounded-2xl border border-[#16c8ff]/20 bg-black/15 p-6 sm:p-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-3xl">
+              <Badge tone="gold">Advanced · Private beta</Badge>
+              <h2 className="mt-4 text-2xl font-semibold text-white sm:text-3xl">
+                Want the tool to remember the network and tell you where to go next?
+              </h2>
+              <p className="mt-3 text-sm leading-7 text-white/56">
+                Advanced Network adds persistent follow-back tracking, reciprocal
+                path analysis, bridge and bestie discovery, targeted influential
+                communities, historical network maps, and dynamic importance
+                rankings.
+              </p>
+            </div>
+            <Link
+              href="/tools/bluesky-network-advanced"
+              className={buttonStyles({ variant: "glass", size: "lg", className: "shrink-0" })}
+            >
+              Explore Advanced Network
+              <ArrowRight className="size-4" aria-hidden />
+            </Link>
+          </div>
         </Container>
       </Section>
 
