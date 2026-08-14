@@ -38,3 +38,14 @@ for (const path of files) {
   fs.writeFileSync(path, source);
   console.log(`patched ${path}`);
 }
+
+const oauthPath = "src/components/tools/bluesky-oauth.tsx";
+let oauthSource = fs.readFileSync(oauthPath, "utf8");
+const oldRedirect = '      const session = await client.signIn(handle, {\n        display: "popup",\n        prompt: "login",\n        redirect_uri: `${window.location.origin}/tools/bluesky-network`,\n      });';
+const newRedirect = '      const redirectUri =\n        window.location.hostname.toLowerCase() === "www.rukhlabs.com"\n          ? "https://www.rukhlabs.com/tools/bluesky-network"\n          : "https://rukhlabs.com/tools/bluesky-network";\n      const session = await client.signIn(handle, {\n        display: "popup",\n        prompt: "login",\n        redirect_uri: redirectUri,\n      });';
+if (!oauthSource.includes(oldRedirect)) {
+  throw new Error(`${oauthPath}: expected OAuth redirect block not found`);
+}
+oauthSource = oauthSource.replace(oldRedirect, newRedirect);
+fs.writeFileSync(oauthPath, oauthSource);
+console.log(`patched ${oauthPath}`);
