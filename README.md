@@ -33,4 +33,4 @@ Optional email notifications use Resend:
 - `CONTACT_NOTIFICATION_EMAIL`
 - `CONTACT_FROM_EMAIL` — optional; defaults to `Rukh Labs <hello@rukhlabs.com>`
 
-Lead notification failures do not discard a successfully stored lead.
+Lead notification failures do not discard a successfully stored lead. Vercel-to-Neon connectivity and database writes were verified before production merge.
