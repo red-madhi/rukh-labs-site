@@ -31,7 +31,7 @@ jobs:
       - name: Add official AT Protocol OAuth packages
         run: pnpm add @atproto/api@0.20.41 @atproto/oauth-client-browser@0.5.3
 
-      - name: Patch explorer result actions
+      - name: Patch explorer result actions and deployment metadata
         run: node scripts/patch-bluesky-oauth.mjs
 
       - name: Lint
@@ -47,7 +47,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json pnpm-lock.yaml src/components/tools/bluesky-oauth.tsx src/components/tools/bluesky-network-explorer.tsx src/components/tools/bluesky-following-explorer.tsx
+          git add package.json pnpm-lock.yaml src/components/tools/bluesky-oauth.tsx src/components/tools/bluesky-network-explorer.tsx src/components/tools/bluesky-following-explorer.tsx src/lib/seo-routes.ts scripts/seo-audit.mjs
           if git diff --cached --quiet; then
             echo "No generated changes to commit."
           else
