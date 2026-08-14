@@ -35,7 +35,10 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   if (!allowedOrigin(request)) {
-    return NextResponse.json({ error: "Request origin is not allowed." }, { status: 403 });
+    return NextResponse.json(
+      { error: "Request origin is not allowed." },
+      { status: 403 },
+    );
   }
   if (!isAdvancedNetworkAccessConfigured()) {
     return NextResponse.json(
@@ -46,7 +49,10 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as { code?: string };
   if (!verifyAdvancedNetworkAccessCode(String(body.code ?? "").trim())) {
-    return NextResponse.json({ error: "That access code is not valid." }, { status: 401 });
+    return NextResponse.json(
+      { error: "That access code is not valid." },
+      { status: 401 },
+    );
   }
 
   const response = NextResponse.json({ ok: true });
@@ -56,7 +62,7 @@ export async function POST(request: NextRequest) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/tools/bluesky-network-advanced",
+    path: "/",
     maxAge: 60 * 60 * 24 * 30,
   });
   return response;
@@ -70,7 +76,7 @@ export async function DELETE() {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/tools/bluesky-network-advanced",
+    path: "/",
     maxAge: 0,
   });
   return response;
