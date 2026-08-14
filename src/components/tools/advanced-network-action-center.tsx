@@ -12,6 +12,7 @@ import {
   Sparkles,
   UsersRound,
 } from "lucide-react";
+import { NetworkTermHelp } from "@/components/tools/advanced-network-terms";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAdvancedBlueskyOAuth } from "@/components/tools/advanced-network-oauth";
@@ -168,7 +169,7 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
               Cultivate the people around your goals.
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-white/48">
-              Big accounts are destinations. This section focuses on the reachable bridge people, besties, and emerging relationships that can create genuine social proof around those destinations.
+              Big accounts are destinations. This section focuses on reachable bridge people and close-network connections that can create genuine social proof around those destinations.
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={() => void load()} disabled={working}>
@@ -184,15 +185,24 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
         {data?.runId ? (
           <div className="mt-5 grid gap-2 sm:grid-cols-3">
             <div className="rounded-xl border border-white/8 bg-black/20 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-white/30">Bridge moves now</p>
+              <p className="inline-flex text-[10px] uppercase tracking-[0.12em] text-white/30">
+                Bridge moves now
+                <NetworkTermHelp term="bridge" />
+              </p>
               <p className="mt-1 text-xl font-semibold text-white">{data.actions.length}</p>
             </div>
             <div className="rounded-xl border border-white/8 bg-black/20 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-white/30">Emerging bestie signals</p>
+              <p className="inline-flex text-[10px] uppercase tracking-[0.12em] text-white/30">
+                Target-circle connections
+                <NetworkTermHelp term="targetCircle" />
+              </p>
               <p className="mt-1 text-xl font-semibold text-white">{data.bestieSignals.length}</p>
             </div>
             <div className="rounded-xl border border-white/8 bg-black/20 px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.12em] text-white/30">Strongest social-proof cluster</p>
+              <p className="inline-flex text-[10px] uppercase tracking-[0.12em] text-white/30">
+                Strongest social-proof cluster
+                <NetworkTermHelp term="socialProof" />
+              </p>
               <p className="mt-1 truncate text-sm font-semibold text-[#d8b5ff]">
                 {strongestCluster
                   ? `@${strongestCluster.handle} · ${strongestCluster.independentPaths} paths`
@@ -259,8 +269,9 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
                               <span className="rounded-full border border-[#16c8ff]/15 bg-[#16c8ff]/[0.04] px-2 py-0.5 text-[9px] text-[#9cecff]">
                                 {item.relationshipRole}
                               </span>
-                              <span className="rounded-full border border-[#e6bd73]/15 bg-[#e6bd73]/[0.04] px-2 py-0.5 text-[9px] text-[#f1d49a]">
+                              <span className="inline-flex rounded-full border border-[#e6bd73]/15 bg-[#e6bd73]/[0.04] px-2 py-0.5 text-[9px] text-[#f1d49a]">
                                 {item.independentPaths} independent path{item.independentPaths === 1 ? "" : "s"}
+                                <NetworkTermHelp term="independentPath" />
                               </span>
                               {item.targetHandles[0] ? (
                                 <span className="rounded-full border border-[#aa63ff]/15 bg-[#aa63ff]/[0.035] px-2 py-0.5 text-[9px] text-[#d8b5ff]">
@@ -327,8 +338,9 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
             <section className="bg-[#08090c] p-5 sm:p-6">
               <div className="flex items-center gap-2">
                 <UsersRound className="size-4 text-[#d8b5ff]" aria-hidden />
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#d8b5ff]">
+                <p className="inline-flex text-xs font-semibold uppercase tracking-[0.12em] text-[#d8b5ff]">
                   Bridges to cultivate
+                  <NetworkTermHelp term="bridge" />
                 </p>
               </div>
               <p className="mt-2 text-[11px] leading-5 text-white/34">
@@ -385,10 +397,14 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
             <section className="bg-[#08090c] p-5 sm:p-6">
               <div className="flex items-center gap-2">
                 <Heart className="size-4 text-[#f1d49a]" aria-hidden />
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#f1d49a]">
-                  Emerging bestie signals
+                <p className="inline-flex text-xs font-semibold uppercase tracking-[0.12em] text-[#f1d49a]">
+                  Target-circle connections
+                  <NetworkTermHelp term="targetCircle" />
                 </p>
               </div>
+              <p className="mt-2 text-[11px] leading-5 text-white/34">
+                These labels describe where someone sits around a destination or bridge. They do not mean that person is already your bestie.
+              </p>
               <div className="mt-4 grid gap-2">
                 {data.bestieSignals.length ? (
                   data.bestieSignals.slice(0, 5).map((signal) => (
@@ -401,7 +417,18 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
                           <p className="truncate text-xs font-semibold text-white">
                             {signal.displayName || `@${signal.handle}`}
                           </p>
-                          <p className="mt-1 text-[10px] text-white/32">{bestieLabel(signal.type)}</p>
+                          <p className="mt-1 inline-flex text-[10px] text-white/32">
+                            {bestieLabel(signal.type)}
+                            <NetworkTermHelp
+                              term={signal.type === "target-bestie"
+                                ? "targetBestie"
+                                : signal.type === "bridge-bestie"
+                                  ? "bridgeBestie"
+                                  : signal.type === "second-wave-bestie"
+                                    ? "wave2"
+                                    : "bestieOfBestie"}
+                            />
+                          </p>
                         </div>
                         <span className="rounded-full border border-[#e6bd73]/18 bg-[#e6bd73]/[0.05] px-2 py-0.5 text-[9px] text-[#f1d49a]">
                           {Math.round(signal.signalStrength)}
@@ -415,7 +442,7 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
                   ))
                 ) : (
                   <p className="text-xs leading-5 text-white/34">
-                    No repeated-interaction bestie signal cleared the current threshold in this run.
+                    No target-circle connection cleared the current repeated-interaction threshold in this run.
                   </p>
                 )}
               </div>
@@ -424,12 +451,13 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
             <section className="bg-[#08090c] p-5 sm:p-6">
               <div className="flex items-center gap-2">
                 <MessageCircle className="size-4 text-[#8ce8ff]" aria-hidden />
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8ce8ff]">
+                <p className="inline-flex text-xs font-semibold uppercase tracking-[0.12em] text-[#8ce8ff]">
                   Destination social proof
+                  <NetworkTermHelp term="socialProof" />
                 </p>
               </div>
               <p className="mt-2 text-[11px] leading-5 text-white/34">
-                More independent warm people around the same destination means a stronger chance that your name becomes familiar through normal social overlap.
+                More independent warm people around the same destination means your name can become familiar through normal social overlap instead of cold outreach.
               </p>
               <div className="mt-4 grid gap-3">
                 {data.clusters.slice(0, 5).map((cluster) => (
