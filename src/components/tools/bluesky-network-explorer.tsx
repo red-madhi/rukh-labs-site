@@ -24,7 +24,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { Button, buttonStyles } from "@/components/ui/button";
+import { BlueskyFollowButton } from "@/components/tools/bluesky-oauth";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import {
@@ -678,7 +679,7 @@ export function BlueskyNetworkExplorer() {
                 <p className="mt-4 min-h-12 text-sm leading-6 text-white/56">{item.description || "No profile description available."}</p>
                 <dl className="mt-5 grid grid-cols-3 gap-2"><Metric label="Overlap" value={`${item.overlapPct.toFixed(item.overlapPct < 1 ? 2 : 1)}%`} /><Metric label="Shared" value={formatExactCount(item.sharedCount)} /><Metric label="Followers" value={formatCount(item.followersCount)} /></dl>
                 <div className="mt-5 rounded-xl border border-white/8 bg-black/15 p-4"><div className="flex items-center justify-between text-xs"><span className="text-white/56">Discovery Score</span><span className="font-semibold text-white">{item.discoveryScore}</span></div><div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.06]"><div className="h-full rounded-full bg-gradient-to-r from-[#f0001c] to-[#16c8ff]" style={{ width: `${item.discoveryScore}%` }} /></div></div>
-                <div className="mt-auto flex flex-wrap gap-2 pt-5"><Button variant="secondary" size="sm" onClick={() => setSelectedDid(item.did)}><Eye aria-hidden className="size-4" />Why this account</Button><a href={`https://bsky.app/profile/${item.handle}`} target="_blank" rel="noreferrer" className={buttonStyles({ size: "sm", className: "flex-1" })}>Open & follow<ArrowUpRight aria-hidden className="size-4" /></a></div>
+                <div className="mt-auto flex flex-wrap gap-2 pt-5"><Button variant="secondary" size="sm" onClick={() => setSelectedDid(item.did)}><Eye aria-hidden className="size-4" />Why this account</Button><BlueskyFollowButton did={item.did} handle={item.handle} className="flex-1" /></div>
               </Card>
             ))}
           </div>
@@ -687,7 +688,7 @@ export function BlueskyNetworkExplorer() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-3"><Card className="p-5"><Network aria-hidden className="size-5 text-[#8ce8ff]" /><h3 className="mt-4 font-semibold text-white">Public graph data</h3><p className="mt-2 text-sm leading-6 text-white/52">No Bluesky password or app password is requested. Every follow remains a manual choice on Bluesky.</p></Card><Card className="p-5"><RefreshCw aria-hidden className="size-5 text-[#ffb4b8]" /><h3 className="mt-4 font-semibold text-white">Resumable locally</h3><p className="mt-2 text-sm leading-6 text-white/52">Completed work and result data stay in IndexedDB on this device rather than a Rukh Labs account or database.</p></Card><Card className="p-5"><Download aria-hidden className="size-5 text-[#ffe4a0]" /><h3 className="mt-4 font-semibold text-white">Sortable and exportable</h3><p className="mt-2 text-sm leading-6 text-white/52">Keep raw overlap, shared count, and reach visible, then export the filtered results to CSV.</p></Card></div>
+      <div className="grid gap-4 md:grid-cols-3"><Card className="p-5"><Network aria-hidden className="size-5 text-[#8ce8ff]" /><h3 className="mt-4 font-semibold text-white">Public graph data</h3><p className="mt-2 text-sm leading-6 text-white/52">Public scanning still requires no login. Optional OAuth sign-in enables deliberate in-tool follows without giving Rukh Labs your password.</p></Card><Card className="p-5"><RefreshCw aria-hidden className="size-5 text-[#ffb4b8]" /><h3 className="mt-4 font-semibold text-white">Resumable locally</h3><p className="mt-2 text-sm leading-6 text-white/52">Completed work and result data stay in IndexedDB on this device rather than a Rukh Labs account or database.</p></Card><Card className="p-5"><Download aria-hidden className="size-5 text-[#ffe4a0]" /><h3 className="mt-4 font-semibold text-white">Sortable and exportable</h3><p className="mt-2 text-sm leading-6 text-white/52">Keep raw overlap, shared count, and reach visible, then export the filtered results to CSV.</p></Card></div>
 
       {selected ? (
         <div className="fixed inset-0 z-[80] grid place-items-center bg-black/75 p-4 backdrop-blur-sm" onMouseDown={(event: ReactMouseEvent<HTMLDivElement>) => event.target === event.currentTarget && setSelectedDid(null)}>

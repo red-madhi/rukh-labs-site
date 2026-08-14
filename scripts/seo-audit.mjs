@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const { seoRoutes, seoRedirects, SEO_PHASE_TWO_DEPLOYMENT_DATE } = await import(
+const { seoRoutes, seoRedirects, SEO_PHASE_TWO_DEPLOYMENT_DATE, SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE } = await import(
   pathToFileURL(path.join(root, "src/lib/seo-routes.ts")).href
 );
 const { insights } = await import(
@@ -682,7 +682,6 @@ try {
   }
 
   const deploymentDatedRoutes = [
-    "/",
     "/services/web-development",
     "/services/career-portfolios",
     "/services/web-development/small-business",
@@ -701,7 +700,6 @@ try {
     ...insights.map((insight) => `/insights/${insight.slug}`),
     "/tools/website-project-brief",
     "/legal/terms",
-    "/legal/privacy",
     "/services/web-development/designs/obsidian",
     "/services/web-development/designs/signal",
     "/services/web-development/designs/atelier",
@@ -723,10 +721,10 @@ try {
     check(insight.publishedOn === SEO_PHASE_TWO_DEPLOYMENT_DATE, `${insight.slug} uses the Phase 2 publication date`);
     check(insight.modifiedOn === insight.publishedOn, `${insight.slug} starts with matching publication and modification dates`);
   }
-  check(seoRoutes.every((route) => route.lastModified <= SEO_PHASE_TWO_DEPLOYMENT_DATE), "No route date is later than the intended deployment date");
+  check(seoRoutes.every((route) => route.lastModified <= SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE), "No route date is later than the intended deployment date");
   check(!sourceFiles.seoRoutes.includes("new Date("), "Route dates are not generated with new Date()");
   check(!sourceFiles.insights.includes("new Date("), "Article dates are not generated with new Date()");
-  check(renderedText(pages.get("/legal/privacy")?.html ?? "").includes("Last updated: August 5, 2026"), "General Privacy Policy shows August 5, 2026");
+  check(renderedText(pages.get("/legal/privacy")?.html ?? "").includes("Last updated: August 14, 2026"), "General Privacy Policy shows August 14, 2026");
   check(renderedText(pages.get("/products/farzin/privacy")?.html ?? "").includes("Last updated: August 5, 2026"), "Farzin Privacy Policy shows August 5, 2026");
 
   const briefTool = pages.get("/tools/website-project-brief")?.html ?? "";

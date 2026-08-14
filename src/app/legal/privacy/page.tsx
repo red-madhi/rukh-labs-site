@@ -12,7 +12,7 @@ import { createPageMetadata, siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Privacy Policy",
   description:
-    "How Rukh Labs handles website inquiries, email communications, analytics, technical logs, and beta-interest forms.",
+    "How Rukh Labs handles website inquiries, optional Bluesky OAuth, email communications, analytics, technical logs, and beta-interest forms.",
   path: "/legal/privacy",
   image: {
     url: "/opengraph-image",
@@ -25,7 +25,11 @@ export const metadata: Metadata = createPageMetadata({
 const policySections = [
   {
     title: "Information you choose to provide",
-    copy: "The project inquiry form prepares an email draft on your device. Nothing is sent to Rukh Labs until you review and send that email through your email provider. If you email Rukh Labs directly, the message may include your name, email address, phone number, organization, project details, and any other information you choose to provide.",
+    copy: "The project inquiry form submits the information you enter directly to Rukh Labs and stores the lead in a database used to manage inquiries. Depending on the form selections, this can include your name, email address, phone number, organization or role, project type, budget, timeline, website, referral source, message, source page, and limited referral or campaign metadata. If you email Rukh Labs directly, the message may include any information you choose to provide.",
+  },
+  {
+    title: "Bluesky Network Explorer and optional sign-in",
+    copy: "Public Bluesky network scans do not require a Rukh Labs account or Bluesky login. Scan progress and results are stored locally on your device. If you optionally connect a Bluesky or AT Protocol account to follow discoveries inside the tool, authorization is handled through AT Protocol OAuth with your account provider. Rukh Labs does not ask for or receive your Bluesky password. OAuth credentials are managed in browser storage by the OAuth client rather than stored in a Rukh Labs server database. The tool stores the connected account DID locally so it can restore that browser session, and deliberate follow actions are sent to the account's AT Protocol service.",
   },
   {
     title: "Beta-interest form",
@@ -33,23 +37,23 @@ const policySections = [
   },
   {
     title: "Analytics and technical information",
-    copy: "Rukh Labs uses Vercel Analytics to understand general site usage and conversion actions. Events are configured not to include names, email addresses, phone numbers, form messages, or résumé data. Vercel and the site hosting infrastructure may also process technical information and logs needed to deliver, secure, and operate the website, such as request, device, browser, and network information.",
+    copy: "Rukh Labs uses Vercel Analytics to understand general site usage and conversion actions. Events are configured not to include names, email addresses, phone numbers, form messages, résumé data, or Bluesky OAuth credentials. Vercel and the site hosting infrastructure may also process technical information and logs needed to deliver, secure, and operate the website, such as request, device, browser, and network information.",
   },
   {
     title: "How information is used",
-    copy: "Information is used to respond to inquiries, evaluate and deliver requested services, provide product support, maintain and secure the website, understand aggregate site usage, and comply with applicable obligations. Rukh Labs does not use inquiry details to build advertising profiles.",
+    copy: "Information is used to respond to inquiries, evaluate and deliver requested services, provide product support, maintain and secure the website, operate user-requested Bluesky follow actions, understand aggregate site usage, and comply with applicable obligations. Rukh Labs does not use inquiry details or Bluesky connection information to build advertising profiles.",
   },
   {
     title: "Sharing and service providers",
-    copy: "Information may be processed by providers used to operate the website and communications, including Vercel and the email providers involved when you send a message. Information may also be disclosed when reasonably necessary to comply with law, protect rights or security, or complete a business transaction. Rukh Labs does not sell personal information.",
+    copy: "Information may be processed by providers used to operate the website and communications, including Vercel, the database provider used for contact leads, email providers, and—when you choose optional Bluesky sign-in—the AT Protocol services involved in account authorization and requested follow actions. Public Bluesky graph requests are made against public Bluesky API infrastructure. Information may also be disclosed when reasonably necessary to comply with law, protect rights or security, or complete a business transaction. Rukh Labs does not sell personal information.",
   },
   {
     title: "Retention",
-    copy: "Communications and related project records are kept only as long as reasonably useful for the inquiry, working relationship, recordkeeping, security, or legal needs. Hosting and analytics providers may retain technical data under their own policies. No fixed deletion period is promised where one has not been implemented.",
+    copy: "Contact leads, communications, and related project records are kept only as long as reasonably useful for the inquiry, working relationship, recordkeeping, security, or legal needs. Bluesky scan results remain in local browser storage unless you clear them. Optional OAuth credentials and the connected account identifier remain in browser storage according to the OAuth session lifecycle or until you sign out or clear browser storage. Hosting, database, analytics, email, and account providers may retain technical data under their own policies. No fixed deletion period is promised where one has not been implemented.",
   },
   {
     title: "Security limitations",
-    copy: "Rukh Labs uses reasonable technical and organizational care, but no website, email system, or internet transmission can be guaranteed completely secure. Avoid sending credentials, payment-card details, confidential employer data, or other sensitive information through a first-contact message.",
+    copy: "Rukh Labs uses reasonable technical and organizational care, but no website, database, browser storage, email system, OAuth session, or internet transmission can be guaranteed completely secure. Avoid sending credentials, payment-card details, confidential employer data, or other sensitive information through a first-contact message. Rukh Labs does not request Bluesky passwords through the Network Explorer.",
   },
   {
     title: "Children",
@@ -77,13 +81,13 @@ export default function PrivacyPage() {
       <PageHeader
         eyebrow="Legal"
         title="Rukh Labs Privacy Policy"
-        description="This policy explains how the Rukh Labs website and business handle information from inquiries, email, analytics, technical logs, and current beta-interest forms."
+        description="This policy explains how the Rukh Labs website and business handle information from inquiries, optional Bluesky OAuth, email, analytics, technical logs, and current beta-interest forms."
       />
       <Section>
         <Container>
           <div className="mb-6 rounded-lg border border-[#d6ad5b]/20 bg-[#d6ad5b]/8 p-5 text-sm leading-7 text-white/68">
             <p className="font-medium text-[color:var(--brand-bronze)]">
-              Last updated: August 5, 2026
+              Last updated: August 14, 2026
             </p>
             <p className="mt-2">
               Looking for the Android app policy? Read the{" "}
