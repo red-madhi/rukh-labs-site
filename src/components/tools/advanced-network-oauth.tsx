@@ -32,6 +32,7 @@ type ContextValue = {
   error: string;
   signIn: (handle: string) => Promise<void>;
   signOut: () => Promise<void>;
+  follow: (subjectDid: string) => Promise<void>;
 };
 
 const Context = createContext<ContextValue | null>(null);
@@ -45,6 +46,7 @@ function isProductionHost() {
 
 export function AdvancedBlueskyOAuthProvider({ children }: { children: ReactNode }) {
   const clientRef = useRef<BrowserOAuthClient | null>(null);
+  const agentRef = useRef<Agent | null>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [available, setAvailable] = useState(false);
   const [did, setDid] = useState<string | null>(null);
@@ -58,6 +60,7 @@ export function AdvancedBlueskyOAuthProvider({ children }: { children: ReactNode
       session: Awaited<ReturnType<BrowserOAuthClient["restore"]>>,
     ) {
       const agent = new Agent(session);
+      agentRef.current = agent;
       const nextDid = agent.accountDid;
       if (!cancelled) {
         setDid(nextDid);
@@ -99,6 +102,7 @@ export function AdvancedBlueskyOAuthProvider({ children }: { children: ReactNode
             await attach(await client.restore(storedDid));
             return;
           } catch {
+            agentRef.current = null;
             window.localStorage.removeItem(SESSION_DID_KEY);
           }
         }
@@ -111,6 +115,7 @@ export function AdvancedBlueskyOAuthProvider({ children }: { children: ReactNode
         ) {
           return;
         }
+        agentRef.current = null;
         if (!cancelled) {
           setError("Bluesky sign-in is temporarily unavailable.");
           setPhase("anonymous");
@@ -148,6 +153,7 @@ export function AdvancedBlueskyOAuthProvider({ children }: { children: ReactNode
         redirect_uri: redirectUri,
       });
       const agent = new Agent(session);
+      agentRef.current = agent;
       const nextDid = agent.accountDid;
       setDid(nextDid);
       setPhase("connected");
@@ -158,6 +164,7 @@ export function AdvancedBlueskyOAuthProvider({ children }: { children: ReactNode
         setProfile(null);
       }
     } catch (caught) {
+      agentRef.current = null;
       setPhase("anonymous");
       setError(caught instanceof Error ? caught.message : "Bluesky sign-in failed.");
     }
@@ -169,15 +176,24 @@ export function AdvancedBlueskyOAuthProvider({ children }: { children: ReactNode
     } catch {
       // Local sign-out still succeeds if remote revocation fails.
     }
+    agentRef.current = null;
     window.localStorage.removeItem(SESSION_DID_KEY);
     setDid(null);
     setProfile(null);
     setPhase("anonymous");
   }
 
+  async function follow(subjectDid: string) {
+    const agent = agentRef.current;
+    if (!agent || phase !== "connected") {
+      throw new Error("Reconnect your Bluesky account before following.");
+    }
+    await agent.follow(subjectDid);
+  }
+
   return (
     <Context.Provider
-      value={{ phase, available, did, profile, error, signIn, signOut }}
+      value={{ phase, available, did, profile, error, signIn, signOut, follow }}
     >
       {children}
     </Context.Provider>
