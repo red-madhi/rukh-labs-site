@@ -215,6 +215,15 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
     () => positioned.find((node) => node.kind === "self"),
     [positioned],
   );
+  const uniqueBridgeAccounts = useMemo(
+    () =>
+      new Set(
+        (graph?.edges ?? [])
+          .filter((edge) => edge.kind === "verified-target-bridge")
+          .map((edge) => edge.source),
+      ).size,
+    [graph],
+  );
 
   if (!connected) return null;
 
@@ -236,7 +245,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
             ) : null}
             {graph?.totals.verifiedTargetBridges ? (
               <span className="rounded-full border border-[#e6bd73]/25 bg-[#e6bd73]/[0.06] px-2.5 py-1 text-[#f3d28d]">
-                {graph.totals.verifiedTargetBridges} verified target bridge
+                {graph.totals.verifiedTargetBridges} verified 2-hop path
                 {graph.totals.verifiedTargetBridges === 1 ? "" : "s"}
               </span>
             ) : null}
@@ -273,7 +282,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
               ["Mutuals", graph.totals.mutuals],
               ["Shown", graph.totals.displayedStartingNodes],
               ["Targets", graph.totals.targets],
-              ["2-hop bridges", graph.totals.verifiedTargetBridges],
+              ["2-hop paths", graph.totals.verifiedTargetBridges],
             ].map(([label, value]) => (
               <div key={String(label)} className="bg-[#07090c] px-4 py-3">
                 <p className="text-[10px] uppercase tracking-[0.12em] text-white/30">
@@ -513,7 +522,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
                 fontWeight="700"
                 letterSpacing="1.4"
               >
-                VERIFIED 2-HOP BRIDGES
+                VERIFIED 2-HOP PATHS
               </text>
               <text
                 x="501"
@@ -533,7 +542,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
                 fillOpacity="0.3"
                 fontSize="8"
               >
-                real reciprocal paths only
+                {uniqueBridgeAccounts} unique bridge account{uniqueBridgeAccounts === 1 ? "" : "s"}
               </text>
             </g>
 
@@ -635,7 +644,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
                 Gold
               </p>
               <p className="mt-1 text-xs leading-5 text-white/42">
-                A starting account becomes gold only when Bluesky verifies a reciprocal edge between it and a mapped target.
+                A starting account becomes gold only when Bluesky verifies a reciprocal edge between it and a mapped target. One bridge account can create more than one verified path.
               </p>
             </div>
             <div className="bg-[#07090c] p-4">
