@@ -2,12 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  ArrowRight,
-  BarChart3,
   ExternalLink,
   GitBranch,
   Loader2,
-  Radar,
   Sparkles,
   Target,
   UserPlus,
@@ -29,25 +26,6 @@ import {
   type ReconResponse,
   type StartingNetworkScope,
 } from "@/lib/advanced-network";
-
-const modeCopy: Record<AdvancedTargetMode, { label: string; description: string }> = {
-  profiles: {
-    label: "Specific profiles",
-    description: "Aim at up to 10 named Bluesky accounts.",
-  },
-  categories: {
-    label: "Categories",
-    description: "Discover fresh influential endpoints from your graph, weighted toward selected areas.",
-  },
-  hybrid: {
-    label: "Hybrid",
-    description: "Use named anchors while category relevance influences deeper scoring.",
-  },
-  suggested: {
-    label: "Suggested direction",
-    description: "Let your existing graph reveal the cheapest high-value direction.",
-  },
-};
 
 type AnalysisPath = {
   kind: string;
@@ -133,6 +111,8 @@ type ExtendedReconResponse = Omit<ReconResponse, "targets"> & {
   error?: string;
 };
 
+type RunStage = "idle" | "finding-targets" | "ranking-follows";
+
 const typeLabels: Record<string, string> = {
   "warm-follower-bridge": "Warm follower bridge",
   "target-bestie": "Target bestie",
@@ -160,15 +140,13 @@ function pathText(path: AnalysisPath) {
 
 export function AdvancedNetworkDashboard() {
   const oauth = useAdvancedBlueskyOAuth();
-  const [mode, setMode] = useState<AdvancedTargetMode>("hybrid");
+  const [mode, setMode] = useState<AdvancedTargetMode>("suggested");
   const [targetText, setTargetText] = useState("");
-  const [categories, setCategories] = useState<string[]>(["gaming", "software"]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [recon, setRecon] = useState<ExtendedReconResponse | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
+  const [stage, setStage] = useState<RunStage>("idle");
   const [error, setError] = useState("");
-  const [working, setWorking] = useState(false);
-  const [analysisWorking, setAnalysisWorking] = useState(false);
-  const [analysisError, setAnalysisError] = useState("");
 
   const targets = useMemo(
     () =>
@@ -185,11 +163,12 @@ export function AdvancedNetworkDashboard() {
 
   const connected = oauth.phase === "connected" && Boolean(oauth.did);
   const storageKey = oauth.did ? `rukh:advanced-network:draft:${oauth.did}` : "";
+  const manualMode = mode === "profiles";
+  const running = stage !== "idle";
   const deepTargets = useMemo(
     () => (recon?.targets ?? []).filter((target) => target.disposition === "deep-analysis"),
     [recon],
   );
-  const discoveryMode = mode === "suggested" || mode === "categories";
 
   useEffect(() => {
     if (!storageKey) return;
@@ -199,7 +178,9 @@ export function AdvancedNetworkDashboard() {
         targetText?: string;
         categories?: string[];
       } | null;
-      if (saved?.mode) setMode(saved.mode);
+      if (saved?.mode) {
+        setMode(saved.mode === "profiles" || saved.mode === "hybrid" ? "profiles" : "suggested");
+      }
       if (typeof saved?.targetText === "string") setTargetText(saved.targetText);
       if (Array.isArray(saved?.categories)) setCategories(saved.categories);
     } catch {
@@ -212,89 +193,90 @@ export function AdvancedNetworkDashboard() {
     window.localStorage.setItem(storageKey, JSON.stringify({ mode, targetText, categories }));
   }, [storageKey, mode, targetText, categories]);
 
-  function invalidateAnalysis() {
+  function invalidateResults() {
     setRecon(null);
     setAnalysis(null);
     setError("");
-    setAnalysisError("");
   }
 
-  async function runRecon() {
-    if (!oauth.did) return;
-    setWorking(true);
+  async function findPeopleToFollow() {
+    if (!oauth.did || (manualMode && targets.length === 0)) return;
+
     setError("");
+    setRecon(null);
     setAnalysis(null);
-    setAnalysisError("");
+    setStage("finding-targets");
+
     try {
-      const endpoint = discoveryMode
-        ? "/api/advanced-network/suggest"
-        : "/api/advanced-network/recon";
-      const body = discoveryMode
+      const targetEndpoint = manualMode
+        ? "/api/advanced-network/recon"
+        : "/api/advanced-network/suggest";
+      const targetBody = manualMode
         ? {
-            actor: oauth.did,
-            categories,
-            scope: getStartingScope(oauth.did),
-            deepTargetLimit: DEFAULT_DEEP_TARGETS,
-          }
-        : {
             actor: oauth.did,
             targets,
             categories,
             deepTargetLimit: DEFAULT_DEEP_TARGETS,
+          }
+        : {
+            actor: oauth.did,
+            categories,
+            scope: getStartingScope(oauth.did),
+            deepTargetLimit: DEFAULT_DEEP_TARGETS,
           };
-      const response = await fetch(endpoint, {
+
+      const targetResponse = await fetch(targetEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(targetBody),
       });
-      const result = (await response.json()) as ExtendedReconResponse;
-      if (!response.ok) throw new Error(result.error || "Reconnaissance failed.");
-      setRecon(result);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Reconnaissance failed.");
-    } finally {
-      setWorking(false);
-    }
-  }
+      const targetResult = (await targetResponse.json()) as ExtendedReconResponse;
+      if (!targetResponse.ok) {
+        throw new Error(targetResult.error || "Could not choose target neighborhoods.");
+      }
 
-  async function runAdvancedAnalysis() {
-    if (!oauth.did || !deepTargets.length) return;
-    setAnalysisWorking(true);
-    setAnalysisError("");
-    try {
-      const response = await fetch("/api/advanced-network/analyze", {
+      const selectedTargets = targetResult.targets
+        .filter((target) => target.disposition === "deep-analysis")
+        .slice(0, DEFAULT_DEEP_TARGETS);
+      if (!selectedTargets.length) {
+        throw new Error(
+          manualMode
+            ? "None of those target accounts could be analyzed. Check the handles and try again."
+            : "No strong new target neighborhoods surfaced from this graph yet. Try adding a topic focus or use specific accounts.",
+        );
+      }
+
+      setRecon(targetResult);
+      setStage("ranking-follows");
+
+      const analysisResponse = await fetch("/api/advanced-network/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           actor: oauth.did,
-          targets: deepTargets.map((target) => target.handle),
+          targets: selectedTargets.map((target) => target.handle),
           categories,
           scope: getStartingScope(oauth.did),
         }),
       });
-      const result = (await response.json()) as AnalysisResponse;
-      if (!response.ok) throw new Error(result.error || "Advanced analysis failed.");
-      setAnalysis(result);
+      const analysisResult = (await analysisResponse.json()) as AnalysisResponse;
+      if (!analysisResponse.ok) {
+        throw new Error(analysisResult.error || "Could not rank the next accounts to follow.");
+      }
+      setAnalysis(analysisResult);
     } catch (caught) {
-      setAnalysisError(caught instanceof Error ? caught.message : "Advanced analysis failed.");
+      setError(caught instanceof Error ? caught.message : "Network analysis failed.");
     } finally {
-      setAnalysisWorking(false);
+      setStage("idle");
     }
   }
 
-  const primaryActionLabel = working
-    ? discoveryMode
-      ? "Expanding graph…"
-      : "Running reconnaissance…"
-    : mode === "suggested"
-      ? "Discover expanded directions"
-      : mode === "categories"
-        ? "Discover category directions"
-        : "Run cheap reconnaissance";
-
-  const primaryActionNote = discoveryMode
-    ? "Expands verified warm neighborhoods and finds fresh large endpoints."
-    : "First pass: validates and cost-ranks named targets.";
+  const actionLabel =
+    stage === "finding-targets"
+      ? "Choosing the best target neighborhoods…"
+      : stage === "ranking-follows"
+        ? "Ranking your best next follows…"
+        : "Find people to follow";
 
   return (
     <div className="grid gap-6">
@@ -302,112 +284,123 @@ export function AdvancedNetworkDashboard() {
 
       {!connected ? null : (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              {
-                icon: Target,
-                label: discoveryMode ? "Discovery mode" : "Named targets",
-                value: discoveryMode ? "Graph" : String(targets.length),
-                note: discoveryMode ? "fresh endpoints" : `up to ${MAX_EXPLICIT_TARGETS}`,
-              },
-              {
-                icon: GitBranch,
-                label: "Deep targets/run",
-                value: String(DEFAULT_DEEP_TARGETS),
-                note: "cost-aware selection",
-              },
-              {
-                icon: UsersRound,
-                label: "Live graph",
-                value: "On",
-                note: "verified Bluesky edges",
-              },
-              {
-                icon: BarChart3,
-                label: "Historical comparison",
-                value: "On",
-                note: "baseline + snapshots",
-              },
-            ].map((metric) => (
-              <Card key={metric.label} className="p-5">
-                <metric.icon className="size-5 text-[#8ce8ff]" aria-hidden />
-                <p className="mt-4 text-xs uppercase tracking-[0.12em] text-white/38">
-                  {metric.label}
-                </p>
-                <p className="mt-1 text-2xl font-semibold text-white">{metric.value}</p>
-                <p className="mt-1 text-xs text-white/35">{metric.note}</p>
-              </Card>
-            ))}
-          </div>
-
-          <Card className="p-5 sm:p-7">
-            <div className="flex items-start gap-3">
-              <Radar className="mt-1 size-5 text-[#e6bd73]" aria-hidden />
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#e6bd73]">
-                  Target configuration
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">
-                  Tell the engine where you want to move.
-                </h2>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-white/52">
-                  Named accounts can be explicit anchors, or the engine can expand your existing reciprocal neighborhoods and discover the strongest fresh directions itself.
-                </p>
-              </div>
+          <Card className="overflow-hidden p-0">
+            <div className="border-b border-white/10 bg-[radial-gradient(circle_at_100%_0%,rgba(22,200,255,0.08),transparent_36%),radial-gradient(circle_at_0%_100%,rgba(230,189,115,0.07),transparent_36%)] px-5 py-6 sm:px-7 sm:py-7">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
+                Find your next follows
+              </p>
+              <h2 className="mt-2 max-w-3xl text-3xl font-semibold tracking-[-0.03em] text-white">
+                Pick a direction. The engine handles the rest.
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-white/50">
+                You can name accounts you want to get closer to, or let your current network choose the most reachable high-value destinations. Either way, one click finds and ranks the actual people worth following next.
+              </p>
             </div>
 
-            <div className="mt-6 grid gap-3 md:grid-cols-4">
-              {(Object.keys(modeCopy) as AdvancedTargetMode[]).map((key) => (
+            <div className="p-5 sm:p-7">
+              <div className="grid gap-3 md:grid-cols-2">
                 <button
-                  key={key}
                   type="button"
                   onClick={() => {
-                    setMode(key);
-                    invalidateAnalysis();
+                    setMode("suggested");
+                    invalidateResults();
                   }}
-                  className={`rounded-xl border p-4 text-left transition ${
-                    mode === key
-                      ? "border-[#16c8ff]/50 bg-[#16c8ff]/9"
+                  className={`rounded-2xl border p-5 text-left transition ${
+                    !manualMode
+                      ? "border-[#16c8ff]/45 bg-[#16c8ff]/[0.075] shadow-[0_0_28px_rgba(22,200,255,0.06)]"
                       : "border-white/10 bg-white/[0.02] hover:border-white/20"
                   }`}
                 >
-                  <span className="block text-sm font-semibold text-white">{modeCopy[key].label}</span>
-                  <span className="mt-2 block text-xs leading-5 text-white/40">
-                    {modeCopy[key].description}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-10 place-items-center rounded-xl border border-[#16c8ff]/20 bg-[#16c8ff]/[0.07] text-[#a9efff]">
+                      <Sparkles className="size-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="font-semibold text-white">Choose targets for me</p>
+                      <p className="mt-1 text-xs leading-5 text-white/42">
+                        Use my existing network to find reachable, high-value destination accounts.
+                      </p>
+                    </div>
+                  </div>
                 </button>
-              ))}
-            </div>
 
-            {mode !== "categories" && mode !== "suggested" ? (
-              <div className="mt-6">
-                <label className="text-sm font-medium text-white/72">
-                  Profile targets{" "}
-                  <span className="text-white/35">
-                    ({targets.length}/{MAX_EXPLICIT_TARGETS})
-                  </span>
-                </label>
-                <textarea
-                  value={targetText}
-                  onChange={(event) => {
-                    setTargetText(event.target.value);
-                    invalidateAnalysis();
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMode("profiles");
+                    invalidateResults();
                   }}
-                  rows={5}
-                  placeholder={
-                    "markhamillofficial.bsky.social\nexample.bsky.social\nhttps://bsky.app/profile/another.example"
-                  }
-                  className="mt-2 w-full resize-y rounded-xl border border-white/12 bg-black/20 px-4 py-3 font-mono text-sm text-white outline-none focus:border-[#16c8ff]/55 focus:ring-4 focus:ring-[#16c8ff]/10"
-                />
-                <p className="mt-2 text-xs text-white/36">
-                  One handle or profile URL per line. Up to six of the strongest targets are expanded deeply in a single run.
-                </p>
+                  className={`rounded-2xl border p-5 text-left transition ${
+                    manualMode
+                      ? "border-[#e6bd73]/40 bg-[#e6bd73]/[0.065] shadow-[0_0_28px_rgba(230,189,115,0.05)]"
+                      : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="grid size-10 place-items-center rounded-xl border border-[#e6bd73]/20 bg-[#e6bd73]/[0.07] text-[#f1d49a]">
+                      <Target className="size-4" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="font-semibold text-white">I have target accounts</p>
+                      <p className="mt-1 text-xs leading-5 text-white/42">
+                        Tell me who you want to get closer to and I’ll find the strongest route.
+                      </p>
+                    </div>
+                  </div>
+                </button>
               </div>
-            ) : null}
 
-            {mode !== "profiles" ? (
+              {manualMode ? (
+                <div className="mt-6">
+                  <label className="text-sm font-medium text-white/72">
+                    Accounts you want to get closer to{" "}
+                    <span className="text-white/35">
+                      ({targets.length}/{MAX_EXPLICIT_TARGETS})
+                    </span>
+                  </label>
+                  <textarea
+                    value={targetText}
+                    onChange={(event) => {
+                      setTargetText(event.target.value);
+                      invalidateResults();
+                    }}
+                    rows={4}
+                    placeholder={
+                      "markhamillofficial.bsky.social\nexample.bsky.social\nhttps://bsky.app/profile/another.example"
+                    }
+                    className="mt-2 w-full resize-y rounded-xl border border-white/12 bg-black/25 px-4 py-3 font-mono text-sm text-white outline-none focus:border-[#16c8ff]/55 focus:ring-4 focus:ring-[#16c8ff]/10"
+                  />
+                  <p className="mt-2 text-xs text-white/34">
+                    One handle or profile URL per line. The engine automatically picks the strongest targets for the deeper run.
+                  </p>
+                </div>
+              ) : (
+                <div className="mt-6 rounded-xl border border-[#16c8ff]/14 bg-[#16c8ff]/[0.03] p-4 text-xs leading-6 text-white/45">
+                  No target entry needed. The engine will expand your current warm network, ignore destinations already used in your saved campaign, and choose fresh large accounts with the strongest reachable paths.
+                </div>
+              )}
+
               <div className="mt-6">
-                <p className="text-sm font-medium text-white/72">Category directions</p>
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white/72">Optional topic focus</p>
+                    <p className="mt-1 text-xs text-white/34">
+                      These gently influence ranking. Leave everything off if you want the network itself to decide.
+                    </p>
+                  </div>
+                  {categories.length ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCategories([]);
+                        invalidateResults();
+                      }}
+                      className="text-xs text-white/38 transition hover:text-white/70"
+                    >
+                      Clear topics
+                    </button>
+                  ) : null}
+                </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {ADVANCED_NETWORK_CATEGORIES.map((category) => {
                     const selected = categories.includes(category.id);
@@ -421,12 +414,12 @@ export function AdvancedNetworkDashboard() {
                               ? current.filter((item) => item !== category.id)
                               : [...current, category.id].slice(0, 8),
                           );
-                          invalidateAnalysis();
+                          invalidateResults();
                         }}
                         className={`rounded-full border px-3 py-2 text-xs transition ${
                           selected
                             ? "border-[#16c8ff]/45 bg-[#16c8ff]/10 text-[#b9f1ff]"
-                            : "border-white/10 bg-white/[0.02] text-white/48 hover:text-white"
+                            : "border-white/10 bg-white/[0.02] text-white/45 hover:border-white/20 hover:text-white/72"
                         }`}
                       >
                         {category.label}
@@ -435,203 +428,79 @@ export function AdvancedNetworkDashboard() {
                   })}
                 </div>
               </div>
-            ) : null}
 
-            {mode === "suggested" ? (
-              <div className="mt-6 rounded-xl border border-[#e6bd73]/22 bg-[#e6bd73]/[0.05] p-4 text-sm leading-6 text-white/58">
-                <Sparkles className="mb-2 size-4 text-[#e6bd73]" aria-hidden />
-                <span className="font-semibold text-[#f1d49a]">Expanded-direction discovery is live.</span>{" "}
-                It starts from your current {oauth.did ? (getStartingScope(oauth.did) === "mutuals-only" ? "mutual" : "follower") : "follower"} pool, samples the strongest starting accounts, verifies reciprocal interaction neighborhoods, excludes targets you already saved, and ranks fresh large accounts by warm-path strength, influence, category fit, and crawl cost. Category chips are ranking signals, not hard filters.
-              </div>
-            ) : null}
-
-            {mode === "categories" ? (
-              <div className="mt-6 rounded-xl border border-[#16c8ff]/18 bg-[#16c8ff]/[0.04] p-4 text-sm leading-6 text-white/54">
-                Category mode uses the same expanded-graph discovery, but gives stronger ranking weight to the selected category signals instead of requiring a named anchor.
-              </div>
-            ) : null}
-
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Button
-                variant="glass"
-                onClick={() => void runRecon()}
-                disabled={
-                  working ||
-                  ((mode === "profiles" || mode === "hybrid") && targets.length === 0)
-                }
-              >
-                {working ? (
-                  <Loader2 className="size-4 animate-spin" aria-hidden />
-                ) : discoveryMode ? (
-                  <Sparkles className="size-4" aria-hidden />
-                ) : (
-                  <Radar className="size-4" aria-hidden />
-                )}
-                {primaryActionLabel}
-              </Button>
-              <span className="text-xs text-white/34">{primaryActionNote}</span>
-            </div>
-            {error ? (
-              <p role="alert" className="mt-3 text-sm text-[#ffb4b8]">
-                {error}
-              </p>
-            ) : null}
-          </Card>
-
-          {recon ? (
-            <Card className="p-5 sm:p-7">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
-                    {recon.discovery ? "Expanded direction result" : "Reconnaissance result"}
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">
-                    {deepTargets.length}{" "}
-                    {recon.discovery ? "fresh directions selected" : "selected for deep analysis"}
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-white/48">
-                    {recon.discovery
-                      ? "These are fresh large endpoints found by expanding your existing warm graph. Follow any useful endpoint directly, or run Advanced Analysis to turn them into the ranked people-to-follow list."
-                      : "These targets passed the cheap validation step. You can follow a target directly or run the reciprocal bestie/bridge crawl to build the ranked follow list."}
+              <div className="mt-7 rounded-2xl border border-white/10 bg-black/20 p-4 sm:flex sm:items-center sm:justify-between sm:gap-6">
+                <div className="mb-4 sm:mb-0">
+                  <p className="text-sm font-semibold text-white">One click from here.</p>
+                  <p className="mt-1 text-xs leading-5 text-white/38">
+                    We’ll choose or validate destination accounts, trace reciprocal bridge/bestie paths, discover deeper neighborhoods, and return a ranked follow list automatically.
                   </p>
                 </div>
-                <p className="text-sm text-white/42">{recon.deferredCount} deferred</p>
+                <Button
+                  variant="glass"
+                  className="min-w-52 shrink-0"
+                  onClick={() => void findPeopleToFollow()}
+                  disabled={running || (manualMode && targets.length === 0)}
+                >
+                  {running ? (
+                    <Loader2 className="size-4 animate-spin" aria-hidden />
+                  ) : (
+                    <UserPlus className="size-4" aria-hidden />
+                  )}
+                  {actionLabel}
+                </Button>
               </div>
 
-              {recon.discovery ? (
-                <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {[
-                    ["Observable followers", recon.discovery.observableFollowers],
-                    ["Anchors scanned", recon.discovery.startingAnchorsScanned],
-                    ["Warm endpoints", recon.discovery.reciprocalInteractionEndpoints],
-                    ["Fresh directions", recon.discovery.freshLargeDirections],
-                  ].map(([label, value]) => (
-                    <div key={String(label)} className="rounded-xl border border-white/8 bg-black/20 px-3 py-3">
-                      <p className="text-[10px] uppercase tracking-[0.1em] text-white/30">{label}</p>
-                      <p className="mt-1 text-lg font-semibold text-white">{Number(value).toLocaleString()}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-
-              <div className="mt-6 grid gap-3 lg:grid-cols-2">
-                {recon.targets.map((target) => (
+              {running ? (
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
                   <div
-                    key={target.did}
-                    className="rounded-xl border border-white/10 bg-white/[0.02] p-4"
+                    className={`rounded-xl border px-4 py-3 text-xs transition ${
+                      stage === "finding-targets"
+                        ? "border-[#16c8ff]/30 bg-[#16c8ff]/[0.05] text-[#b9f1ff]"
+                        : "border-emerald-300/16 bg-emerald-300/[0.035] text-emerald-200/80"
+                    }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-white">
-                          {target.displayName || `@${target.handle}`}
-                        </p>
-                        <p className="mt-1 truncate text-xs text-white/40">@{target.handle}</p>
-                      </div>
-                      <span
-                        className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] ${
-                          target.disposition === "deep-analysis"
-                            ? "border-emerald-300/20 bg-emerald-300/8 text-emerald-100"
-                            : "border-white/10 text-white/42"
-                        }`}
-                      >
-                        {target.disposition === "deep-analysis" ? "Deep run" : "Deferred"}
-                      </span>
-                    </div>
-                    <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
-                      <span>
-                        <b className="block text-white">{compact(target.followersCount)}</b>
-                        <span className="text-white/35">followers</span>
-                      </span>
-                      <span>
-                        <b className="block text-white">{target.priorityScore}</b>
-                        <span className="text-white/35">priority</span>
-                      </span>
-                      <span>
-                        <b className="block capitalize text-white">{target.estimatedCost}</b>
-                        <span className="text-white/35">cost</span>
-                      </span>
-                    </div>
-                    {target.discoveryReason ? (
-                      <p className="mt-4 text-xs leading-5 text-white/48">{target.discoveryReason}</p>
-                    ) : null}
-                    {target.warmPathHandles?.length ? (
-                      <p className="mt-3 text-[11px] text-[#b9f1ff]/70">
-                        Warm routes: {target.warmPathHandles.map((handle) => `@${handle}`).join(" · ")}
-                      </p>
-                    ) : null}
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <AdvancedNetworkFollowButton
-                        did={target.did}
-                        handle={target.handle}
-                        following={target.relationship.following}
-                      />
-                      <a
-                        href={`https://bsky.app/profile/${target.handle}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-xs font-medium text-white/55 transition hover:border-white/20 hover:text-white"
-                      >
-                        <ExternalLink className="size-3.5" aria-hidden />
-                        Open profile
-                      </a>
-                    </div>
+                    <span className="font-semibold">1. Choose target neighborhoods</span>
+                    <span className="mt-1 block opacity-70">
+                      {stage === "finding-targets" ? "Working…" : "Done"}
+                    </span>
                   </div>
-                ))}
-              </div>
-
-              {deepTargets.length ? (
-                <div className="mt-6 rounded-2xl border border-[#e6bd73]/28 bg-[radial-gradient(circle_at_100%_0%,rgba(230,189,115,0.12),transparent_42%),rgba(230,189,115,0.035)] p-5 sm:flex sm:items-center sm:justify-between sm:gap-6">
-                  <div>
-                    <p className="flex items-center gap-2 text-sm font-semibold text-[#f1d49a]">
-                      <UserPlus className="size-4" aria-hidden />
-                      Ready to find the people to follow
-                    </p>
-                    <p className="mt-2 max-w-2xl text-xs leading-6 text-white/45">
-                      This runs the real bounded recursive engine: current followers/mutuals → verified bridges → target besties → besties-of-besties → bridge besties → fresh second-wave large accounts and their besties. A run can take tens of seconds.
-                    </p>
-                  </div>
-                  <Button
-                    variant="glass"
-                    className="mt-4 shrink-0 sm:mt-0"
-                    onClick={() => void runAdvancedAnalysis()}
-                    disabled={analysisWorking}
+                  <div
+                    className={`rounded-xl border px-4 py-3 text-xs transition ${
+                      stage === "ranking-follows"
+                        ? "border-[#e6bd73]/30 bg-[#e6bd73]/[0.05] text-[#f1d49a]"
+                        : "border-white/8 bg-white/[0.015] text-white/30"
+                    }`}
                   >
-                    {analysisWorking ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                      <Sparkles className="size-4" aria-hidden />
-                    )}
-                    {analysisWorking ? "Analyzing network…" : "Run Advanced Analysis"}
-                  </Button>
+                    <span className="font-semibold">2. Rank your best next follows</span>
+                    <span className="mt-1 block opacity-70">
+                      {stage === "ranking-follows" ? "Working…" : "Up next"}
+                    </span>
+                  </div>
                 </div>
               ) : null}
 
-              {analysisWorking ? (
-                <div className="mt-4 rounded-xl border border-[#16c8ff]/16 bg-[#16c8ff]/[0.035] px-4 py-3 text-xs leading-6 text-white/45">
-                  Checking reciprocal target bridges, sampling repeated public interactions, verifying besties, expanding one level deeper, and performing the second large-account search. Keep this tab open until the run completes.
+              {error ? (
+                <div role="alert" className="mt-4 rounded-xl border border-[#ff7e8a]/20 bg-[#ff7e8a]/[0.04] px-4 py-3 text-sm text-[#ffb4b8]">
+                  {error}
                 </div>
               ) : null}
-              {analysisError ? (
-                <p role="alert" className="mt-4 text-sm text-[#ffb4b8]">
-                  {analysisError}
-                </p>
-              ) : null}
-            </Card>
-          ) : null}
+            </div>
+          </Card>
 
           {analysis ? (
             <Card className="overflow-hidden p-0">
-              <div className="border-b border-white/10 px-5 py-6 sm:px-7">
+              <div className="border-b border-white/10 bg-[radial-gradient(circle_at_0%_0%,rgba(22,200,255,0.07),transparent_38%)] px-5 py-6 sm:px-7">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#f1d49a]">
-                      Advanced Analysis complete
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
+                      Your next follows
                     </p>
                     <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-white">
-                      Accounts to follow next
+                      These are the accounts worth acting on.
                     </h2>
                     <p className="mt-3 max-w-3xl text-sm leading-6 text-white/48">
-                      Ranked by reciprocal proximity, independent paths, repeated interaction strength, target-cluster overlap, influence, reciprocity potential, and mass-follow penalties. Follow buttons write directly through your connected Bluesky OAuth session; accounts already followed are tracked in run history.
+                      Ranked by reciprocal proximity, independent paths, repeated interaction strength, target-neighborhood overlap, influence, reciprocity potential, and mass-follow penalties. You can follow directly from each card.
                     </p>
                   </div>
                   <div className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3 text-xs text-white/42">
@@ -639,14 +508,12 @@ export function AdvancedNetworkDashboard() {
                   </div>
                 </div>
 
-                <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+                <div className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
                   {[
-                    ["Recommendations", analysis.metrics.recommendationsReturned],
-                    ["Candidates", analysis.metrics.candidateAccounts],
-                    ["Targets", analysis.metrics.targetsAnalyzed],
-                    ["Starting bridges", analysis.metrics.verifiedStartingBridges],
-                    ["Target besties", analysis.metrics.targetBesties],
-                    ["Wave 2 targets", analysis.metrics.secondWaveTargets.length],
+                    ["People to follow", analysis.metrics.recommendationsReturned],
+                    ["Target neighborhoods", analysis.metrics.targetsAnalyzed],
+                    ["Verified bridges", analysis.metrics.verifiedStartingBridges],
+                    ["Fresh Wave 2", analysis.metrics.secondWaveTargets.length],
                   ].map(([label, value]) => (
                     <div key={String(label)} className="rounded-xl border border-white/8 bg-black/20 px-3 py-3">
                       <p className="text-[10px] uppercase tracking-[0.1em] text-white/30">{label}</p>
@@ -654,13 +521,6 @@ export function AdvancedNetworkDashboard() {
                     </div>
                   ))}
                 </div>
-
-                {analysis.metrics.secondWaveTargets.length ? (
-                  <p className="mt-4 text-xs leading-5 text-white/38">
-                    <span className="font-semibold text-[#d8b5ff]">Fresh Wave 2 endpoints:</span>{" "}
-                    {analysis.metrics.secondWaveTargets.map((handle) => `@${handle}`).join(", ")}
-                  </p>
-                ) : null}
               </div>
 
               {analysis.recommendations.length ? (
@@ -728,7 +588,7 @@ export function AdvancedNetworkDashboard() {
 
                           <div className="mt-4 border-l-2 border-[#e6bd73]/35 pl-3">
                             <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[#f1d49a]">
-                              Engagement approach
+                              Best way to approach
                             </p>
                             <p className="mt-1 text-xs leading-5 text-white/45">{item.strategy}</p>
                           </div>
@@ -744,13 +604,13 @@ export function AdvancedNetworkDashboard() {
                               href={item.profileUrl}
                               target="_blank"
                               rel="noreferrer"
-                              className="inline-flex items-center gap-2 rounded-lg border border-[#16c8ff]/24 bg-[#16c8ff]/[0.06] px-3 py-2 text-xs font-medium text-[#a9efff] transition hover:bg-[#16c8ff]/10"
+                              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2 text-xs font-medium text-white/55 transition hover:border-white/20 hover:text-white"
                             >
                               <ExternalLink className="size-3.5" aria-hidden />
-                              Open on Bluesky
+                              View profile
                             </a>
                             <span className="self-center text-[11px] text-white/28">
-                              Toward {item.targetHandles.slice(0, 3).map((handle) => `@${handle}`).join(", ")}
+                              Helps toward {item.targetHandles.slice(0, 3).map((handle) => `@${handle}`).join(", ")}
                               {item.targetHandles.length > 3 ? ` +${item.targetHandles.length - 3}` : ""}
                             </span>
                           </div>
@@ -763,14 +623,52 @@ export function AdvancedNetworkDashboard() {
                 <div className="px-6 py-12 text-center">
                   <p className="text-sm font-semibold text-white">No new follows survived the filters.</p>
                   <p className="mt-2 text-xs text-white/38">
-                    The useful candidates found in this run are already accounts you follow. Try another direction or broaden the starting network.
+                    The useful accounts found in this run are already people you follow. Try another direction or broaden the starting network.
                   </p>
                 </div>
               )}
 
-              <div className="border-t border-white/8 bg-[#07090c] px-5 py-4 text-xs leading-5 text-white/34 sm:px-7">
-                {analysis.note}
-              </div>
+              {recon ? (
+                <div className="border-t border-white/8 bg-[#07090c] px-5 py-5 sm:px-7">
+                  <details className="group rounded-xl border border-white/8 bg-white/[0.015]">
+                    <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-white/58 transition hover:text-white">
+                      Why these recommendations? <span className="text-white/28">· {deepTargets.length} destination account{deepTargets.length === 1 ? "" : "s"} analyzed</span>
+                    </summary>
+                    <div className="border-t border-white/8 px-4 py-4">
+                      <p className="max-w-3xl text-xs leading-5 text-white/38">
+                        These are the destination neighborhoods the engine used to calculate your routes. They are context, not a second to-do list. Your actionable follow list is above.
+                      </p>
+                      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                        {deepTargets.map((target) => (
+                          <div key={target.did} className="rounded-xl border border-white/8 bg-black/20 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="truncate text-sm font-semibold text-white">
+                                  {target.displayName || `@${target.handle}`}
+                                </p>
+                                <p className="mt-1 truncate text-[11px] text-white/36">@{target.handle}</p>
+                              </div>
+                              <span className="shrink-0 text-[11px] text-white/36">{compact(target.followersCount)}</span>
+                            </div>
+                            {target.discoveryReason ? (
+                              <p className="mt-3 text-[11px] leading-5 text-white/38">{target.discoveryReason}</p>
+                            ) : null}
+                            <a
+                              href={`https://bsky.app/profile/${target.handle}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-[#a9efff]/70 transition hover:text-[#a9efff]"
+                            >
+                              <ExternalLink className="size-3" aria-hidden />
+                              View destination
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </details>
+                </div>
+              ) : null}
             </Card>
           ) : null}
 
@@ -780,43 +678,42 @@ export function AdvancedNetworkDashboard() {
                 <GitBranch className="size-5 text-[#ff7e8a]" aria-hidden />
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#ff8994]">
-                    Dynamic network map
+                    Network map
                   </p>
                   <h2 className="mt-1 text-xl font-semibold text-white">
-                    Live accounts and verified relationship edges
+                    The real relationships behind your recommendations
                   </h2>
                 </div>
               </div>
               <p className="max-w-md text-xs leading-5 text-white/35">
-                This visualization is regenerated from Bluesky data whenever the connected account, starting scope, or mapped targets change.
+                Real Bluesky accounts and verified relationship edges only. The map refreshes when your network, scope, or target neighborhoods change.
               </p>
             </div>
             <AdvancedNetworkLiveMap recon={recon} />
           </Card>
 
-          <Card className="p-5 sm:p-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#e6bd73]">
-              Recursive engine
-            </p>
-            <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-              {[
-                "1. Large-account wave #1",
-                "2. Shortest mutual paths + bridges",
-                "3. Bridge besties + endpoint besties",
-                "4. Besties-of-besties + follower bridges",
-                "5. Follow / follow-back outcome scoring",
-                "6. Fresh large-account wave #2, then repeat",
-              ].map((step) => (
-                <div
-                  key={step}
-                  className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white/58"
-                >
-                  <span>{step}</span>
-                  <ArrowRight className="size-4 text-white/22" aria-hidden />
-                </div>
-              ))}
+          <details className="rounded-2xl border border-white/8 bg-white/[0.015]">
+            <summary className="cursor-pointer list-none px-5 py-4 text-sm font-medium text-white/42 transition hover:text-white/70 sm:px-7">
+              How the engine works
+            </summary>
+            <div className="border-t border-white/8 px-5 py-5 sm:px-7">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {[
+                  "Choose the strongest destination accounts",
+                  "Find shortest reciprocal paths and bridges",
+                  "Expand bridge besties and destination besties",
+                  "Expand besties-of-besties and warm follower routes",
+                  "Score follow-back leverage and network value",
+                  "Discover a fresh large-account Wave 2 and repeat",
+                ].map((step, index) => (
+                  <div key={step} className="rounded-xl border border-white/8 bg-black/20 px-4 py-3 text-xs leading-5 text-white/42">
+                    <span className="mr-2 text-[#e6bd73]">{index + 1}.</span>
+                    {step}
+                  </div>
+                ))}
+              </div>
             </div>
-          </Card>
+          </details>
         </>
       )}
     </div>
