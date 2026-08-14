@@ -9,19 +9,50 @@ The free Network Explorer remains a public, disposable discovery tool. Advanced 
 ## Repeatable engine
 
 1. Snapshot the customer’s followers, follows, and mutual relationships.
-2. Build large-account wave #1 from explicit targets, categories, or suggested directions.
-3. Compute shortest **mutual-follow-only** paths from the customer’s current graph to those endpoints.
-4. Rank existing mutuals by bridge value and identify missing bridge accounts.
-5. Find bridge besties: mutual follows with recurring public interaction.
-6. Treat the large account as a node, not merely an endpoint. Find the large account’s besties using the same reciprocal + interaction rule.
-7. Expand one level into besties-of-besties on both sides.
-8. Search all customer followers, even one-way followers, for warm reciprocal bridges into those bestie layers.
-9. Rank recommended follows using reciprocal distance, independent paths, cluster overlap, interaction, reach, relevance, estimated follow-back likelihood, and compute cost.
-10. Track every recommendation as recommended → followed → followed back / lost follow.
-11. Recalculate dynamic importance whenever the graph changes.
-12. Refresh the graph and launch **large-account wave #2**, excluding wave #1 and accounts already followed. Use the newly expanded network as the starting position.
-13. Repeat the bestie / bestie-of-bestie / follower-bridge expansion for wave #2.
-14. Persist before/after snapshots so path compression and network strength can be compared by run/day/week.
+2. Let the customer choose the **starting network** for the run:
+   - **All followers**: every follower can be considered as a potential warm starting bridge, including people the customer does not follow back.
+   - **Mutual followers only**: the starting pool contains only reciprocal relationships.
+3. Build large-account wave #1 from explicit targets, categories, or suggested directions.
+4. Compute shortest **mutual-follow-only** paths from the chosen starting graph to those endpoints. When the customer chooses All Followers, the first customer→follower edge may be one-way; reciprocal degree calculations begin from that follower outward.
+5. Rank existing mutuals by bridge value and identify missing bridge accounts.
+6. Find bridge besties: mutual follows with recurring public interaction.
+7. Treat the large account as a node, not merely an endpoint. Find the large account’s besties using the same reciprocal + interaction rule.
+8. Expand one level into besties-of-besties on both sides.
+9. Search all customer followers for warm reciprocal bridges into those bestie layers when the campaign scope allows it.
+10. Rank recommended follows using reciprocal distance, independent paths, cluster overlap, interaction, reach, relevance, estimated follow-back likelihood, and compute cost.
+11. Track every recommendation as recommended → followed → followed back / lost follow.
+12. Recalculate dynamic importance whenever the graph changes.
+13. Refresh the graph and launch **large-account wave #2**, excluding wave #1 and accounts already followed. Use the newly expanded network as the starting position.
+14. Repeat the bestie / bestie-of-bestie / follower-bridge expansion for wave #2.
+15. Persist before/after snapshots so path compression and network strength can be compared by run/day/week.
+
+## Starting-network tradeoffs
+
+### All followers
+
+Pros:
+- Widest warm-edge pool and strongest chance of finding hidden bridges.
+- Surfaces useful followers the customer may have overlooked.
+- Better for discovering distant or unexpected communities.
+
+Tradeoffs:
+- More graph work, so the run is more expensive and can take longer.
+- One-way follower relationships are weaker than mutual starting relationships.
+- Requires aggressive quality filtering so mass-follow, inactive, and low-value accounts do not dominate the graph.
+
+### Mutual followers only
+
+Pros:
+- Every starting edge is reciprocal and socially stronger.
+- Cheaper and faster to process.
+- Produces a cleaner graph with easier-to-explain paths.
+
+Tradeoffs:
+- Can miss one-way followers who already have excellent reciprocal relationships deeper in the target network.
+- Smaller accounts may have too few mutuals to expose useful paths.
+- Can be slower to break into entirely new clusters.
+
+The recommended default is **All followers** for maximum discovery, with **Mutual followers only** available as the focused/low-cost mode.
 
 ## Targeting
 
@@ -46,7 +77,7 @@ Shared cache:
 Customer-specific:
 
 - Access/account record.
-- Campaigns and target configuration.
+- Campaigns and target configuration, including starting-network scope.
 - Runs and graph snapshots.
 - Recommendations and reasons.
 - Followed / followed-back state.
