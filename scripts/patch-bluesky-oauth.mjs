@@ -49,3 +49,37 @@ if (!oauthSource.includes(oldRedirect)) {
 oauthSource = oauthSource.replace(oldRedirect, newRedirect);
 fs.writeFileSync(oauthPath, oauthSource);
 console.log(`patched ${oauthPath}`);
+
+const routesPath = "src/lib/seo-routes.ts";
+let routesSource = fs.readFileSync(routesPath, "utf8");
+routesSource = routesSource.replace(
+  'export const SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE = "2026-08-07";',
+  'export const SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE = "2026-08-14";',
+);
+routesSource = routesSource.replace(
+  '{ path: "/legal/privacy", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE,',
+  '{ path: "/legal/privacy", lastModified: SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE,',
+);
+fs.writeFileSync(routesPath, routesSource);
+console.log(`patched ${routesPath}`);
+
+const auditPath = "scripts/seo-audit.mjs";
+let auditSource = fs.readFileSync(auditPath, "utf8");
+auditSource = auditSource.replace(
+  'const { seoRoutes, seoRedirects, SEO_PHASE_TWO_DEPLOYMENT_DATE } = await import(',
+  'const { seoRoutes, seoRedirects, SEO_PHASE_TWO_DEPLOYMENT_DATE, SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE } = await import(',
+);
+auditSource = auditSource.replace(
+  '  const deploymentDatedRoutes = [\n    "/",\n',
+  '  const deploymentDatedRoutes = [\n',
+);
+auditSource = auditSource.replace(
+  'check(seoRoutes.every((route) => route.lastModified <= SEO_PHASE_TWO_DEPLOYMENT_DATE), "No route date is later than the intended deployment date");',
+  'check(seoRoutes.every((route) => route.lastModified <= SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE), "No route date is later than the intended deployment date");',
+);
+auditSource = auditSource.replace(
+  'check(renderedText(pages.get("/legal/privacy")?.html ?? "").includes("Last updated: August 5, 2026"), "General Privacy Policy shows August 5, 2026");',
+  'check(renderedText(pages.get("/legal/privacy")?.html ?? "").includes("Last updated: August 14, 2026"), "General Privacy Policy shows August 14, 2026");',
+);
+fs.writeFileSync(auditPath, auditSource);
+console.log(`patched ${auditPath}`);
