@@ -6,7 +6,6 @@ import {
   type ReactNode,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
@@ -82,15 +81,6 @@ export function BlueskyOAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const supported = isProductionOAuthHost();
-    setAvailable(supported);
-
-    if (!supported) {
-      setPhase("anonymous");
-      return () => {
-        cancelled = true;
-      };
-    }
 
     async function attachSession(session: Awaited<ReturnType<BrowserOAuthClient["restore"]>>) {
       const agent = new Agent(session);
@@ -112,6 +102,14 @@ export function BlueskyOAuthProvider({ children }: { children: ReactNode }) {
     }
 
     void (async () => {
+      const supported = isProductionOAuthHost();
+      if (cancelled) return;
+      setAvailable(supported);
+      if (!supported) {
+        setPhase("anonymous");
+        return;
+      }
+
       try {
         const client = await BrowserOAuthClient.load({
           clientId: CLIENT_ID,
@@ -227,10 +225,16 @@ export function BlueskyOAuthProvider({ children }: { children: ReactNode }) {
     return "followed";
   }
 
-  const value = useMemo<BlueskyOAuthContextValue>(
-    () => ({ phase, available, did, profile, error, signIn, signOut, follow }),
-    [phase, available, did, profile, error],
-  );
+  const value: BlueskyOAuthContextValue = {
+    phase,
+    available,
+    did,
+    profile,
+    error,
+    signIn,
+    signOut,
+    follow,
+  };
 
   return <BlueskyOAuthContext.Provider value={value}>{children}</BlueskyOAuthContext.Provider>;
 }
