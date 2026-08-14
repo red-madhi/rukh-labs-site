@@ -5,8 +5,16 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 const XRPC = "https://public.api.bsky.app/xrpc";
-const MAX_PEOPLE = 12;
+const MAX_PEOPLE = 18;
 const FEED_LIMIT = 16;
+
+const TACTICAL_TYPES = new Set([
+  "warm-follower-bridge",
+  "target-bestie",
+  "bestie-of-bestie",
+  "bridge-bestie",
+  "second-wave-bestie",
+]);
 
 type NeonResponse = { rows?: Array<Array<string | null>> };
 
@@ -36,6 +44,8 @@ type RecommendationRow = {
   reason: string;
   importance: number;
   reciprocity: number;
+  independentPaths: number;
+  sharedBestieClusters: number;
   state: string;
   metadata: Record<string, unknown>;
   displayName?: string;
@@ -128,34 +138,68 @@ function targetHandles(metadata: Record<string, unknown>) {
     : [];
 }
 
-function actionLabel(relation: Relationship | undefined, hours: number, recommendationType: string) {
-  if (relation?.followedBy && !relation.following) return "Follow back + reply";
-  if (!relation?.following && recommendationType === "warm-follower-bridge") return "Follow back";
-  if (hours <= 12) return "Reply while it’s fresh";
+function relationshipRole(type: string) {
+  if (type === "warm-follower-bridge") return "Warm bridge";
+  if (type === "target-bestie") return "Target-circle bridge";
+  if (type === "bridge-bestie") return "Bridge-circle connection";
+  if (type === "second-wave-bestie") return "Wave 2 bridge";
+  return "Extended bridge";
+}
+
+function bridgeLeverage(recommendation: RecommendationRow, relation: Relationship | undefined) {
+  const interaction = maxInteraction(recommendation.metadata);
+  const destinations = targetHandles(recommendation.metadata).length;
+  const warmRelationship = relation?.followedBy ? 12 : relation?.following ? 6 : 0;
+  const score =
+    recommendation.importance * 0.42 +
+    recommendation.reciprocity * 0.12 +
+    Math.min(30, recommendation.independentPaths * 8) +
+    Math.min(18, interaction / 5) +
+    Math.min(12, destinations * 4) +
+    warmRelationship;
+  return Math.max(0, Math.min(100, Math.round(score)));
+}
+
+function actionLabel(
+  relation: Relationship | undefined,
+  hours: number,
+  recommendationType: string,
+  independentPaths: number,
+) {
+  if (relation?.followedBy && !relation.following) return "Follow back + build rapport";
+  if (hours <= 12 && independentPaths >= 2) return "Reply to this bridge now";
   if (hours <= 48) return "Like + thoughtful reply";
-  return relation?.following ? "Reconnect" : "Follow + engage";
+  if (!relation?.following && recommendationType === "warm-follower-bridge") return "Follow back";
+  if (relation?.following || relation?.followedBy) return "Keep this bridge warm";
+  return "Cultivate this bridge";
 }
 
 function actionReason(
   recommendation: RecommendationRow,
   relation: Relationship | undefined,
-  targetNames: string[],
+  targets: string[],
   hours: number,
 ) {
-  const destination = targetNames[0] ? ` toward @${targetNames[0]}` : " in a useful network cluster";
+  const target = targets[0];
+  const targetPhrase = target ? ` toward @${target}` : " toward a high-value destination cluster";
+  const paths = recommendation.independentPaths;
+
+  if (paths >= 2) {
+    return `This person supports ${paths} independent warm path${paths === 1 ? "" : "s"}${targetPhrase}. Strengthening this relationship increases the number of people in that neighborhood who know and can vouch for you.`;
+  }
   if (relation?.followedBy && !relation.following) {
-    return `They already follow you, making this one of the lowest-friction relationship opportunities${destination}.`;
+    return `They already follow you and sit on a useful route${targetPhrase}. This is low-friction relationship capital worth turning into a real two-way connection.`;
   }
   if (recommendation.recommendationType === "target-bestie") {
-    return `This account is a verified close-neighborhood connection${destination}; a real conversation here is more valuable than cold-engaging the large target.`;
+    return `This is a close-neighborhood connection${targetPhrase}. Building familiarity here is more strategic than repeatedly cold-engaging the destination account itself.`;
   }
   if (recommendation.recommendationType === "bridge-bestie") {
-    return `This person sits next to one of your strongest bridge accounts${destination}.`;
+    return `This person is adjacent to one of your strongest bridges${targetPhrase}; they help turn one fragile route into a broader trusted cluster.`;
   }
   if (hours <= 24) {
-    return `A high-value account from your latest run has a fresh post right now${destination}.`;
+    return `A useful bridge account has a fresh post right now${targetPhrase}. A natural interaction here can deepen recognition while the conversation is active.`;
   }
-  return recommendation.reason;
+  return `This account is part of the reachable bridge network${targetPhrase}. The goal is genuine repeated familiarity, not a one-off request for a follow.`;
 }
 
 export async function POST(request: NextRequest) {
@@ -204,6 +248,8 @@ export async function POST(request: NextRequest) {
               rec.reason,
               rec.importance_score::text,
               rec.follow_back_likelihood::text,
+              COALESCE(rec.independent_paths,0)::text,
+              COALESCE(rec.shared_bestie_clusters,0)::text,
               rec.state,
               rec.metadata::text,
               p.display_name,
@@ -213,14 +259,14 @@ export async function POST(request: NextRequest) {
        JOIN public.advanced_network_accounts a ON a.id=rec.account_id
        WHERE a.bluesky_did=$1 AND rec.run_id=$2::uuid
        ORDER BY rec.importance_score DESC, rec.independent_paths DESC
-       LIMIT 40`,
+       LIMIT 60`,
       [actorDid, runId],
     );
 
     const recommendations: RecommendationRow[] = (recResult.rows ?? []).map((row) => {
       let metadata: Record<string, unknown> = {};
       try {
-        metadata = JSON.parse(row[7] ?? "{}") as Record<string, unknown>;
+        metadata = JSON.parse(row[9] ?? "{}") as Record<string, unknown>;
       } catch {
         metadata = {};
       }
@@ -231,23 +277,38 @@ export async function POST(request: NextRequest) {
         reason: row[3] ?? "",
         importance: Number(row[4] ?? 0),
         reciprocity: Number(row[5] ?? 0),
-        state: row[6] ?? "recommended",
+        independentPaths: Number(row[6] ?? 0),
+        sharedBestieClusters: Number(row[7] ?? 0),
+        state: row[8] ?? "recommended",
         metadata,
-        displayName: row[8] ?? undefined,
-        followersCount: Number(row[9] ?? 0),
+        displayName: row[10] ?? undefined,
+        followersCount: Number(row[11] ?? 0),
       };
     }).filter((item) => item.did && item.handle);
 
-    const top = recommendations.slice(0, MAX_PEOPLE);
+    // The Action Center is tactical. Large destination accounts belong in the
+    // target layer; this queue focuses on the reachable humans who form bridges
+    // and trusted neighborhoods around those destinations.
+    const tacticalRecommendations = recommendations.filter((item) => TACTICAL_TYPES.has(item.recommendationType));
+    const candidatePool = tacticalRecommendations.slice(0, MAX_PEOPLE);
+
     const relParams = new URLSearchParams({ actor: actorDid });
-    for (const item of top) relParams.append("others", item.did);
-    const relationships = top.length
+    for (const item of candidatePool) relParams.append("others", item.did);
+    const relationships = candidatePool.length
       ? (await xrpc<{ relationships?: Relationship[] }>("app.bsky.graph.getRelationships", relParams)).relationships ?? []
       : [];
     const relationByDid = new Map(relationships.map((item) => [item.did, item]));
 
+    const rankedBridges = candidatePool
+      .map((recommendation) => ({
+        recommendation,
+        relation: relationByDid.get(recommendation.did),
+        leverage: bridgeLeverage(recommendation, relationByDid.get(recommendation.did)),
+      }))
+      .sort((a, b) => b.leverage - a.leverage || b.recommendation.independentPaths - a.recommendation.independentPaths);
+
     const actionRows = await Promise.all(
-      top.slice(0, 8).map(async (recommendation) => {
+      rankedBridges.slice(0, 10).map(async ({ recommendation, relation, leverage }) => {
         let feed: FeedItem[] = [];
         try {
           const result = await xrpc<{ feed?: FeedItem[] }>(
@@ -259,24 +320,23 @@ export async function POST(request: NextRequest) {
           feed = [];
         }
         const selected = bestPost(feed, recommendation.did);
-        const relation = relationByDid.get(recommendation.did);
         const targets = targetHandles(recommendation.metadata);
         const hours = selected?.hours ?? 999;
         const post = selected?.post;
-        const freshnessBonus = hours <= 12 ? 18 : hours <= 36 ? 12 : hours <= 72 ? 5 : 0;
-        const warmBonus = relation?.followedBy ? 18 : relation?.following ? 7 : 0;
-        const interactionBonus = Math.round(maxInteraction(recommendation.metadata) / 8);
-        const opportunityScore = Math.round(
-          recommendation.importance * 0.55 + recommendation.reciprocity * 0.2 + freshnessBonus + warmBonus + interactionBonus,
-        );
+        const freshnessBonus = hours <= 12 ? 18 : hours <= 36 ? 11 : hours <= 72 ? 5 : 0;
+        const warmBonus = relation?.followedBy ? 12 : relation?.following ? 6 : 0;
+        const opportunityScore = Math.min(100, Math.round(leverage * 0.72 + freshnessBonus + warmBonus));
         return {
           did: recommendation.did,
           handle: recommendation.handle,
           displayName: recommendation.displayName,
           followersCount: recommendation.followersCount,
           recommendationType: recommendation.recommendationType,
+          relationshipRole: relationshipRole(recommendation.recommendationType),
+          bridgeLeverage: leverage,
+          independentPaths: recommendation.independentPaths,
           opportunityScore,
-          action: actionLabel(relation, hours, recommendation.recommendationType),
+          action: actionLabel(relation, hours, recommendation.recommendationType, recommendation.independentPaths),
           reason: actionReason(recommendation, relation, targets, hours),
           targetHandles: targets,
           following: Boolean(relation?.following),
@@ -300,45 +360,52 @@ export async function POST(request: NextRequest) {
 
     const actions = actionRows.sort((a, b) => b.opportunityScore - a.opportunityScore).slice(0, 6);
 
-    const topPeople = top.slice(0, 8).map((item) => {
-      const relation = relationByDid.get(item.did);
-      return {
-        did: item.did,
-        handle: item.handle,
-        displayName: item.displayName,
-        followersCount: item.followersCount,
-        importance: item.importance,
-        reciprocity: item.reciprocity,
-        interactionStrength: maxInteraction(item.metadata),
-        targetHandles: targetHandles(item.metadata),
-        following: Boolean(relation?.following),
-        followedBy: Boolean(relation?.followedBy),
-      };
-    });
+    const topPeople = rankedBridges.slice(0, 8).map(({ recommendation, relation, leverage }) => ({
+      did: recommendation.did,
+      handle: recommendation.handle,
+      displayName: recommendation.displayName,
+      followersCount: recommendation.followersCount,
+      importance: recommendation.importance,
+      reciprocity: recommendation.reciprocity,
+      independentPaths: recommendation.independentPaths,
+      interactionStrength: maxInteraction(recommendation.metadata),
+      bridgeLeverage: leverage,
+      relationshipRole: relationshipRole(recommendation.recommendationType),
+      targetHandles: targetHandles(recommendation.metadata),
+      following: Boolean(relation?.following),
+      followedBy: Boolean(relation?.followedBy),
+    }));
 
-    const bestieSignals = recommendations
+    const bestieSignals = tacticalRecommendations
       .filter((item) =>
         ["target-bestie", "bestie-of-bestie", "bridge-bestie", "second-wave-bestie"].includes(item.recommendationType),
       )
-      .map((item) => ({
-        did: item.did,
-        handle: item.handle,
-        displayName: item.displayName,
-        followersCount: item.followersCount,
-        signalStrength: Math.max(item.importance, maxInteraction(item.metadata)),
-        interactionStrength: maxInteraction(item.metadata),
-        type: item.recommendationType,
-        targetHandles: targetHandles(item.metadata),
-      }))
+      .map((item) => {
+        const relation = relationByDid.get(item.did);
+        const leverage = bridgeLeverage(item, relation);
+        return {
+          did: item.did,
+          handle: item.handle,
+          displayName: item.displayName,
+          followersCount: item.followersCount,
+          signalStrength: Math.max(leverage, item.importance, maxInteraction(item.metadata)),
+          interactionStrength: maxInteraction(item.metadata),
+          independentPaths: item.independentPaths,
+          bridgeLeverage: leverage,
+          type: item.recommendationType,
+          targetHandles: targetHandles(item.metadata),
+        };
+      })
       .sort((a, b) => b.signalStrength - a.signalStrength)
       .slice(0, 6);
 
-    const clusterMap = new Map<string, { count: number; score: number }>();
-    for (const item of recommendations) {
+    const clusterMap = new Map<string, { count: number; score: number; paths: number }>();
+    for (const item of tacticalRecommendations) {
       for (const target of targetHandles(item.metadata)) {
-        const current = clusterMap.get(target) ?? { count: 0, score: 0 };
+        const current = clusterMap.get(target) ?? { count: 0, score: 0, paths: 0 };
         current.count += 1;
         current.score += item.importance;
+        current.paths += item.independentPaths;
         clusterMap.set(target, current);
       }
     }
@@ -346,9 +413,10 @@ export async function POST(request: NextRequest) {
       .map(([handle, value]) => ({
         handle,
         people: value.count,
+        independentPaths: value.paths,
         strength: Math.round(value.score / Math.max(1, value.count)),
       }))
-      .sort((a, b) => b.strength - a.strength || b.people - a.people)
+      .sort((a, b) => b.independentPaths - a.independentPaths || b.strength - a.strength || b.people - a.people)
       .slice(0, 6);
 
     return NextResponse.json({
@@ -359,7 +427,7 @@ export async function POST(request: NextRequest) {
       bestieSignals,
       clusters,
       note:
-        "Action suggestions combine saved Advanced Network ranking data with live Bluesky relationships and recent public posts. They are suggestions only; likes and replies are never automated.",
+        "The Action Center deliberately excludes pure destination accounts. It prioritizes the reachable bridge, bestie, and emerging-trust relationships that can create multiple independent warm paths into those destination neighborhoods. Likes and replies are suggestions only and are never automated.",
     });
   } catch (error) {
     console.error("Advanced Network Action Center failed", error);
