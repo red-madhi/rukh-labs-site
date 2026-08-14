@@ -1,12 +1,14 @@
 {
   "client_id": "https://rukhlabs.com/oauth-client-metadata.json",
-  "client_name": "Rukh Labs Bluesky Network Explorer",
+  "client_name": "Rukh Labs Bluesky Tools",
   "client_uri": "https://rukhlabs.com/tools/bluesky-network",
   "policy_uri": "https://rukhlabs.com/legal/privacy",
   "tos_uri": "https://rukhlabs.com/legal/terms",
   "redirect_uris": [
     "https://rukhlabs.com/tools/bluesky-network",
-    "https://www.rukhlabs.com/tools/bluesky-network"
+    "https://www.rukhlabs.com/tools/bluesky-network",
+    "https://rukhlabs.com/tools/bluesky-network-advanced/app",
+    "https://www.rukhlabs.com/tools/bluesky-network-advanced/app"
   ],
   "scope": "atproto repo:app.bsky.graph.follow?action=create",
   "grant_types": ["authorization_code", "refresh_token"],
