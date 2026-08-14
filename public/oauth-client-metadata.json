@@ -1,7 +1,7 @@
 {
   "client_id": "https://rukhlabs.com/oauth-client-metadata.json",
   "client_name": "Rukh Labs Bluesky Tools",
-  "client_uri": "https://rukhlabs.com/tools/bluesky-network",
+  "client_uri": "https://rukhlabs.com/",
   "policy_uri": "https://rukhlabs.com/legal/privacy",
   "tos_uri": "https://rukhlabs.com/legal/terms",
   "redirect_uris": [
