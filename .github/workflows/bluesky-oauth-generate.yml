@@ -29,7 +29,7 @@ jobs:
         run: npm install --global pnpm@10.28.0
 
       - name: Add official AT Protocol OAuth packages
-        run: pnpm add @atproto/api@0.20.34 @atproto/oauth-client-browser@0.4.9
+        run: pnpm add @atproto/api@0.20.41 @atproto/oauth-client-browser@0.5.3
 
       - name: Patch explorer result actions
         run: node scripts/patch-bluesky-oauth.mjs
