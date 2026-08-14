@@ -199,9 +199,14 @@ export async function POST(request: NextRequest) {
     const scope = body.scope === "mutuals-only" ? "mutuals-only" : "all-followers";
     const actor = await getProfile(actorInput);
 
+    // The profile total and the publicly enumerable follower graph can differ.
+    // Keep both values so the UI never presents a partial graph count as the
+    // account's full follower total.
+    const profileFollowers = Math.max(0, actor.followersCount ?? 0);
+
     // app.bsky.graph.getFollowers returns lightweight profile views and does not
-    // reliably include follower/following counts. Hydrate every follower through
-    // app.bsky.actor.getProfiles before scoring or displaying them.
+    // reliably include follower/following counts. Hydrate every visible follower
+    // through app.bsky.actor.getProfiles before scoring or displaying them.
     const followerStubs = await getFollowers(actor.did);
     const followerDids = followerStubs.map((profile) => profile.did).filter(Boolean);
     const hydratedProfiles = followerDids.length ? await getProfiles(followerDids) : [];
@@ -210,6 +215,7 @@ export async function POST(request: NextRequest) {
       ...stub,
       ...(hydratedByDid.get(stub.did) ?? {}),
     }));
+    const observableFollowers = followers.length;
 
     const followerRelationships = followerDids.length
       ? await getRelationships(actor.did, followerDids)
@@ -253,7 +259,11 @@ export async function POST(request: NextRequest) {
       ? requestedTargetInputs
       : savedTargetInputs
     ).slice(0, MAX_TARGETS);
-    const targetSource = requestedTargetInputs.length ? "current-run" : savedTargetInputs.length ? "saved-campaign" : "none";
+    const targetSource = requestedTargetInputs.length
+      ? "current-run"
+      : savedTargetInputs.length
+        ? "saved-campaign"
+        : "none";
 
     const targetProfiles = (
       await Promise.all(
@@ -274,7 +284,7 @@ export async function POST(request: NextRequest) {
         handle: actor.handle,
         displayName: actor.displayName,
         avatar: actor.avatar,
-        followersCount: Math.max(0, actor.followersCount ?? 0),
+        followersCount: profileFollowers,
         followsCount: Math.max(0, actor.followsCount ?? 0),
         kind: "self",
         score: 999,
@@ -355,7 +365,8 @@ export async function POST(request: NextRequest) {
       generatedAt: new Date().toISOString(),
       targetSource,
       totals: {
-        followers: followers.length,
+        profileFollowers,
+        observableFollowers,
         mutuals: mutualCount,
         startingPool: startingPool.length,
         displayedStartingNodes: selectedStarting.length,
