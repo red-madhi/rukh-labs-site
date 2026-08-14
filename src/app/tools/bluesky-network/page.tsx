@@ -10,7 +10,7 @@ import { createPageMetadata, siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Free Bluesky Network Explorer",
   description:
-    "Analyze Bluesky through followers or accounts followed, then rank people to follow by shared connections, overlap percentage, and reach.",
+    "Analyze Bluesky through followers or accounts followed, rank people by network overlap and reach, and optionally sign in to follow discoveries inside the tool.",
   path: "/tools/bluesky-network",
   image: {
     url: "/opengraph-image",
@@ -38,7 +38,7 @@ export default function BlueskyNetworkPage() {
     operatingSystem: "Any",
     url: `${siteConfig.url}/tools/bluesky-network`,
     description:
-      "A free browser-based tool that analyzes public Bluesky follower or following connections and ranks second-degree accounts by network overlap and follower reach.",
+      "A free browser-based tool that analyzes public Bluesky follower or following connections, ranks second-degree accounts by network overlap and follower reach, and offers optional OAuth follow actions.",
     provider: {
       "@type": "Organization",
       "@id": `${siteConfig.url}/#organization`,
@@ -57,7 +57,7 @@ export default function BlueskyNetworkPage() {
       "Follower reach ranking",
       "Local resumable scans",
       "CSV export",
-      "Manual profile and follow links",
+      "Optional Bluesky OAuth follow actions",
     ],
   };
 
@@ -83,7 +83,7 @@ export default function BlueskyNetworkPage() {
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f0001c_35%,#16c8ff_65%,transparent)]" />
         <Container>
           <div className="max-w-5xl">
-            <Badge tone="blue">Free · No signup · Public Bluesky data</Badge>
+            <Badge tone="blue">Free · Public scans · Optional sign-in</Badge>
             <h1 className="mt-6 text-4xl font-semibold leading-[1.02] tracking-[-0.045em] text-white sm:text-6xl lg:text-7xl">
               Find the accounts your network already knows.
             </h1>
@@ -101,7 +101,7 @@ export default function BlueskyNetworkPage() {
                 Scan progress stays in your browser
               </span>
               <span className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3">
-                Every follow remains your choice
+                Optional sign-in for in-tool follows
               </span>
             </div>
           </div>
@@ -133,9 +133,11 @@ export default function BlueskyNetworkPage() {
               would usually be better signals for ranking individual posts.
             </p>
             <p className="mt-3">
-              Rukh Labs is not affiliated with Bluesky Social PBC. This tool
-              reads public AT Protocol data and opens official Bluesky profile
-              pages for any follow action. It does not automate bulk follows.
+              Rukh Labs is not affiliated with Bluesky Social PBC. Public scans
+              require no login. Optional OAuth sign-in is used only when you
+              choose to follow an account inside the tool; Rukh Labs never asks
+              for your Bluesky password, and the tool does not perform bulk
+              follows.
             </p>
           </div>
         </Container>
