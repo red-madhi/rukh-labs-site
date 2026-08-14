@@ -7,7 +7,13 @@ const PUBLIC_API = "https://public.api.bsky.app/xrpc";
 const MAX_MUTUAL_SCAN_FOLLOWERS = 2_000;
 const SNAPSHOT_COOLDOWN_MS = 10 * 60 * 1000;
 
-const NETWORK_LEVELS = [
+type NetworkLevelDefinition = {
+  level: number;
+  title: string;
+  minXp: number;
+};
+
+const NETWORK_LEVELS: NetworkLevelDefinition[] = [
   { level: 1, title: "Starting Point", minXp: 0 },
   { level: 2, title: "Connector", minXp: 150 },
   { level: 3, title: "Bridge Builder", minXp: 350 },
@@ -18,7 +24,7 @@ const NETWORK_LEVELS = [
   { level: 8, title: "Network Architect", minXp: 3_200 },
   { level: 9, title: "Constellation", minXp: 4_300 },
   { level: 10, title: "Network Gravity", minXp: 5_600 },
-] as const;
+];
 
 type Profile = {
   did: string;
