@@ -2,8 +2,53 @@ export const MAX_EXPLICIT_TARGETS = 10;
 export const DEFAULT_DEEP_TARGETS = 6;
 
 export type AdvancedTargetMode = "profiles" | "categories" | "hybrid" | "suggested";
+export type StartingNetworkScope = "all-followers" | "mutuals-only";
 export type TargetCost = "low" | "medium" | "high" | "very-high";
 export type TargetDisposition = "deep-analysis" | "deferred";
+
+export const STARTING_NETWORK_SCOPE_COPY: Record<
+  StartingNetworkScope,
+  {
+    label: string;
+    description: string;
+    pros: readonly string[];
+    cons: readonly string[];
+    recommendedFor: string;
+  }
+> = {
+  "all-followers": {
+    label: "All followers",
+    description:
+      "Start from everyone who follows you, even when you do not follow them back.",
+    pros: [
+      "Widest pool of warm edges and hidden bridge opportunities.",
+      "Can discover valuable followers you have overlooked.",
+      "Best chance of finding unexpected paths into distant target clusters.",
+    ],
+    cons: [
+      "More graph work, so runs cost more and can take longer.",
+      "Includes weaker one-way relationships that add noise.",
+      "Needs stronger quality filters to avoid mass-follow and low-value accounts.",
+    ],
+    recommendedFor: "Maximum discovery and mature accounts with a meaningful follower base.",
+  },
+  "mutuals-only": {
+    label: "Mutual followers only",
+    description:
+      "Start only from people where you already follow each other.",
+    pros: [
+      "Every starting edge is reciprocal and socially stronger.",
+      "Cheaper, faster, and easier to explain in path calculations.",
+      "Produces a cleaner graph with fewer weak starting relationships.",
+    ],
+    cons: [
+      "Can miss followers who already have excellent mutual bridges deeper in the graph.",
+      "Smaller accounts may end up with too little starting coverage.",
+      "May take longer to discover entirely new communities.",
+    ],
+    recommendedFor: "Focused runs, smaller compute budgets, and users who value relationship quality over breadth.",
+  },
+};
 
 export type AdvancedNetworkCategory = {
   id: string;
@@ -88,7 +133,9 @@ export function calculateDynamicImportance(input: NetworkImportanceInputs) {
   const pathScore = clamp(Math.log2(input.independentPaths + 1) * 24);
   const clusterScore = clamp(Math.log2(input.sharedBestieClusters + 1) * 22);
   const interactionScore = clamp(input.interactionStrength);
-  const reachScore = clamp((Math.log10(Math.max(0, input.followersCount) + 10) / 7) * 100);
+  const reachScore = clamp(
+    (Math.log10(Math.max(0, input.followersCount) + 10) / 7) * 100,
+  );
   const reciprocityScore = clamp(input.followBackLikelihood);
   const relevanceScore = clamp(input.categoryRelevance);
 
@@ -103,7 +150,10 @@ export function calculateDynamicImportance(input: NetworkImportanceInputs) {
   );
 }
 
-export function estimateGraphCost(followersCount = 0, followsCount = 0): TargetCost {
+export function estimateGraphCost(
+  followersCount = 0,
+  followsCount = 0,
+): TargetCost {
   const graphSize = Math.max(0, followersCount) + Math.max(0, followsCount);
   if (graphSize >= 1_000_000) return "very-high";
   if (graphSize >= 250_000) return "high";
@@ -122,8 +172,14 @@ export function targetPriorityScore({
   mutual: boolean;
   oneWay: boolean;
 }) {
-  const influence = clamp((Math.log10(Math.max(0, followersCount) + 10) / 7) * 100);
+  const influence = clamp(
+    (Math.log10(Math.max(0, followersCount) + 10) / 7) * 100,
+  );
   const cost = estimateGraphCost(followersCount, followsCount);
   const costPenalty = { low: 0, medium: 5, high: 11, "very-high": 18 }[cost];
-  return clamp(Math.round(influence * 0.82 + (mutual ? 24 : oneWay ? 6 : 0) - costPenalty));
+  return clamp(
+    Math.round(
+      influence * 0.82 + (mutual ? 24 : oneWay ? 6 : 0) - costPenalty,
+    ),
+  );
 }
