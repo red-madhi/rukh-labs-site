@@ -6,6 +6,7 @@ type AnalyticsEvents = {
   website_package_click: { package_id: string; source_page: string };
   career_package_click: { package_id: string; source_page: string };
   contact_form_start: { inquiry_type: string; source_page: string };
+  contact_form_submitted: { inquiry_type: string; source_page: string };
   contact_email_draft_opened: { inquiry_type: string; source_page: string };
   email_click: { source_page: string };
   google_play_click: { product: "farzin"; source_page: string };
