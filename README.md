@@ -1,58 +1,36 @@
-# Rukh Labs Site
+# Rukh Labs
 
-Production-quality marketing website for Rukh Labs, an independent software lab building Glass Squares OS and Farzin.
+Public website for Rukh Labs, built with Next.js and deployed on Vercel.
 
-## Stack
-
-- Next.js App Router
-- React
-- TypeScript
-- Tailwind CSS
-- Framer Motion
-- Lucide React
-- Custom shadcn/ui-style primitives
-
-## Install
+## Local development
 
 ```bash
 pnpm install
-```
-
-## Run Development Server
-
-```bash
 pnpm dev
 ```
 
-Open `http://localhost:3000`.
+## Quality checks
 
-## Build
-
-```bash
-pnpm build
-```
-
-## Lint
+Run these before publishing meaningful changes:
 
 ```bash
-pnpm lint
+pnpm run lint
+pnpm run build
+pnpm run seo:audit
 ```
 
-## Deployment
+## Contact lead capture
 
-The project is ready for Vercel deployment. Import the repo, keep the default Next.js settings, and use `pnpm build` as the build command.
+The `/contact` form submits to `/api/contact` and stores leads in Neon Postgres.
 
-## Editing Content
+Required server environment variable:
 
-Primary brand, product, and roadmap content lives in:
+- `DATABASE_URL` — Neon Postgres connection string. Keep this server-only and never expose it through a `NEXT_PUBLIC_` variable.
 
-- `src/lib/site-config.ts`
-- `src/lib/products.ts`
-- `src/lib/changelog.ts`
-- `src/lib/web-development.ts`
+Optional email notifications use Resend:
 
-Shared UI lives in `src/components`. Product mockups are CSS/HTML based and live in `src/components/visuals`.
+- `RESEND_API_KEY`
+- `CONTACT_NOTIFICATION_EMAIL`
+- `CONTACT_FROM_EMAIL` — optional; defaults to `Rukh Labs <hello@rukhlabs.com>`
 
-## Forms
-
-The waitlist and contact forms are frontend-only placeholders. They validate input locally and show polished success states, but they do not send data to a backend yet.
+Lead notification failures do not discard a successfully stored lead.
