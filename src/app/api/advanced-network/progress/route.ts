@@ -7,6 +7,19 @@ const PUBLIC_API = "https://public.api.bsky.app/xrpc";
 const MAX_MUTUAL_SCAN_FOLLOWERS = 2_000;
 const SNAPSHOT_COOLDOWN_MS = 10 * 60 * 1000;
 
+const NETWORK_LEVELS = [
+  { level: 1, title: "Starting Point", minXp: 0 },
+  { level: 2, title: "Connector", minXp: 150 },
+  { level: 3, title: "Bridge Builder", minXp: 350 },
+  { level: 4, title: "Network Weaver", minXp: 650 },
+  { level: 5, title: "Cluster Builder", minXp: 1_050 },
+  { level: 6, title: "Social Proof", minXp: 1_600 },
+  { level: 7, title: "Neighborhood Insider", minXp: 2_300 },
+  { level: 8, title: "Network Architect", minXp: 3_200 },
+  { level: 9, title: "Constellation", minXp: 4_300 },
+  { level: 10, title: "Network Gravity", minXp: 5_600 },
+] as const;
+
 type Profile = {
   did: string;
   handle: string;
@@ -31,6 +44,7 @@ type SnapshotMetrics = {
   followsCount?: number;
   mutualsCount?: number;
   postsCount?: number;
+  networkXp?: number;
   baseline?: boolean;
   source?: string;
   followersCountNote?: string;
@@ -41,6 +55,15 @@ type SnapshotMetrics = {
 type Snapshot = {
   capturedAt: string;
   metrics: SnapshotMetrics;
+};
+
+type GrowthStats = {
+  bridgePeople: number;
+  independentPaths: number;
+  newBridgePeople: number;
+  newIndependentPaths: number;
+  followBacks: number;
+  interactionScore: number;
 };
 
 function getNeonEndpoint(connectionString: string) {
@@ -160,6 +183,123 @@ function metric(metrics: SnapshotMetrics, key: "followersCount" | "followsCount"
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }
 
+function numeric(value: string | null | undefined) {
+  const parsed = Number(value ?? 0);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function getGrowthStats(accountId: string, actorDid: string, baselineAt: string): Promise<GrowthStats> {
+  const bridgeResult = await neonQuery(
+    `WITH targets AS (
+       SELECT DISTINCT t.target_did
+       FROM public.advanced_network_targets t
+       JOIN public.advanced_network_campaigns c ON c.id=t.campaign_id
+       WHERE c.account_id=$1::uuid
+         AND c.status='active'
+         AND t.status IN ('active','candidate')
+     ),
+     mutual_user AS (
+       SELECT e1.target_did AS bridge_did,
+              GREATEST(e1.first_seen_at,e2.first_seen_at) AS relationship_seen_at
+       FROM public.advanced_network_follow_edges e1
+       JOIN public.advanced_network_follow_edges e2
+         ON e2.source_did=e1.target_did
+        AND e2.target_did=e1.source_did
+        AND e2.active=true
+       WHERE e1.source_did=$2
+         AND e1.active=true
+     ),
+     twohop AS (
+       SELECT DISTINCT m.bridge_did,
+              t.target_did,
+              GREATEST(m.relationship_seen_at,bt.first_seen_at,tb.first_seen_at) AS path_seen_at
+       FROM mutual_user m
+       JOIN public.advanced_network_follow_edges bt
+         ON bt.source_did=m.bridge_did AND bt.active=true
+       JOIN public.advanced_network_follow_edges tb
+         ON tb.source_did=bt.target_did
+        AND tb.target_did=m.bridge_did
+        AND tb.active=true
+       JOIN targets t ON t.target_did=bt.target_did
+     )
+     SELECT COUNT(DISTINCT bridge_did)::text,
+            COUNT(*)::text,
+            COUNT(DISTINCT bridge_did) FILTER (WHERE path_seen_at >= $3::timestamptz)::text,
+            COUNT(*) FILTER (WHERE path_seen_at >= $3::timestamptz)::text
+     FROM twohop`,
+    [accountId, actorDid, baselineAt],
+  );
+
+  const outcomeResult = await neonQuery(
+    `SELECT COUNT(DISTINCT target_did) FILTER (
+              WHERE followed_back_at IS NOT NULL AND followed_back_at >= $2::timestamptz
+            )::text
+     FROM public.advanced_network_recommendations
+     WHERE account_id=$1::uuid`,
+    [accountId, baselineAt],
+  );
+
+  const interactionResult = await neonQuery(
+    `SELECT COALESCE(SUM(interaction_score),0)::text
+     FROM public.advanced_network_interaction_scores
+     WHERE (actor_did=$1 OR peer_did=$1)
+       AND updated_at >= $2::timestamptz`,
+    [actorDid, baselineAt],
+  );
+
+  const bridgeRow = bridgeResult.rows?.[0] ?? [];
+  return {
+    bridgePeople: numeric(bridgeRow[0]),
+    independentPaths: numeric(bridgeRow[1]),
+    newBridgePeople: numeric(bridgeRow[2]),
+    newIndependentPaths: numeric(bridgeRow[3]),
+    followBacks: numeric(outcomeResult.rows?.[0]?.[0]),
+    interactionScore: numeric(interactionResult.rows?.[0]?.[0]),
+  };
+}
+
+function calculateNetworkXp(
+  delta: { followers: number; mutuals: number },
+  stats: GrowthStats,
+) {
+  const breakdown = {
+    followerGrowth: Math.min(400, Math.max(0, delta.followers) * 4),
+    mutualGrowth: Math.min(700, Math.max(0, delta.mutuals) * 35),
+    bridgeGrowth: Math.min(540, stats.newBridgePeople * 18),
+    pathGrowth: Math.min(
+      260,
+      stats.newIndependentPaths > 0
+        ? Math.round(Math.log2(stats.newIndependentPaths + 1) * 28)
+        : 0,
+    ),
+    followBacks: Math.min(700, stats.followBacks * 70),
+    interactions: Math.min(
+      300,
+      stats.interactionScore > 0
+        ? Math.round(Math.log2(stats.interactionScore + 1) * 20)
+        : 0,
+    ),
+  };
+
+  return {
+    xp: Object.values(breakdown).reduce((sum, value) => sum + value, 0),
+    breakdown,
+  };
+}
+
+function levelForXp(xp: number) {
+  let current = NETWORK_LEVELS[0];
+  for (const level of NETWORK_LEVELS) {
+    if (xp >= level.minXp) current = level;
+  }
+  const next = NETWORK_LEVELS.find((level) => level.level === current.level + 1) ?? null;
+  const span = next ? Math.max(1, next.minXp - current.minXp) : 1;
+  const progress = next
+    ? Math.round(Math.max(0, Math.min(1, (xp - current.minXp) / span)) * 100)
+    : 100;
+  return { current, next, progress };
+}
+
 export async function GET(request: NextRequest) {
   try {
     if (!(await hasAdvancedNetworkAccess())) {
@@ -188,16 +328,6 @@ export async function GET(request: NextRequest) {
     if (!accountId) throw new Error("Advanced Network account could not be initialized.");
 
     const mutuals = await countMutuals(profile.did);
-    const currentMetrics: SnapshotMetrics = {
-      followersCount: Math.max(0, profile.followersCount ?? 0),
-      followsCount: Math.max(0, profile.followsCount ?? 0),
-      mutualsCount: mutuals.count,
-      postsCount: Math.max(0, profile.postsCount ?? 0),
-      baseline: false,
-      source: "live-login-reconciliation",
-      mutualsSampled: !mutuals.complete,
-      sampledFollowerCount: mutuals.sampledFollowerCount,
-    };
 
     const snapshotsResult = await neonQuery(
       `SELECT captured_at::text, metrics::text
@@ -209,22 +339,62 @@ export async function GET(request: NextRequest) {
     let snapshots = (snapshotsResult.rows ?? []).map(parseSnapshotRow).filter(Boolean) as Snapshot[];
 
     if (snapshots.length === 0) {
-      const baselineMetrics = { ...currentMetrics, baseline: true, source: "first-advanced-network-login" };
-      await neonQuery(
+      const baselineMetrics: SnapshotMetrics = {
+        followersCount: Math.max(0, profile.followersCount ?? 0),
+        followsCount: Math.max(0, profile.followsCount ?? 0),
+        mutualsCount: mutuals.count,
+        postsCount: Math.max(0, profile.postsCount ?? 0),
+        networkXp: 0,
+        baseline: true,
+        source: "first-advanced-network-login",
+        mutualsSampled: !mutuals.complete,
+        sampledFollowerCount: mutuals.sampledFollowerCount,
+      };
+      const insertBaseline = await neonQuery(
         `INSERT INTO public.advanced_network_snapshots (account_id, captured_at, metrics, graph_summary)
-         VALUES ($1::uuid, now(), $2::jsonb, '{"baselineEstablishedBy":"first-login"}'::jsonb)`,
+         VALUES ($1::uuid, now(), $2::jsonb, '{"baselineEstablishedBy":"first-login"}'::jsonb)
+         RETURNING captured_at::text, metrics::text`,
         [accountId, JSON.stringify(baselineMetrics)],
       );
-      const now = new Date().toISOString();
-      snapshots = [{ capturedAt: now, metrics: baselineMetrics }];
+      const created = parseSnapshotRow(insertBaseline.rows?.[0]);
+      snapshots = created ? [created] : [{ capturedAt: new Date().toISOString(), metrics: baselineMetrics }];
     }
+
+    const baseline = snapshots[0];
+    const baseDelta = {
+      followers: Math.max(0, profile.followersCount ?? 0) - metric(baseline.metrics, "followersCount"),
+      follows: Math.max(0, profile.followsCount ?? 0) - metric(baseline.metrics, "followsCount"),
+      mutuals: mutuals.count - metric(baseline.metrics, "mutualsCount"),
+    };
+
+    const growthStats = await getGrowthStats(accountId, profile.did, baseline.capturedAt);
+    const calculated = calculateNetworkXp(baseDelta, growthStats);
+    const historicalXp = snapshots.reduce(
+      (max, snapshot) => Math.max(max, Number(snapshot.metrics.networkXp ?? 0)),
+      0,
+    );
+    const networkXp = Math.max(historicalXp, calculated.xp);
+    const level = levelForXp(networkXp);
+
+    const currentMetrics: SnapshotMetrics = {
+      followersCount: Math.max(0, profile.followersCount ?? 0),
+      followsCount: Math.max(0, profile.followsCount ?? 0),
+      mutualsCount: mutuals.count,
+      postsCount: Math.max(0, profile.postsCount ?? 0),
+      networkXp,
+      baseline: false,
+      source: "live-login-reconciliation",
+      mutualsSampled: !mutuals.complete,
+      sampledFollowerCount: mutuals.sampledFollowerCount,
+    };
 
     const latest = snapshots.at(-1)!;
     const latestAt = Date.parse(latest.capturedAt);
     const changed =
       metric(latest.metrics, "followersCount") !== metric(currentMetrics, "followersCount") ||
       metric(latest.metrics, "followsCount") !== metric(currentMetrics, "followsCount") ||
-      metric(latest.metrics, "mutualsCount") !== metric(currentMetrics, "mutualsCount");
+      metric(latest.metrics, "mutualsCount") !== metric(currentMetrics, "mutualsCount") ||
+      Number(latest.metrics.networkXp ?? 0) !== networkXp;
     const stale = !Number.isFinite(latestAt) || Date.now() - latestAt >= SNAPSHOT_COOLDOWN_MS;
 
     let current: Snapshot = { capturedAt: new Date().toISOString(), metrics: currentMetrics };
@@ -239,6 +409,10 @@ export async function GET(request: NextRequest) {
           JSON.stringify({
             observableFollowersChecked: mutuals.sampledFollowerCount,
             mutualScanComplete: mutuals.complete,
+            networkLevel: level.current.level,
+            networkLevelTitle: level.current.title,
+            bridgePeople: growthStats.bridgePeople,
+            independentPaths: growthStats.independentPaths,
           }),
         ],
       );
@@ -247,7 +421,6 @@ export async function GET(request: NextRequest) {
       current = latest;
     }
 
-    const baseline = snapshots[0];
     return NextResponse.json({
       actor: {
         did: profile.did,
@@ -256,12 +429,21 @@ export async function GET(request: NextRequest) {
       },
       baseline,
       current,
-      delta: {
-        followers: metric(current.metrics, "followersCount") - metric(baseline.metrics, "followersCount"),
-        follows: metric(current.metrics, "followsCount") - metric(baseline.metrics, "followsCount"),
-        mutuals: metric(current.metrics, "mutualsCount") - metric(baseline.metrics, "mutualsCount"),
-      },
+      delta: baseDelta,
       continuingExistingHistory: baseline.metrics.source === "aug-14-network-session",
+      networkLevel: {
+        xp: networkXp,
+        level: level.current.level,
+        title: level.current.title,
+        currentLevelXp: level.current.minXp,
+        nextLevelXp: level.next?.minXp ?? null,
+        nextLevelTitle: level.next?.title ?? null,
+        progressPercent: level.progress,
+        breakdown: calculated.breakdown,
+        stats: growthStats,
+        scoringNote:
+          "Network XP rewards quality growth from the saved baseline: mutuals, verified bridge coverage, independent paths, real follow-backs, and interaction. Raw following volume is not rewarded.",
+      },
     });
   } catch (error) {
     console.error("Advanced Network progress reconciliation failed", error);
