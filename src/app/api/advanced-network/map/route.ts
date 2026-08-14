@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { hasAdvancedNetworkAccess } from "@/lib/advanced-network-access";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 const XRPC = "https://public.api.bsky.app/xrpc";
-const MAX_STARTING_NODES = 20;
+const DEFAULT_STARTING_NODES = 20;
+const EXPLORE_STARTING_NODES = 100;
 const MAX_TARGETS = 10;
 const PROFILE_BATCH_SIZE = 25;
+const MAX_KNOWN_PEER_EDGES = 500;
 
 type Profile = {
   did: string;
@@ -38,7 +41,12 @@ type GraphNode = {
 type GraphEdge = {
   source: string;
   target: string;
-  kind: "self-mutual" | "self-follower" | "self-target" | "verified-target-bridge";
+  kind:
+    | "self-mutual"
+    | "self-follower"
+    | "self-target"
+    | "verified-target-bridge"
+    | "known-peer-edge";
   reciprocal: boolean;
 };
 
@@ -169,6 +177,27 @@ async function getSavedTargetHandles(actorDid: string) {
     .filter((value): value is string => Boolean(value));
 }
 
+async function getKnownPeerEdges(dids: string[]) {
+  const unique = Array.from(new Set(dids.filter(Boolean))).slice(0, 120);
+  if (unique.length < 2) return [] as Array<{ source: string; target: string }>;
+
+  const placeholders = unique.map((_, index) => `$${index + 1}`).join(",");
+  const result = await neonQuery(
+    `SELECT source_did, target_did
+     FROM public.advanced_network_follow_edges
+     WHERE active=true
+       AND source_did IN (${placeholders})
+       AND target_did IN (${placeholders})
+     ORDER BY last_seen_at DESC
+     LIMIT ${MAX_KNOWN_PEER_EDGES}`,
+    unique,
+  );
+
+  return (result.rows ?? [])
+    .map((row) => ({ source: row[0] ?? "", target: row[1] ?? "" }))
+    .filter((edge) => edge.source && edge.target && edge.source !== edge.target);
+}
+
 function influenceScore(profile: Profile, mutual: boolean) {
   const followers = Math.max(0, profile.followersCount ?? 0);
   const follows = Math.max(0, profile.followsCount ?? 0);
@@ -178,6 +207,10 @@ function influenceScore(profile: Profile, mutual: boolean) {
       Math.min(24, Math.log2(ratio + 1) * 8) +
       (mutual ? 35 : 0),
   );
+}
+
+function edgeKey(source: string, target: string) {
+  return `${source}->${target}`;
 }
 
 export async function POST(request: NextRequest) {
@@ -190,23 +223,19 @@ export async function POST(request: NextRequest) {
       actor?: string;
       scope?: "all-followers" | "mutuals-only";
       targets?: string[];
+      explore?: boolean;
     };
     const actorInput = normalize(String(body.actor ?? ""));
     if (!actorInput) {
       return NextResponse.json({ error: "Connect a Bluesky account first." }, { status: 400 });
     }
 
+    const explore = Boolean(body.explore);
+    const maxStartingNodes = explore ? EXPLORE_STARTING_NODES : DEFAULT_STARTING_NODES;
     const scope = body.scope === "mutuals-only" ? "mutuals-only" : "all-followers";
     const actor = await getProfile(actorInput);
-
-    // The profile total and the publicly enumerable follower graph can differ.
-    // Keep both values so the UI never presents a partial graph count as the
-    // account's full follower total.
     const profileFollowers = Math.max(0, actor.followersCount ?? 0);
 
-    // app.bsky.graph.getFollowers returns lightweight profile views and does not
-    // reliably include follower/following counts. Hydrate every visible follower
-    // through app.bsky.actor.getProfiles before scoring or displaying them.
     const followerStubs = await getFollowers(actor.did);
     const followerDids = followerStubs.map((profile) => profile.did).filter(Boolean);
     const hydratedProfiles = followerDids.length ? await getProfiles(followerDids) : [];
@@ -244,14 +273,12 @@ export async function POST(request: NextRequest) {
           b.score - a.score ||
           (b.profile.followersCount ?? 0) - (a.profile.followersCount ?? 0),
       )
-      .slice(0, MAX_STARTING_NODES);
+      .slice(0, maxStartingNodes);
 
     const requestedTargetInputs = Array.from(
       new Set((body.targets ?? []).map((value) => normalize(String(value))).filter(Boolean)),
     ).slice(0, MAX_TARGETS);
 
-    // When the browser has not supplied a target set yet, continue from the user's
-    // persisted campaign instead of presenting a false "no targets" Day 0 state.
     const savedTargetInputs = requestedTargetInputs.length
       ? []
       : await getSavedTargetHandles(actor.did);
@@ -337,10 +364,16 @@ export async function POST(request: NextRequest) {
       }
 
       const startingDids = selectedStarting.map(({ profile }) => profile.did);
-      for (const target of targetProfiles) {
-        const relationships = startingDids.length
-          ? await getRelationships(target.did, startingDids)
-          : [];
+      const targetBridgeGroups = await Promise.all(
+        targetProfiles.map(async (target) => ({
+          target,
+          relationships: startingDids.length
+            ? await getRelationships(target.did, startingDids)
+            : [],
+        })),
+      );
+
+      for (const { target, relationships } of targetBridgeGroups) {
         for (const relationship of relationships) {
           if (relationship.following && relationship.followedBy) {
             edges.push({
@@ -354,6 +387,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    let knownPeerEdgeCount = 0;
+    if (explore) {
+      const displayedIds = nodes.map((node) => node.did);
+      const known = await getKnownPeerEdges(displayedIds);
+      const knownSet = new Set(known.map((edge) => edgeKey(edge.source, edge.target)));
+      const existingDirected = new Set(edges.map((edge) => edgeKey(edge.source, edge.target)));
+      const actorId = actor.did;
+
+      for (const edge of known) {
+        if (edge.source === actorId || edge.target === actorId) continue;
+        if (existingDirected.has(edgeKey(edge.source, edge.target))) continue;
+        edges.push({
+          source: edge.source,
+          target: edge.target,
+          kind: "known-peer-edge",
+          reciprocal: knownSet.has(edgeKey(edge.target, edge.source)),
+        });
+        knownPeerEdgeCount += 1;
+      }
+    }
+
     const mutualCount = enrichedFollowers.filter((item) => item.mutual).length;
     const verifiedBridgeCount = edges.filter(
       (edge) => edge.kind === "verified-target-bridge",
@@ -364,6 +418,7 @@ export async function POST(request: NextRequest) {
       scope,
       generatedAt: new Date().toISOString(),
       targetSource,
+      explore,
       totals: {
         profileFollowers,
         observableFollowers,
@@ -372,13 +427,16 @@ export async function POST(request: NextRequest) {
         displayedStartingNodes: selectedStarting.length,
         targets: targetProfiles.length,
         verifiedTargetBridges: verifiedBridgeCount,
+        knownPeerEdges: knownPeerEdgeCount,
       },
       nodes,
       edges,
       note:
-        targetSource === "saved-campaign"
-          ? "Mapped targets were restored from this account's persisted Advanced Network campaign. Every visible account and edge still comes from live Bluesky profile or relationship data."
-          : "Every visible account and edge in this response comes from live Bluesky profile or relationship data. Follower counts are hydrated from full app.bsky.actor.getProfiles records.",
+        explore
+          ? "Explore mode shows a larger live follower slice plus active peer edges already verified during Advanced Network analysis. Zoomed-out structure is simplified visually; zooming in reveals the underlying real accounts and relationships."
+          : targetSource === "saved-campaign"
+            ? "Mapped targets were restored from this account's persisted Advanced Network campaign. Every visible account and edge still comes from live Bluesky profile or relationship data."
+            : "Every visible account and edge in this response comes from live Bluesky profile or relationship data. Follower counts are hydrated from full app.bsky.actor.getProfiles records.",
     });
   } catch (error) {
     console.error("Advanced Network live map failed", error);

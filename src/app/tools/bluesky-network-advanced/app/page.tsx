@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdvancedNetworkAccessGate } from "@/components/tools/advanced-network-access-gate";
 import { AdvancedNetworkDashboard } from "@/components/tools/advanced-network-dashboard";
+import { AdvancedNetworkExplorePanel } from "@/components/tools/advanced-network-explore-panel";
 import { AdvancedNetworkProgress } from "@/components/tools/advanced-network-progress";
+import { AdvancedNetworkTerms } from "@/components/tools/advanced-network-terms";
 import { AdvancedBlueskyOAuthProvider } from "@/components/tools/advanced-network-oauth";
 import { AdvancedNetworkStartingScope } from "@/components/tools/advanced-network-starting-scope";
 import { buttonStyles } from "@/components/ui/button";
@@ -50,10 +52,7 @@ export default async function AdvancedNetworkAppPage() {
             Network growth workspace
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-white/54">
-            Private beta workspace for target campaigns, cost-aware reconnaissance,
-            persistent follow-back intelligence, dynamic importance scoring, and
-            before/after network maps. Existing history is preserved when a saved
-            baseline already exists for the connected Bluesky account.
+            Private beta workspace for target campaigns, bridge cultivation, follow-back intelligence, network levels, live action suggestions, and both guided and fully zoomable network maps. Existing history is preserved when a saved baseline already exists for the connected Bluesky account.
           </p>
         </Container>
       </Section>
@@ -62,7 +61,9 @@ export default async function AdvancedNetworkAppPage() {
           <div className="grid gap-6">
             <AdvancedNetworkStartingScope />
             <AdvancedNetworkProgress />
+            <AdvancedNetworkTerms />
             <AdvancedNetworkDashboard />
+            <AdvancedNetworkExplorePanel />
           </div>
         </Container>
       </Section>
