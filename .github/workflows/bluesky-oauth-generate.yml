@@ -54,3 +54,6 @@ jobs:
             git commit -m "Wire optional Bluesky OAuth into result cards"
             git push origin HEAD:feature/bluesky-optional-oauth-follow
           fi
+
+      - name: Validation complete
+        run: echo "Bluesky OAuth generation, build, and SEO validation complete."
