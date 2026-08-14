@@ -29,6 +29,13 @@ export function AdvancedNetworkStartingScope() {
   function choose(next: StartingNetworkScope) {
     setScope(next);
     if (storageKey) window.localStorage.setItem(storageKey, next);
+    if (oauth.did) {
+      window.dispatchEvent(
+        new CustomEvent("rukh:advanced-network:scope-change", {
+          detail: { did: oauth.did, scope: next },
+        }),
+      );
+    }
   }
 
   if (oauth.phase !== "connected" || !oauth.did) return null;
