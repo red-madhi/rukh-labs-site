@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AdvancedNetworkAccessGate } from "@/components/tools/advanced-network-access-gate";
 import { AdvancedNetworkDashboard } from "@/components/tools/advanced-network-dashboard";
+import { AdvancedNetworkProgress } from "@/components/tools/advanced-network-progress";
 import { AdvancedBlueskyOAuthProvider } from "@/components/tools/advanced-network-oauth";
 import { AdvancedNetworkStartingScope } from "@/components/tools/advanced-network-starting-scope";
 import { buttonStyles } from "@/components/ui/button";
@@ -49,9 +50,10 @@ export default async function AdvancedNetworkAppPage() {
             Network growth workspace
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-white/54">
-            Private beta shell for target campaigns, cost-aware reconnaissance,
+            Private beta workspace for target campaigns, cost-aware reconnaissance,
             persistent follow-back intelligence, dynamic importance scoring, and
-            before/after network maps.
+            before/after network maps. Existing history is preserved when a saved
+            baseline already exists for the connected Bluesky account.
           </p>
         </Container>
       </Section>
@@ -59,6 +61,7 @@ export default async function AdvancedNetworkAppPage() {
         <Container>
           <div className="grid gap-6">
             <AdvancedNetworkStartingScope />
+            <AdvancedNetworkProgress />
             <AdvancedNetworkDashboard />
           </div>
         </Container>
