@@ -96,6 +96,27 @@ export default function BlueskyNetworkPage() {
               curators. Then rank people by overlap, shared connections, and
               public reach.
             </p>
+
+            <div className="mt-7 flex max-w-4xl flex-col gap-4 rounded-2xl border border-[#aa63ff]/22 bg-[radial-gradient(circle_at_100%_0%,rgba(170,99,255,0.13),transparent_42%),rgba(170,99,255,0.035)] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge tone="gold">Advanced Network</Badge>
+                  <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-white/35">Persistent strategy workspace</span>
+                </div>
+                <p className="mt-2 text-sm font-semibold text-white">Want the tool to tell you who to cultivate next?</p>
+                <p className="mt-1 text-xs leading-5 text-white/48">
+                  Open the Advanced Network app for bridge strategy, follow-back tracking, evidence-weighted paths, action suggestions, network levels, and visual maps.
+                </p>
+              </div>
+              <Link
+                href="/tools/bluesky-network-advanced/app"
+                className={buttonStyles({ variant: "glass", size: "sm", className: "shrink-0 justify-center" })}
+              >
+                Open Advanced Network
+                <ArrowRight className="size-4" aria-hidden />
+              </Link>
+            </div>
+
             <div className="mt-8 grid gap-3 text-sm text-white/54 sm:grid-cols-3">
               <span className="rounded-xl border border-white/10 bg-white/[0.025] px-4 py-3">
                 Followers or following graph
@@ -133,10 +154,10 @@ export default function BlueskyNetworkPage() {
               </p>
             </div>
             <Link
-              href="/tools/bluesky-network-advanced"
+              href="/tools/bluesky-network-advanced/app"
               className={buttonStyles({ variant: "glass", size: "lg", className: "shrink-0" })}
             >
-              Explore Advanced Network
+              Open Advanced Network
               <ArrowRight className="size-4" aria-hidden />
             </Link>
           </div>
