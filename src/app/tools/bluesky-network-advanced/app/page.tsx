@@ -3,7 +3,10 @@ import Link from "next/link";
 import { AdvancedNetworkAccessGate } from "@/components/tools/advanced-network-access-gate";
 import { AdvancedNetworkDashboard } from "@/components/tools/advanced-network-dashboard";
 import { AdvancedNetworkExplorePanel } from "@/components/tools/advanced-network-explore-panel";
+import { AdvancedNetworkFitPanel } from "@/components/tools/advanced-network-fit-panel";
+import { AdvancedNetworkGoal } from "@/components/tools/advanced-network-goal";
 import { AdvancedNetworkProgress } from "@/components/tools/advanced-network-progress";
+import { AdvancedNetworkStrategyPanel } from "@/components/tools/advanced-network-strategy-panel";
 import { AdvancedNetworkTerms } from "@/components/tools/advanced-network-terms";
 import { AdvancedBlueskyOAuthProvider } from "@/components/tools/advanced-network-oauth";
 import { AdvancedNetworkStartingScope } from "@/components/tools/advanced-network-starting-scope";
@@ -52,7 +55,7 @@ export default async function AdvancedNetworkAppPage() {
             Network growth workspace
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-white/54">
-            Private beta workspace for target campaigns, bridge cultivation, follow-back intelligence, network levels, live action suggestions, and both guided and fully zoomable network maps. Existing history is preserved when a saved baseline already exists for the connected Bluesky account.
+            Build several genuine, independent relationships toward the communities and accounts that matter. The evidence-weighted engine separates mathematical paths from active, activated, and converted relationships before it expands into round two.
           </p>
         </Container>
       </Section>
@@ -60,9 +63,12 @@ export default async function AdvancedNetworkAppPage() {
         <Container>
           <div className="grid gap-6">
             <AdvancedNetworkStartingScope />
+            <AdvancedNetworkGoal />
             <AdvancedNetworkProgress />
             <AdvancedNetworkTerms />
             <AdvancedNetworkDashboard />
+            <AdvancedNetworkStrategyPanel />
+            <AdvancedNetworkFitPanel />
             <AdvancedNetworkExplorePanel />
           </div>
         </Container>

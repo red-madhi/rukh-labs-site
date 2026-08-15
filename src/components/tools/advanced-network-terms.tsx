@@ -11,56 +11,92 @@ export const NETWORK_TERM_DEFINITIONS = {
   warmNetwork: {
     label: "Warm network",
     description:
-      "People already close to you in the graph: followers, mutuals, and other accounts with an existing relationship foothold.",
+      "People already close to you in the graph: followers, mutuals, and accounts with an existing interaction or relationship foothold. Warmth is weighted; a person who actually talks with you is warmer than a silent mutual.",
   },
   mutual: {
     label: "Mutual",
-    description: "You follow them and they follow you back. Mutual edges are the core trusted links used for reciprocal path distance.",
+    description:
+      "You follow them and they follow you back. A mutual follow is useful evidence, but it does not by itself prove friendship, trust, or active social influence.",
   },
   bridge: {
     label: "Bridge",
     description:
-      "A reachable person who connects your network toward a destination. Bridges are the people to cultivate because stronger real relationships with them can move you closer to the larger account's social neighborhood.",
+      "A reachable person who connects your network toward a destination. Bridges are the people to cultivate because stronger real relationships with them can move you closer to the destination's social neighborhood.",
+  },
+  weightedPath: {
+    label: "Weighted path",
+    description:
+      "A route ranked by relationship quality, not just hop count. Reciprocal interaction, recency, target-to-bridge attention, and confidence can make a three-hop route stronger than a hollow two-hop route.",
   },
   independentPath: {
-    label: "Independent path",
+    label: "Node-independent path",
     description:
-      "A distinct warm route from you toward the same destination. Four genuinely separate bridge routes are more strategically valuable than one fragile route because they create broader social proof.",
+      "A route that does not rely on the same internal bridge person as another counted route. Four paths that all collapse through one person are not treated as four independent sources of social proof.",
+  },
+  tieConfidence: {
+    label: "Tie confidence",
+    description:
+      "How much evidence supports a relationship: reciprocal follow status, interaction in both directions, repeated activity on separate days, recency, and attention flowing from the destination. Possible, likely, and strong are confidence bands—not claims of friendship.",
+  },
+  structuralPath: {
+    label: "Structural path",
+    description:
+      "The follow chain exists, but the route has not shown enough meaningful public activity to count as an active social relationship yet.",
+  },
+  activePath: {
+    label: "Active path",
+    description:
+      "People on the route repeatedly interact with one another. The route is socially alive, but it may not yet create visible overlap involving you.",
+  },
+  activatedPath: {
+    label: "Activated path",
+    description:
+      "The bridge relationship has started creating visible overlap involving you—for example, replies, quotes, reposts, or a warm follower relationship connected to an active route.",
+  },
+  convertedPath: {
+    label: "Converted path",
+    description:
+      "The relationship involving you is reciprocal and can support a durable warm route. Converted does not mean the final destination followed you; it means the foothold itself became real.",
   },
   targetCircle: {
     label: "Target-circle connection",
     description:
-      "Someone who appears in or near a destination account's close reciprocal/interaction neighborhood. This describes their position around the target; it does not mean they are already your friend or bestie.",
+      "Someone who appears in or near a destination account's reciprocal interaction neighborhood. This describes their position around the target; it does not mean they are already your friend.",
   },
   targetBestie: {
     label: "Target-circle bestie",
     description:
-      "A strongly connected account in the destination's neighborhood, based on reciprocal-follow and repeated-interaction evidence. They are a bestie/close connection of the target circle, not automatically your bestie.",
+      "Product shorthand for a high-confidence reciprocal interaction tie in the destination's neighborhood. It requires more than a mutual follow, but it is still an evidence label—not a literal claim about private friendship.",
   },
   bridgeBestie: {
     label: "Bridge-circle bestie",
     description:
-      "Someone strongly connected to one of your bridge accounts. Building a genuine relationship here can widen the number of warm routes into a target neighborhood.",
+      "A high-confidence reciprocal interaction tie around one of your bridge accounts. Cultivating this person can widen your independent routes into a destination neighborhood.",
   },
   bestieOfBestie: {
     label: "Bestie-of-bestie",
     description:
-      "One layer beyond a strong reciprocal/interaction relationship. It is a deeper neighborhood signal used to find additional routes without pretending every account is directly close to the destination.",
+      "One evidence-discounted layer beyond a strong reciprocal interaction relationship. It is an exploration signal, not automatic proof that the person is close to the destination.",
   },
   emergingRelationship: {
     label: "Your emerging relationship",
     description:
-      "A relationship involving your own account that is showing signs of strengthening through reciprocity and repeated interaction. This term should only be used when the evidence is about you and that person directly.",
+      "A relationship involving your own account that is strengthening through reciprocity and repeated interaction. This term is reserved for evidence about you and that person directly.",
   },
   wave2: {
-    label: "Wave 2",
+    label: "Wave 2 / round two",
     description:
-      "A fresh influential destination discovered after expanding the first set of bridges, besties, and deeper neighborhoods. It keeps the engine moving outward instead of repeatedly analyzing the same big accounts.",
+      "A new destination neighborhood discovered only after a round-one foothold becomes activated or converted. The engine no longer expands round two from every speculative recommendation.",
   },
   reciprocity: {
     label: "Reciprocity potential",
     description:
       "A heuristic signal for how promising a relationship may be to turn mutual. It is not a probability or a promise of a follow-back.",
+  },
+  marginalCoverage: {
+    label: "Marginal coverage",
+    description:
+      "How much genuinely new network territory a person adds. The first useful route into a new target subcluster is worth more than the seventh redundant person from the same clique.",
   },
   observable: {
     label: "Observable graph",
@@ -70,7 +106,7 @@ export const NETWORK_TERM_DEFINITIONS = {
   socialProof: {
     label: "Destination social proof",
     description:
-      "How much warm relationship coverage you have around a destination. More independent bridge people and paths mean you are less socially distant from that neighborhood.",
+      "How much active, independent warm relationship coverage you have around a destination. Passive follow chains count less than activated or converted routes.",
   },
   networkLevel: {
     label: "Network Level",
@@ -111,8 +147,15 @@ export function NetworkTermHelp({ term }: { term: NetworkTermKey }) {
 const glossaryOrder: NetworkTermKey[] = [
   "destination",
   "bridge",
+  "weightedPath",
   "independentPath",
+  "tieConfidence",
+  "structuralPath",
+  "activePath",
+  "activatedPath",
+  "convertedPath",
   "socialProof",
+  "marginalCoverage",
   "warmNetwork",
   "mutual",
   "targetCircle",
@@ -136,7 +179,9 @@ export function AdvancedNetworkTerms() {
           </span>
           <span>
             <span className="block text-sm font-semibold text-white">Network terms</span>
-            <span className="mt-0.5 block text-[11px] text-white/34">What bridges, besties, paths, levels, and target circles actually mean.</span>
+            <span className="mt-0.5 block text-[11px] text-white/34">
+              What bridges, evidence stages, weighted paths, besties, and target circles actually mean.
+            </span>
           </span>
         </span>
         <span className="rounded-full border border-white/8 px-2.5 py-1 text-[10px] text-white/32">Glossary</span>
