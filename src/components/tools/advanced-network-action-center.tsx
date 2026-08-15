@@ -214,7 +214,7 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
       </div>
 
       {data?.runId ? (
-        <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-3 sm:p-4">
+        <div className="mx-5 mb-4 mt-4 rounded-2xl border border-white/8 bg-black/20 p-3 sm:mx-7 sm:p-4">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-white/34">
