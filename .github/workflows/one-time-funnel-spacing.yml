@@ -1,0 +1,46 @@
+name: One-time funnel spacing polish
+
+on:
+  push:
+    branches:
+      - feature/bridge-funnel-terminology
+
+permissions:
+  contents: write
+
+jobs:
+  patch-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Polish funnel spacing
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/components/tools/advanced-network-action-center.tsx")
+          text = path.read_text()
+          old = 'className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-3 sm:p-4"'
+          new = 'className="mx-5 mb-4 mt-4 rounded-2xl border border-white/8 bg-black/20 p-3 sm:mx-7 sm:p-4"'
+          if text.count(old) != 1:
+              raise SystemExit(f"Expected one funnel class, found {text.count(old)}")
+          path.write_text(text.replace(old, new))
+
+          workflow = Path(".github/workflows/one-time-funnel-spacing.yml")
+          if workflow.exists():
+              workflow.unlink()
+          PY
+
+      - name: Commit polished spacing
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Polish bridge progression layout"
+          git push origin HEAD:feature/bridge-funnel-terminology
