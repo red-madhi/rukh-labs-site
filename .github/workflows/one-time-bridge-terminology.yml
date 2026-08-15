@@ -1,0 +1,199 @@
+name: One-time bridge terminology update
+
+on:
+  push:
+    branches:
+      - feature/bridge-funnel-terminology
+
+permissions:
+  contents: write
+
+jobs:
+  patch-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply bridge terminology and funnel
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from textwrap import dedent, indent
+
+          def replace(path: str, old: str, new: str, expected: int = 1) -> None:
+              file = Path(path)
+              text = file.read_text()
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f"{path}: expected {expected} occurrence(s), found {count}: {old[:100]!r}")
+              file.write_text(text.replace(old, new))
+
+          terms = "src/components/tools/advanced-network-terms.tsx"
+          old_bridge = '  bridge: {\n    label: "Bridge",\n    description:\n      "A reachable person who connects your network toward a destination. Bridges are the people to cultivate because stronger real relationships with them can move you closer to the destination\'s social neighborhood.",\n  },'
+          new_bridge = '  bridgeCandidate: {\n    label: "Bridge candidate",\n    description:\n      "A reachable person worth cultivating because they may help connect you toward a destination. Candidate means strategically promising; it does not mean a warm route involving you has been activated yet.",\n  },\n  bridge: {\n    label: "Activated bridge",\n    description:\n      "A person in your warm network whose active or reciprocal relationship with you now creates a validated route into a destination neighborhood. This is a later stage than a bridge candidate.",\n  },'
+          replace(terms, old_bridge, new_bridge)
+          replace(
+              terms,
+              '  networkLevel: {\n    label: "Network Level",',
+              '  expandedNetwork: {\n    label: "Expanded network",\n    description:\n      "The result of developing real bridge relationships: new destination circles, stronger independent routes, and additional communities become reachable for later analysis.",\n  },\n  networkLevel: {\n    label: "Network Level",',
+          )
+          replace(
+              terms,
+              '  "destination",\n  "bridge",\n  "weightedPath",',
+              '  "destination",\n  "bridgeCandidate",\n  "targetCircle",\n  "bridge",\n  "expandedNetwork",\n  "weightedPath",',
+          )
+          replace(terms, '  "targetCircle",\n  "targetBestie",', '  "targetBestie",')
+          replace(
+              terms,
+              'What bridges, evidence stages, weighted paths, besties, and target circles actually mean.',
+              'What bridge candidates, activated bridges, target circles, evidence stages, and expanded networks actually mean.',
+          )
+
+          action = "src/components/tools/advanced-network-action-center.tsx"
+          replace(
+              action,
+              'This section focuses on reachable bridge people and close-network connections that can create genuine social proof around those destinations.',
+              'This section focuses on reachable bridge candidates and close-network connections that can create genuine social proof around those destinations.',
+          )
+          replace(action, 'Bridge moves now', 'Candidate actions now')
+          replace(action, 'Best bridge moves now', 'Best actions for bridge candidates')
+          replace(action, 'Bridges to cultivate', 'Bridge candidates')
+          replace(action, '<NetworkTermHelp term="bridge" />', '<NetworkTermHelp term="bridgeCandidate" />', expected=2)
+          replace(
+              action,
+              'The people whose familiarity with you adds the most social proof around your destination neighborhoods.',
+              'Promising people to cultivate. They are not counted as activated bridges until a real warm route involving you exists.',
+          )
+          replace(
+              action,
+              'No tactical bridge account cleared the current threshold. Destination accounts are intentionally excluded from this queue.',
+              'No bridge candidate cleared the current action threshold. Destination accounts are intentionally excluded from this queue.',
+          )
+
+          action_file = Path(action)
+          action_text = action_file.read_text()
+          marker = '\n      {working && !data ? ('
+          if action_text.count(marker) != 1:
+              raise SystemExit(f"{action}: funnel insertion marker count was {action_text.count(marker)}")
+          funnel = dedent('''
+          {data?.runId ? (
+            <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-3 sm:p-4">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-white/34">
+                    Bridge progression
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-white/46">
+                    Candidates can appear here before the map has an activated bridge. That is the expected progression—not a contradiction.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 grid gap-2 sm:grid-cols-4">
+                {([
+                  ["1", "Candidate", "Promising person to cultivate", "bridgeCandidate"],
+                  ["2", "Target-circle connection", "Verified position near a destination", "targetCircle"],
+                  ["3", "Activated bridge", "A warm route now involves you", "bridge"],
+                  ["4", "Expanded network", "New circles and routes unlock", "expandedNetwork"],
+                ] as const).map(([number, label, detail, term], index) => (
+                  <div
+                    key={label}
+                    className="relative rounded-xl border border-white/8 bg-white/[0.02] p-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="grid size-6 shrink-0 place-items-center rounded-full border border-[#16c8ff]/20 bg-[#16c8ff]/[0.055] text-[9px] font-semibold text-[#9cecff]">
+                        {number}
+                      </span>
+                      <p className="inline-flex text-[10px] font-semibold text-white/74">
+                        {label}
+                        <NetworkTermHelp term={term} />
+                      </p>
+                    </div>
+                    <p className="mt-2 text-[10px] leading-4 text-white/32">{detail}</p>
+                    {index < 3 ? (
+                      <span
+                        className="absolute -right-2.5 top-1/2 hidden -translate-y-1/2 text-white/20 sm:block"
+                        aria-hidden
+                      >
+                        →
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          ''').strip()
+          action_text = action_text.replace(marker, '\n' + indent(funnel, '      ') + marker)
+          action_file.write_text(action_text)
+
+          live_map = "src/components/tools/advanced-network-live-map.tsx"
+          replace(live_map, '} verified path{', '} activated path{')
+          replace(live_map, '["Bridge accounts", bridgeNodes.length]', '["Activated bridges", bridgeNodes.length]')
+          replace(live_map, '["bridges", `Bridges (${bridgeNodes.length})`]', '["bridges", `Activated bridges (${bridgeNodes.length})`]')
+          replace(live_map, '>Verified bridges</p>', '>Activated bridges</p>', expected=2)
+          replace(
+              live_map,
+              'Accounts that already create verified reciprocal paths into target neighborhoods.',
+              'Accounts whose active or reciprocal relationship with you already creates a validated route into a destination neighborhood.',
+          )
+          replace(live_map, '>bridge</span>', '>activated bridge</span>')
+          replace(
+              live_map,
+              'Each card replaces a bundle of graph lines. Open it to see the target neighborhoods that bridge reaches.',
+              'These are no longer just candidates. Each account already creates an active or reciprocal route from your warm network into a destination neighborhood.',
+          )
+          replace(
+              live_map,
+              'No verified reciprocal bridge accounts are visible in this current slice yet.',
+              'No activated bridges are visible in this current slice yet. Bridge candidates may still appear in the Action Center while those relationships develop.',
+          )
+          replace(live_map, '>verified paths</p>', '>activated paths</p>')
+          replace(live_map, 'Verified bridge into {selectedTargets', 'Activated bridge into {selectedTargets')
+          replace(
+              live_map,
+              'You do not need to read individual lines. Use the four layers above to answer four questions: where you are, who is already warm, who connects you outward, and which destination neighborhoods the engine is pursuing.',
+              'You do not need to read individual lines. Bridge candidates appear in the Action Center first; only relationships with active or reciprocal evidence involving you appear here as activated bridges.',
+          )
+
+          dashboard = "src/components/tools/advanced-network-dashboard.tsx"
+          replace(dashboard, '2. Find bridge people', '2. Find bridge candidates')
+          replace(dashboard, 'Build the bridges that get you there.', 'Start with the people who can get you there.')
+          replace(
+              dashboard,
+              'These are the reachable people worth following and cultivating. Destination accounts are goals; these relationships are the steps.',
+              'These are bridge candidates worth following and cultivating. They become activated bridges only after a real warm route involving you develops.',
+          )
+          replace(dashboard, 'Top bridge opportunity', 'Top bridge candidate')
+          replace(
+              dashboard,
+              'The map separates your warm network, verified bridges, and destination neighborhoods so it does not become an endless wall of lines.',
+              'The map separates your warm network, activated bridges, and destination neighborhoods so it does not become an endless wall of lines.',
+          )
+          replace(dashboard, '"1. Choose large-account destinations",', '"1. Choose destination neighborhoods",')
+          replace(dashboard, '"2. Find reachable bridge people",', '"2. Identify bridge candidates",')
+          replace(dashboard, '"3. Build multiple independent warm paths",', '"3. Confirm target-circle connections",')
+          replace(dashboard, '"4. Cultivate bridge besties and nearby circles",', '"4. Activate warm relationships through real interaction",')
+          replace(dashboard, '"5. Increase repeated recognition and social proof",', '"5. Build multiple independent bridges and social proof",')
+          replace(dashboard, '"6. Re-run as the network compresses and new paths appear",', '"6. Expand into new communities when footholds become real",')
+
+          workflow = Path(".github/workflows/one-time-bridge-terminology.yml")
+          if workflow.exists():
+              workflow.unlink()
+          PY
+
+      - name: Commit patched UI
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Clarify bridge progression terminology"
+          git push origin HEAD:feature/bridge-funnel-terminology
