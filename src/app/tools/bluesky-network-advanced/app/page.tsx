@@ -24,9 +24,9 @@ export default async function AdvancedNetworkAppPage() {
   const authorized = await hasAdvancedNetworkAccess();
   if (!authorized) {
     return (
-      <Section>
-        <Container>
-          <div className="mb-8">
+      <Section className="overflow-x-clip">
+        <Container className="min-w-0 max-w-full px-4 sm:px-6 lg:px-8">
+          <div className="mb-8 min-w-0">
             <Link
               href="/tools/bluesky-network-advanced"
               className={buttonStyles({
@@ -46,22 +46,24 @@ export default async function AdvancedNetworkAppPage() {
 
   return (
     <AdvancedBlueskyOAuthProvider>
-      <Section className="border-b border-white/10">
-        <Container>
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
-            Advanced Bluesky Network
-          </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
-            Network growth workspace
-          </h1>
-          <p className="mt-4 max-w-3xl text-base leading-7 text-white/54">
-            Build several genuine, independent relationships toward the communities and accounts that matter. The evidence-weighted engine separates mathematical paths from active, activated, and converted relationships before it expands into round two.
-          </p>
+      <Section className="overflow-x-clip border-b border-white/10 py-14 sm:py-20">
+        <Container className="min-w-0 max-w-full px-4 sm:px-6 lg:px-8">
+          <div className="min-w-0 max-w-full">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
+              Advanced Bluesky Network
+            </p>
+            <h1 className="mt-3 break-words text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
+              Network growth workspace
+            </h1>
+            <p className="mt-4 max-w-3xl text-base leading-7 text-white/54">
+              Build several genuine, independent relationships toward the communities and accounts that matter. The evidence-weighted engine separates mathematical paths from active, activated, and converted relationships before it expands into round two.
+            </p>
+          </div>
         </Container>
       </Section>
-      <Section>
-        <Container>
-          <div className="grid gap-6">
+      <Section className="overflow-x-clip py-12 sm:py-20">
+        <Container className="min-w-0 max-w-full px-4 sm:px-6 lg:px-8">
+          <div className="grid min-w-0 max-w-full gap-6 [&>*]:min-w-0 [&>*]:max-w-full">
             <AdvancedNetworkStartingScope />
             <AdvancedNetworkGoal />
             <AdvancedNetworkProgress />

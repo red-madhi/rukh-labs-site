@@ -118,10 +118,10 @@ export function AdvancedNetworkProgress() {
 
   if (!progress) {
     return (
-      <Card className="border-[#16c8ff]/20 p-5 sm:p-6">
-        <div className="flex items-center gap-3 text-sm text-white/58">
-          <Loader2 className="size-4 animate-spin text-[#8ce8ff]" aria-hidden />
-          {error || "Reconciling this account with its saved network history…"}
+      <Card className="min-w-0 max-w-full border-[#16c8ff]/20 p-5 sm:p-6">
+        <div className="flex min-w-0 items-center gap-3 text-sm text-white/58">
+          <Loader2 className="size-4 shrink-0 animate-spin text-[#8ce8ff]" aria-hidden />
+          <span className="min-w-0 break-words">{error || "Reconciling this account with its saved network history…"}</span>
         </div>
       </Card>
     );
@@ -161,44 +161,44 @@ export function AdvancedNetworkProgress() {
   ] as const;
 
   return (
-    <Card className="overflow-hidden border-[#16c8ff]/25 bg-[radial-gradient(circle_at_90%_0%,rgba(22,200,255,0.11),transparent_40%),rgba(14,12,14,0.76)] p-5 sm:p-7">
-      <div className="grid gap-6 xl:grid-cols-[1fr_340px] xl:items-start">
-        <div>
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
-                <History className="size-4" aria-hidden />
-                {progress.continuingExistingHistory ? "Continuing your existing run" : "Saved network history"}
+    <Card className="min-w-0 max-w-full overflow-hidden border-[#16c8ff]/25 bg-[radial-gradient(circle_at_90%_0%,rgba(22,200,255,0.11),transparent_40%),rgba(14,12,14,0.76)] p-4 sm:p-7">
+      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
+        <div className="min-w-0">
+          <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0 max-w-3xl">
+              <div className="flex min-w-0 items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
+                <History className="size-4 shrink-0" aria-hidden />
+                <span className="min-w-0 break-words">{progress.continuingExistingHistory ? "Continuing your existing run" : "Saved network history"}</span>
               </div>
-              <h2 className="mt-3 text-2xl font-semibold text-white sm:text-3xl">
+              <h2 className="mt-3 break-words text-2xl font-semibold text-white sm:text-3xl">
                 {progress.continuingExistingHistory
                   ? "You are not starting over."
                   : "Your progress starts from the saved baseline."}
               </h2>
-              <p className="mt-3 text-sm leading-7 text-white/54">
+              <p className="mt-3 break-words text-sm leading-7 text-white/54">
                 Baseline: {localDate(progress.baseline.capturedAt)}. Current state: {localDate(progress.current.capturedAt)}.
                 {progress.continuingExistingHistory
                   ? " This baseline was seeded from the network-expansion work that began before Advanced Network existed."
                   : " Future runs compare back to this point and later saved snapshots."}
               </p>
             </div>
-            <Button variant="ghost" size="sm" onClick={() => void refresh()} disabled={working}>
+            <Button variant="ghost" size="sm" className="self-start" onClick={() => void refresh()} disabled={working}>
               {working ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <RefreshCw className="size-4" aria-hidden />}
               Refresh progress
             </Button>
           </div>
 
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <div className="mt-6 grid min-w-0 gap-3 md:grid-cols-3">
             {metrics.map((item) => (
-              <div key={item.label} className="rounded-xl border border-white/10 bg-black/15 p-4">
+              <div key={item.label} className="min-w-0 rounded-xl border border-white/10 bg-black/15 p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/38">{item.label}</p>
-                <div className="mt-3 flex items-end gap-2">
+                <div className="mt-3 flex min-w-0 flex-wrap items-end gap-2">
                   <span className="text-lg text-white/42">{exact(item.before)}</span>
                   <span className="pb-0.5 text-white/25">→</span>
                   <span className="text-2xl font-semibold text-white">{exact(item.now)}</span>
                 </div>
-                <p className={`mt-2 inline-flex items-center gap-1 text-sm font-medium ${item.delta >= 0 ? "text-emerald-200" : "text-[#ffb4b8]"}`}>
-                  <TrendingUp className="size-3.5" aria-hidden />
+                <p className={`mt-2 inline-flex max-w-full items-center gap-1 break-words text-sm font-medium ${item.delta >= 0 ? "text-emerald-200" : "text-[#ffb4b8]"}`}>
+                  <TrendingUp className="size-3.5 shrink-0" aria-hidden />
                   {signed(item.delta)} since baseline
                 </p>
               </div>
@@ -206,18 +206,18 @@ export function AdvancedNetworkProgress() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[#aa63ff]/18 bg-[radial-gradient(circle_at_50%_0%,rgba(170,99,255,0.12),transparent_50%),rgba(0,0,0,0.18)] p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.14em] text-[#d8b5ff]">
+        <div className="min-w-0 max-w-full rounded-2xl border border-[#aa63ff]/18 bg-[radial-gradient(circle_at_50%_0%,rgba(170,99,255,0.12),transparent_50%),rgba(0,0,0,0.18)] p-4 sm:p-5">
+          <div className="flex min-w-0 items-center justify-between gap-3">
+            <p className="inline-flex min-w-0 items-center text-[10px] font-semibold uppercase tracking-[0.14em] text-[#d8b5ff]">
               Network Level
               <NetworkTermHelp term="networkLevel" />
             </p>
-            <Sparkles className="size-4 text-[#f1d49a]" aria-hidden />
+            <Sparkles className="size-4 shrink-0 text-[#f1d49a]" aria-hidden />
           </div>
 
-          <div className="mt-5 flex items-center gap-5">
+          <div className="mt-5 flex min-w-0 flex-col items-start gap-4 sm:flex-row sm:items-center sm:gap-5">
             <div
-              className="relative grid size-28 shrink-0 place-items-center rounded-full p-[7px]"
+              className="relative grid size-24 shrink-0 place-items-center rounded-full p-[7px] sm:size-28"
               style={{
                 background: `conic-gradient(#d8b5ff ${level.progressPercent}%, rgba(255,255,255,0.06) ${level.progressPercent}% 100%)`,
               }}
@@ -229,11 +229,11 @@ export function AdvancedNetworkProgress() {
                 </div>
               </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-lg font-semibold text-white">{level.title}</p>
+            <div className="min-w-0 max-w-full">
+              <p className="break-words text-lg font-semibold text-white">{level.title}</p>
               <p className="mt-1 text-sm font-semibold text-[#f1d49a]">{exact(level.xp)} XP</p>
               {level.nextLevelXp ? (
-                <p className="mt-2 text-[11px] leading-5 text-white/36">
+                <p className="mt-2 break-words text-[11px] leading-5 text-white/36">
                   {exact(level.nextLevelXp - level.xp)} XP to Level {level.level + 1}
                   {level.nextLevelTitle ? ` · ${level.nextLevelTitle}` : ""}
                 </p>
@@ -244,45 +244,45 @@ export function AdvancedNetworkProgress() {
           </div>
 
           <div className="mt-5 grid grid-cols-2 gap-2">
-            <div className="rounded-xl border border-[#e6bd73]/12 bg-[#e6bd73]/[0.035] p-3">
+            <div className="min-w-0 rounded-xl border border-[#e6bd73]/12 bg-[#e6bd73]/[0.035] p-3">
               <p className="text-xl font-semibold text-[#f1d49a]">{level.stats.bridgePeople}</p>
-              <p className="mt-0.5 inline-flex text-[9px] uppercase tracking-[0.1em] text-white/27">
+              <p className="mt-0.5 inline-flex max-w-full flex-wrap text-[9px] uppercase tracking-[0.1em] text-white/27">
                 bridge people
                 <NetworkTermHelp term="bridge" />
               </p>
             </div>
-            <div className="rounded-xl border border-[#aa63ff]/12 bg-[#aa63ff]/[0.03] p-3">
+            <div className="min-w-0 rounded-xl border border-[#aa63ff]/12 bg-[#aa63ff]/[0.03] p-3">
               <p className="text-xl font-semibold text-[#d8b5ff]">{level.stats.independentPaths}</p>
-              <p className="mt-0.5 inline-flex text-[9px] uppercase tracking-[0.1em] text-white/27">
+              <p className="mt-0.5 inline-flex max-w-full flex-wrap text-[9px] uppercase tracking-[0.1em] text-white/27">
                 warm paths
                 <NetworkTermHelp term="independentPath" />
               </p>
             </div>
           </div>
 
-          <details className="mt-4 rounded-xl border border-white/8 bg-black/15 p-3">
+          <details className="mt-4 min-w-0 rounded-xl border border-white/8 bg-black/15 p-3">
             <summary className="cursor-pointer list-none text-[11px] font-semibold text-[#b9f1ff]">
               How did I earn this score?
             </summary>
-            <div className="mt-3 grid gap-1.5">
+            <div className="mt-3 grid min-w-0 gap-1.5">
               {xpBreakdown.map(([label, value]) => (
-                <div key={label} className="flex items-center justify-between gap-3 rounded-lg bg-white/[0.025] px-3 py-2 text-[10px]">
-                  <span className="text-white/40">{label}</span>
-                  <span className="font-semibold text-white/70">+{exact(value)} XP</span>
+                <div key={label} className="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-white/[0.025] px-3 py-2 text-[10px]">
+                  <span className="min-w-0 break-words text-white/40">{label}</span>
+                  <span className="shrink-0 font-semibold text-white/70">+{exact(value)} XP</span>
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-[10px] leading-4 text-white/28">{level.scoringNote}</p>
+            <p className="mt-3 break-words text-[10px] leading-4 text-white/28">{level.scoringNote}</p>
           </details>
         </div>
       </div>
 
       {current.mutualsSampled ? (
-        <p className="mt-4 text-xs leading-5 text-[#ffe4a0]/70">
+        <p className="mt-4 break-words text-xs leading-5 text-[#ffe4a0]/70">
           Mutual count is sampled because this account exceeds the current beta scan cap. Follower and following totals remain live profile totals.
         </p>
       ) : null}
-      {error ? <p className="mt-4 text-sm text-[#ffb4b8]">{error}</p> : null}
+      {error ? <p className="mt-4 break-words text-sm text-[#ffb4b8]">{error}</p> : null}
     </Card>
   );
 }
