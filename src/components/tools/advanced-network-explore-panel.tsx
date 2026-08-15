@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Orbit } from "lucide-react";
-import { AdvancedNetworkExploreMapV3 } from "@/components/tools/advanced-network-explore-map-v3";
+import { AdvancedNetworkExploreMapV4 } from "@/components/tools/advanced-network-explore-map-v4";
 import { useAdvancedBlueskyOAuth } from "@/components/tools/advanced-network-oauth";
 import type { StartingNetworkScope } from "@/lib/advanced-network";
 
@@ -43,7 +43,7 @@ export function AdvancedNetworkExplorePanel() {
           <span className="min-w-0">
             <span className="block text-sm font-semibold text-white">Explore the full network map</span>
             <span className="mt-1 block text-[11px] leading-5 text-white/36">
-              Pinch to spread the network apart while people stay readable. Tap any person for a profile card; zoom deeper to reveal individual relationships without giant overlapping bubbles.
+              Pinch to spread the network apart while people stay readable. Tap either a circle or its name to open that account immediately.
             </span>
           </span>
         </span>
@@ -53,7 +53,7 @@ export function AdvancedNetworkExplorePanel() {
       </summary>
 
       <div className="min-w-0 max-w-full border-t border-white/8 p-2 sm:p-4">
-        <AdvancedNetworkExploreMapV3 scope={scope} targetHandles={[]} />
+        <AdvancedNetworkExploreMapV4 scope={scope} targetHandles={[]} />
       </div>
     </details>
   );
