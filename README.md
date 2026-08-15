@@ -27,7 +27,7 @@ Required server environment variable in Vercel Production and Preview:
 
 - `DATABASE_URL` — Neon Postgres connection string. Keep this server-only and never expose it through a `NEXT_PUBLIC_` variable.
 
-Optional email notifications use Resend:
+Contact email notifications use Resend:
 
 - `RESEND_API_KEY`
 - `CONTACT_NOTIFICATION_EMAIL`
