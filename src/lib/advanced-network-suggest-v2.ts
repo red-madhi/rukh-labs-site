@@ -23,28 +23,34 @@ type Profile = {
   handle: string;
   displayName?: string;
   description?: string;
-  avatar?: string;
   followersCount?: number;
   followsCount?: number;
-  postsCount?: number;
 };
 
 type Relationship = { did: string; following?: string; followedBy?: string };
-type FeedActor = { did?: string; handle?: string };
+type FeedActor = { did?: string };
 type FeedItem = {
-  post?: { author?: FeedActor; embed?: unknown; record?: { createdAt?: string } };
+  post?: {
+    author?: FeedActor;
+    embed?: unknown;
+    record?: { createdAt?: string };
+  };
   reason?: { by?: FeedActor };
   reply?: { parent?: { author?: FeedActor }; root?: { author?: FeedActor } };
 };
-type PeerInteraction = {
+
+type PeerAccumulator = {
   did: string;
   events: number;
   replies: number;
   reposts: number;
   quotes: number;
   rawScore: number;
-  distinctDays: number;
+  days: Set<string>;
 };
+
+type PeerEvidence = Omit<PeerAccumulator, "days"> & { distinctDays: number };
+
 type WarmRoute = {
   anchorDid: string;
   anchorHandle: string;
@@ -53,8 +59,6 @@ type WarmRoute = {
   interactionStrength: number;
   events: number;
 };
-type DirectionAccumulator = { routes: Map<string, WarmRoute> };
-type NeonResponse = { rows?: Array<Array<string | null>> };
 
 type RankedDirection = {
   did: string;
@@ -76,22 +80,24 @@ type RankedDirection = {
   routeSignature: string[];
 };
 
+type NeonResponse = { rows?: Array<Array<string | null>> };
+
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
-  politics: ["politic", "congress", "senate", "election", "policy", "government"],
+  politics: ["politic", "policy", "election", "government", "congress"],
   journalism: ["journal", "reporter", "editor", "news", "media", "press"],
   activism: ["activis", "advocacy", "organizer", "rights", "justice"],
-  "film-tv": ["film", "movie", "television", "actor", "director", "screenwriter"],
+  "film-tv": ["film", "movie", "television", "actor", "director", "screen"],
   celebrity: ["actor", "author", "artist", "comedian", "musician", "performer"],
   music: ["music", "musician", "singer", "band", "producer", "songwriter"],
   comedy: ["comed", "satire", "humor", "comic"],
   gaming: ["gaming", "gamer", "video game", "games", "twitch", "steam"],
-  "indie-games": ["indie game", "indiedev", "game maker", "itch.io", "gamedev"],
+  "indie-games": ["indie game", "indiedev", "itch.io", "gamedev"],
   "game-dev": ["gamedev", "game developer", "game design", "unity", "unreal", "godot"],
-  software: ["software", "developer", "engineer", "programmer", "typescript", "javascript", "python"],
-  "linux-open-source": ["linux", "open source", "opensource", "foss", "kde", "fedora", "ubuntu"],
-  startups: ["startup", "founder", "entrepreneur", "venture", "saas", "bootstrap"],
+  software: ["software", "developer", "engineer", "programmer", "typescript", "python"],
+  "linux-open-source": ["linux", "open source", "opensource", "foss", "kde", "fedora"],
+  startups: ["startup", "founder", "entrepreneur", "saas", "bootstrap"],
   design: ["design", "designer", "ux", "ui", "product design"],
-  science: ["science", "scientist", "research", "biology", "physics", "climate", "medicine"],
+  science: ["science", "scientist", "research", "climate", "medicine"],
   books: ["author", "writer", "books", "novelist", "publishing", "poet"],
   art: ["artist", "illustrator", "drawing", "painting", "animation"],
   creators: ["creator", "youtube", "streamer", "podcast", "newsletter"],
@@ -207,13 +213,13 @@ function embeddedAuthors(value: unknown, depth = 0): FeedActor[] {
 }
 
 function addPeer(
-  map: Map<string, PeerInteraction & { days: Set<string> }>,
+  map: Map<string, PeerAccumulator>,
   did: string | undefined,
   kind: "reply" | "repost" | "quote",
   createdAt?: string,
 ) {
   if (!did) return;
-  const current = map.get(did) ?? {
+  const current: PeerAccumulator = map.get(did) ?? {
     did,
     events: 0,
     replies: 0,
@@ -240,12 +246,12 @@ function addPeer(
   map.set(did, current);
 }
 
-async function interactionPeers(anchor: Profile) {
+async function interactionPeers(anchor: Profile): Promise<PeerEvidence[]> {
   const payload = await xrpc<{ feed?: FeedItem[] }>(
     "app.bsky.feed.getAuthorFeed",
     new URLSearchParams({ actor: anchor.did, limit: String(FEED_LIMIT) }),
   );
-  const peers = new Map<string, PeerInteraction & { days: Set<string> }>();
+  const peers = new Map<string, PeerAccumulator>();
   for (const item of payload.feed ?? []) {
     const postAuthorDid = item.post?.author?.did;
     const createdAt = item.post?.record?.createdAt;
@@ -261,14 +267,9 @@ async function interactionPeers(anchor: Profile) {
   }
   return [...peers.values()]
     .filter((peer) => peer.did !== anchor.did && (peer.events >= 2 || peer.days.size >= 2))
-    .sort(
-      (a, b) =>
-        b.rawScore - a.rawScore ||
-        b.days.size - a.days.size ||
-        b.events - a.events,
-    )
+    .sort((a, b) => b.rawScore - a.rawScore || b.days.size - a.days.size || b.events - a.events)
     .slice(0, PEERS_PER_ANCHOR)
-    .map((peer) => ({ ...peer, distinctDays: peer.days.size }));
+    .map(({ days, ...peer }) => ({ ...peer, distinctDays: days.size }));
 }
 
 function profileInfluence(profile: Profile, mutual = false) {
@@ -296,7 +297,9 @@ function categoryMatches(profile: Profile, selected: string[]) {
   if (!selected.length) return [] as string[];
   const haystack = `${profile.handle} ${profile.displayName ?? ""} ${profile.description ?? ""}`.toLowerCase();
   return selected.filter((category) =>
-    (CATEGORY_KEYWORDS[category] ?? [category.replaceAll("-", " ")]).some((keyword) => haystack.includes(keyword)),
+    (CATEGORY_KEYWORDS[category] ?? [category.replaceAll("-", " ")]).some((keyword) =>
+      haystack.includes(keyword),
+    ),
   );
 }
 
@@ -356,10 +359,16 @@ async function existingTargetDids(actorDid: string) {
      WHERE a.bluesky_did=$1 AND t.status IN ('active','candidate')`,
     [actorDid],
   );
-  return new Set((result.rows ?? []).map((row) => row[0]).filter((value): value is string => Boolean(value)));
+  return new Set(
+    (result.rows ?? []).map((row) => row[0]).filter((value): value is string => Boolean(value)),
+  );
 }
 
-async function mapWithConcurrency<T, R>(items: T[], concurrency: number, fn: (item: T) => Promise<R>) {
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+) {
   const results: R[] = new Array(items.length);
   let cursor = 0;
   async function worker() {
@@ -376,36 +385,40 @@ async function mapWithConcurrency<T, R>(items: T[], concurrency: number, fn: (it
 function selectPortfolio(ranked: RankedDirection[], limit: number) {
   const selected: RankedDirection[] = [];
   const usedAnchors = new Map<string, number>();
-  const tierCaps: Record<RankedDirection["portfolioTier"], number> = {
+  const caps: Record<RankedDirection["portfolioTier"], number> = {
     reachable: Math.max(2, Math.ceil(limit * 0.4)),
     aspirational: Math.max(2, Math.ceil(limit * 0.45)),
     moonshot: Math.max(1, Math.floor(limit * 0.2)),
   };
-  const tierCounts = { reachable: 0, aspirational: 0, moonshot: 0 };
+  const counts: Record<RankedDirection["portfolioTier"], number> = {
+    reachable: 0,
+    aspirational: 0,
+    moonshot: 0,
+  };
 
   while (selected.length < limit) {
     const candidate = ranked
       .filter((item) => !selected.some((chosen) => chosen.did === item.did))
-      .filter((item) => tierCounts[item.portfolioTier] < tierCaps[item.portfolioTier])
-      .map((item) => {
-        const redundancy = item.routeSignature.reduce(
-          (sum, anchor) => sum + (usedAnchors.get(anchor) ?? 0) * 9,
-          0,
-        );
-        return { item, adjusted: item.priorityScore - redundancy };
-      })
-      .sort((a, b) => b.adjusted - a.adjusted || b.item.priorityScore - a.item.priorityScore)[0]?.item;
+      .filter((item) => counts[item.portfolioTier] < caps[item.portfolioTier])
+      .map((item) => ({
+        item,
+        adjusted:
+          item.priorityScore -
+          item.routeSignature.reduce((sum, anchor) => sum + (usedAnchors.get(anchor) ?? 0) * 9, 0),
+      }))
+      .sort((a, b) => b.adjusted - a.adjusted || b.item.priorityScore - a.item.priorityScore)[0]
+      ?.item;
     if (!candidate) break;
     selected.push(candidate);
-    tierCounts[candidate.portfolioTier] += 1;
-    candidate.routeSignature.forEach((anchor) => usedAnchors.set(anchor, (usedAnchors.get(anchor) ?? 0) + 1));
+    counts[candidate.portfolioTier] += 1;
+    candidate.routeSignature.forEach((anchor) =>
+      usedAnchors.set(anchor, (usedAnchors.get(anchor) ?? 0) + 1),
+    );
   }
 
-  if (selected.length < limit) {
-    for (const candidate of ranked) {
-      if (selected.length >= limit) break;
-      if (!selected.some((item) => item.did === candidate.did)) selected.push(candidate);
-    }
+  for (const candidate of ranked) {
+    if (selected.length >= limit) break;
+    if (!selected.some((item) => item.did === candidate.did)) selected.push(candidate);
   }
   return selected;
 }
@@ -425,10 +438,13 @@ export async function runSuggestedDirectionV2(request: NextRequest) {
       goal?: string;
     };
     const actorInput = normalize(String(body.actor ?? ""));
-    if (!actorInput) return NextResponse.json({ error: "Connect a Bluesky account first." }, { status: 400 });
+    if (!actorInput) {
+      return NextResponse.json({ error: "Connect a Bluesky account first." }, { status: 400 });
+    }
 
     const categories = Array.from(new Set((body.categories ?? []).map(String))).slice(0, 8);
-    const scope: StartingNetworkScope = body.scope === "mutuals-only" ? "mutuals-only" : "all-followers";
+    const scope: StartingNetworkScope =
+      body.scope === "mutuals-only" ? "mutuals-only" : "all-followers";
     const deepTargetLimit = Math.min(
       MAX_EXPLICIT_TARGETS,
       Math.max(1, Math.floor(body.deepTargetLimit ?? DEFAULT_DEEP_TARGETS)),
@@ -446,56 +462,56 @@ export async function runSuggestedDirectionV2(request: NextRequest) {
     const followerRelations = await getRelationships(actor.did, followers.map((profile) => profile.did));
     const relationByDid = new Map(followerRelations.map((relationship) => [relationship.did, relationship]));
 
-    const mutualAnchors = followers
+    const rankedAnchors = followers
       .map((profile) => {
         const relation = relationByDid.get(profile.did);
         const mutual = Boolean(relation?.following && relation?.followedBy);
         return { profile, mutual, score: profileInfluence(profile, mutual) - massFollowPenalty(profile) };
       })
-      .filter((item) => item.mutual)
       .sort((a, b) => b.score - a.score);
-    const oneWayAnchors = followers
-      .map((profile) => {
-        const relation = relationByDid.get(profile.did);
-        const mutual = Boolean(relation?.following && relation?.followedBy);
-        return { profile, mutual, score: profileInfluence(profile, mutual) - massFollowPenalty(profile) };
-      })
-      .filter((item) => !item.mutual)
-      .sort((a, b) => b.score - a.score);
-
-    const anchors = scope === "mutuals-only"
-      ? mutualAnchors.slice(0, STARTING_ANCHORS)
-      : [
-          ...mutualAnchors.slice(0, Math.ceil(STARTING_ANCHORS * 0.65)),
-          ...oneWayAnchors.slice(0, Math.floor(STARTING_ANCHORS * 0.35)),
-        ].sort((a, b) => b.score - a.score);
+    const mutualAnchors = rankedAnchors.filter((item) => item.mutual);
+    const oneWayAnchors = rankedAnchors.filter((item) => !item.mutual);
+    const anchors =
+      scope === "mutuals-only"
+        ? mutualAnchors.slice(0, STARTING_ANCHORS)
+        : [
+            ...mutualAnchors.slice(0, Math.ceil(STARTING_ANCHORS * 0.65)),
+            ...oneWayAnchors.slice(0, Math.floor(STARTING_ANCHORS * 0.35)),
+          ].sort((a, b) => b.score - a.score);
 
     if (!anchors.length) {
-      return NextResponse.json({ error: "No starting followers are visible for direction discovery." }, { status: 400 });
+      return NextResponse.json(
+        { error: "No starting followers are visible for direction discovery." },
+        { status: 400 },
+      );
     }
 
-    const expanded = new Map<string, DirectionAccumulator>();
+    const expanded = new Map<string, Map<string, WarmRoute>>();
     const anchorResults = await mapWithConcurrency(anchors, 4, async ({ profile: anchor, mutual }) => {
       try {
         const peers = await interactionPeers(anchor);
-        if (!peers.length) return { anchor, mutual, verified: [] as PeerInteraction[] };
-        const relationships = await getRelationships(anchor.did, peers.map((peer) => peer.did));
+        const relationships = peers.length
+          ? await getRelationships(anchor.did, peers.map((peer) => peer.did))
+          : [];
         const relationshipByDid = new Map(relationships.map((relationship) => [relationship.did, relationship]));
-        const verified = peers.filter((peer) => {
-          const relation = relationshipByDid.get(peer.did);
-          return Boolean(relation?.following && relation?.followedBy);
-        });
-        return { anchor, mutual, verified };
+        return {
+          anchor,
+          mutual,
+          peers: peers.filter((peer) => {
+            const relation = relationshipByDid.get(peer.did);
+            return Boolean(relation?.following && relation?.followedBy);
+          }),
+        };
       } catch {
-        return { anchor, mutual, verified: [] as PeerInteraction[] };
+        return { anchor, mutual, peers: [] as PeerEvidence[] };
       }
     });
 
-    for (const { anchor, mutual, verified } of anchorResults) {
-      for (const peer of verified) {
+    for (const { anchor, mutual, peers } of anchorResults) {
+      for (const peer of peers) {
         if (peer.did === actor.did) continue;
-        const current = expanded.get(peer.did) ?? { routes: new Map<string, WarmRoute>() };
-        current.routes.set(anchor.did, {
+        const routes = expanded.get(peer.did) ?? new Map<string, WarmRoute>();
+        routes.set(anchor.did, {
           anchorDid: anchor.did,
           anchorHandle: anchor.handle,
           anchorFollowers: Math.max(0, anchor.followersCount ?? 0),
@@ -503,12 +519,11 @@ export async function runSuggestedDirectionV2(request: NextRequest) {
           interactionStrength: clamp(peer.rawScore * 7 + peer.events * 3 + peer.distinctDays * 5),
           events: peer.events,
         });
-        expanded.set(peer.did, current);
+        expanded.set(peer.did, routes);
       }
     }
 
-    const candidateDids = [...expanded.keys()].slice(0, MAX_DIRECTION_POOL * 3);
-    const candidateProfiles = await getProfiles(candidateDids);
+    const candidateProfiles = await getProfiles([...expanded.keys()].slice(0, MAX_DIRECTION_POOL * 3));
     const userRelations = await getRelationships(actor.did, candidateProfiles.map((profile) => profile.did));
     const userRelationByDid = new Map(userRelations.map((relationship) => [relationship.did, relationship]));
     const excludedTargets = body.includeExistingTargets ? new Set<string>() : await existingTargetDids(actor.did);
@@ -518,11 +533,10 @@ export async function runSuggestedDirectionV2(request: NextRequest) {
         if (profile.did === actor.did || excludedTargets.has(profile.did)) return false;
         if ((profile.followersCount ?? 0) < MIN_DIRECTION_FOLLOWERS) return false;
         const relation = userRelationByDid.get(profile.did);
-        if (relation?.following && relation?.followedBy) return false;
-        return true;
+        return !Boolean(relation?.following && relation?.followedBy);
       })
       .map((profile) => {
-        const routes = [...(expanded.get(profile.did)?.routes.values() ?? [])].sort(
+        const routes = [...(expanded.get(profile.did)?.values() ?? [])].sort(
           (a, b) =>
             b.interactionStrength - a.interactionStrength ||
             Number(b.anchorMutual) - Number(a.anchorMutual) ||
@@ -538,11 +552,12 @@ export async function runSuggestedDirectionV2(request: NextRequest) {
         const routeStrength = clamp(
           Math.log2(routes.length + 1) * 29 +
             (routes.slice(0, 4).reduce((sum, route) => sum + route.interactionStrength, 0) /
-              Math.max(1, Math.min(4, routes.length))) * 0.45,
+              Math.max(1, Math.min(4, routes.length))) *
+              0.45,
         );
         const relevance = categoryScore(matches, categories);
         const directWarmth = followedBy ? 100 : following ? 58 : 24;
-        const score = clamp(
+        const priorityScore = clamp(
           Math.round(
             influence * weights.influence +
               routeStrength * weights.routes +
@@ -551,29 +566,28 @@ export async function runSuggestedDirectionV2(request: NextRequest) {
               massFollowPenalty(profile),
           ),
         );
-        const routeHandles = routes.slice(0, 5).map((route) => route.anchorHandle);
-        const matchText = matches.length
+        const warmPathHandles = routes.slice(0, 5).map((route) => route.anchorHandle);
+        const portfolioTier = tierFor(followersCount);
+        const categoryText = matches.length
           ? ` Matches ${matches.map((value) => value.replaceAll("-", " ")).join(", ")}.`
           : "";
-        const tier = tierFor(followersCount);
-        const discoveryReason = `${routes.length} verified reciprocal route${routes.length === 1 ? "" : "s"} from your current network through ${routeHandles.map((handle) => `@${handle}`).join(", ")}.${matchText} Portfolio tier: ${tier}.`;
         return {
           did: profile.did,
           handle: profile.handle,
           displayName: profile.displayName,
           followersCount,
           followsCount,
-          priorityScore: score,
+          priorityScore,
           estimatedCost: estimateGraphCost(followersCount, followsCount),
           disposition: "deferred" as const,
           relationship: { following, followedBy, mutual: false },
           source: "expanded-graph-v2" as const,
-          warmPathHandles: routeHandles,
+          warmPathHandles,
           warmPathCount: routes.length,
           distinctWarmAnchors: routes.length,
           categoryMatches: matches,
-          discoveryReason,
-          portfolioTier: tier,
+          discoveryReason: `${routes.length} verified reciprocal warm route${routes.length === 1 ? "" : "s"} through ${warmPathHandles.map((handle) => `@${handle}`).join(", ")}.${categoryText} Portfolio tier: ${portfolioTier}.`,
+          portfolioTier,
           routeSignature: routes.slice(0, 6).map((route) => route.anchorDid),
         };
       })
@@ -589,7 +603,7 @@ export async function runSuggestedDirectionV2(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "The current observable graph did not expose a fresh relevant destination with a verified warm route. Broaden to All Followers or change the topic focus.",
+            "The observable graph did not expose a fresh relevant destination with a verified warm route. Broaden to All Followers or change the topic focus.",
         },
         { status: 404 },
       );
@@ -597,7 +611,7 @@ export async function runSuggestedDirectionV2(request: NextRequest) {
 
     const selected = selectPortfolio(ranked, deepTargetLimit);
     const selectedIds = new Set(selected.map((item) => item.did));
-    const ordered = [
+    const targets = [
       ...selected.map((item) => ({ ...item, disposition: "deep-analysis" as const })),
       ...ranked
         .filter((item) => !selectedIds.has(item.did))
@@ -610,8 +624,8 @@ export async function runSuggestedDirectionV2(request: NextRequest) {
       goal,
       requestedTargetCount: 0,
       deepTargetLimit,
-      targets: ordered,
-      deferredCount: ordered.filter((target) => target.disposition === "deferred").length,
+      targets,
+      deferredCount: targets.filter((target) => target.disposition === "deferred").length,
       discovery: {
         mode: "expanded-graph-v2",
         scope,
