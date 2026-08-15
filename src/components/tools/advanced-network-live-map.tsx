@@ -189,7 +189,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
             </span>
             {graph?.totals.verifiedTargetBridges ? (
               <span className="rounded-full border border-[#e6bd73]/25 bg-[#e6bd73]/[0.06] px-2.5 py-1 text-[#f3d28d]">
-                {graph.totals.verifiedTargetBridges} verified path{graph.totals.verifiedTargetBridges === 1 ? "" : "s"}
+                {graph.totals.verifiedTargetBridges} activated path{graph.totals.verifiedTargetBridges === 1 ? "" : "s"}
               </span>
             ) : null}
           </div>
@@ -217,7 +217,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
               ["Followers", graph.totals.profileFollowers],
               ["Observable", graph.totals.observableFollowers],
               ["Mutuals", graph.totals.mutuals],
-              ["Bridge accounts", bridgeNodes.length],
+              ["Activated bridges", bridgeNodes.length],
               ["Targets", graph.totals.targets],
             ].map(([label, value]) => (
               <div key={String(label)} className="bg-[#07090c] px-4 py-3">
@@ -232,7 +232,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
               {([
                 ["overview", "Overview"],
                 ["warm", `Warm network (${warmNodes.length})`],
-                ["bridges", `Bridges (${bridgeNodes.length})`],
+                ["bridges", `Activated bridges (${bridgeNodes.length})`],
                 ["targets", `Targets (${targetNodes.length})`],
               ] as Array<[ViewMode, string]>).map(([id, label]) => (
                 <button
@@ -289,9 +289,9 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
                   className="rounded-2xl border border-[#e6bd73]/22 bg-[radial-gradient(circle_at_50%_0%,rgba(230,189,115,0.10),transparent_60%),rgba(230,189,115,0.035)] p-5 text-left transition hover:border-[#e6bd73]/36"
                 >
                   <GitBranch className="size-5 text-[#f1d49a]" aria-hidden />
-                  <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#f1d49a]">Verified bridges</p>
+                  <p className="mt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#f1d49a]">Activated bridges</p>
                   <p className="mt-1 text-3xl font-semibold text-white">{bridgeNodes.length}</p>
-                  <p className="mt-2 text-xs leading-5 text-white/35">Accounts that already create verified reciprocal paths into target neighborhoods.</p>
+                  <p className="mt-2 text-xs leading-5 text-white/35">Accounts whose active or reciprocal relationship with you already creates a validated route into a destination neighborhood.</p>
                 </button>
 
                 <ArrowRight className="mx-auto hidden size-5 text-white/18 xl:block" aria-hidden />
@@ -311,7 +311,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
               <div className="mt-5 rounded-2xl border border-white/8 bg-white/[0.02] p-4">
                 <p className="text-xs font-semibold text-white">How to use this view</p>
                 <p className="mt-2 text-xs leading-5 text-white/38">
-                  You do not need to read individual lines. Use the four layers above to answer four questions: where you are, who is already warm, who connects you outward, and which destination neighborhoods the engine is pursuing.
+                  You do not need to read individual lines. Bridge candidates appear in the Action Center first; only relationships with active or reciprocal evidence involving you appear here as activated bridges.
                 </p>
               </div>
             </div>
@@ -341,7 +341,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
                     <div className="flex items-center justify-between gap-3">
                       <p className="truncate text-sm font-semibold text-white">{labelFor(node)}</p>
                       {bridgeIds.has(node.id) ? (
-                        <span className="rounded-full border border-[#e6bd73]/20 bg-[#e6bd73]/[0.05] px-2 py-0.5 text-[9px] text-[#f1d49a]">bridge</span>
+                        <span className="rounded-full border border-[#e6bd73]/20 bg-[#e6bd73]/[0.05] px-2 py-0.5 text-[9px] text-[#f1d49a]">activated bridge</span>
                       ) : node.kind === "mutual" ? (
                         <span className="rounded-full border border-[#16c8ff]/16 px-2 py-0.5 text-[9px] text-[#9cecff]">mutual</span>
                       ) : null}
@@ -363,8 +363,8 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
           {view === "bridges" ? (
             <div className="p-5 sm:p-7">
               <div className="mb-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#f1d49a]">Verified bridges</p>
-                <p className="mt-1 text-sm leading-6 text-white/40">Each card replaces a bundle of graph lines. Open it to see the target neighborhoods that bridge reaches.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#f1d49a]">Activated bridges</p>
+                <p className="mt-1 text-sm leading-6 text-white/40">These are no longer just candidates. Each account already creates an active or reciprocal route from your warm network into a destination neighborhood.</p>
               </div>
               {bridgeNodes.length ? (
                 <div className="grid gap-3 lg:grid-cols-2">
@@ -408,7 +408,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
                 </div>
               ) : (
                 <div className="rounded-2xl border border-white/8 bg-white/[0.02] px-5 py-8 text-center text-sm text-white/38">
-                  No verified reciprocal bridge accounts are visible in this current slice yet.
+                  No activated bridges are visible in this current slice yet. Bridge candidates may still appear in the Action Center while those relationships develop.
                 </div>
               )}
             </div>
@@ -445,7 +445,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
                         </div>
                         <div>
                           <p className="text-lg font-semibold text-[#f1d49a]">{bridgeCount}</p>
-                          <p className="text-[9px] uppercase tracking-[0.1em] text-white/26">verified paths</p>
+                          <p className="text-[9px] uppercase tracking-[0.1em] text-white/26">activated paths</p>
                         </div>
                       </div>
                     </button>
@@ -464,7 +464,7 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
                   <p className="mt-1 text-xs text-white/34">@{selected.handle} · {compact(selected.followersCount)} followers · {compact(selected.followsCount)} following</p>
                   {selectedTargets.length ? (
                     <p className="mt-3 text-xs text-white/42">
-                      Verified bridge into {selectedTargets.map((target) => `@${target.handle}`).join(", ")}.
+                      Activated bridge into {selectedTargets.map((target) => `@${target.handle}`).join(", ")}.
                     </p>
                   ) : null}
                 </div>
