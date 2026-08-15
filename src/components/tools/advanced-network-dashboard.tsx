@@ -479,7 +479,7 @@ export function AdvancedNetworkDashboard() {
                         : "border-white/8 bg-white/[0.015]"
                     }`}
                   >
-                    <p className="text-xs font-semibold text-white">2. Find bridge people</p>
+                    <p className="text-xs font-semibold text-white">2. Find bridge candidates</p>
                     <p className="mt-1 text-[11px] text-white/32">Automatic</p>
                   </div>
                 </div>
@@ -502,10 +502,10 @@ export function AdvancedNetworkDashboard() {
                 <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div>
                     <h2 className="text-3xl font-semibold tracking-[-0.03em] text-white">
-                      Build the bridges that get you there.
+                      Start with the people who can get you there.
                     </h2>
                     <p className="mt-2 max-w-3xl text-sm leading-6 text-white/46">
-                      These are the reachable people worth following and cultivating. Destination accounts are goals; these relationships are the steps.
+                      These are bridge candidates worth following and cultivating. They become activated bridges only after a real warm route involving you develops.
                     </p>
                   </div>
                   <span className="text-xs text-white/28">Run {analysis.runId.slice(0, 8)}</span>
@@ -525,7 +525,7 @@ export function AdvancedNetworkDashboard() {
                     <p className="mt-1 text-2xl font-semibold text-[#d8b5ff]">{analysis.metrics.targetsAnalyzed}</p>
                   </div>
                   <div className="rounded-xl border border-white/8 bg-black/20 p-4">
-                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Top bridge opportunity</p>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Top bridge candidate</p>
                     <p className="mt-1 truncate text-sm font-semibold text-[#8ce8ff]">
                       {strongestRecommendation ? `@${strongestRecommendation.handle}` : "—"}
                     </p>
@@ -602,7 +602,7 @@ export function AdvancedNetworkDashboard() {
                     High-level first. Drill down only when you want to.
                   </h2>
                   <p className="mt-2 max-w-3xl text-xs leading-5 text-white/36">
-                    The map separates your warm network, verified bridges, and destination neighborhoods so it does not become an endless wall of lines.
+                    The map separates your warm network, activated bridges, and destination neighborhoods so it does not become an endless wall of lines.
                   </p>
                 </div>
               </div>
@@ -617,12 +617,12 @@ export function AdvancedNetworkDashboard() {
             </summary>
             <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {[
-                "1. Choose large-account destinations",
-                "2. Find reachable bridge people",
-                "3. Build multiple independent warm paths",
-                "4. Cultivate bridge besties and nearby circles",
-                "5. Increase repeated recognition and social proof",
-                "6. Re-run as the network compresses and new paths appear",
+                "1. Choose destination neighborhoods",
+                "2. Identify bridge candidates",
+                "3. Confirm target-circle connections",
+                "4. Activate warm relationships through real interaction",
+                "5. Build multiple independent bridges and social proof",
+                "6. Expand into new communities when footholds become real",
               ].map((step) => (
                 <div
                   key={step}

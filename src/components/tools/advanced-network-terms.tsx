@@ -18,10 +18,15 @@ export const NETWORK_TERM_DEFINITIONS = {
     description:
       "You follow them and they follow you back. A mutual follow is useful evidence, but it does not by itself prove friendship, trust, or active social influence.",
   },
-  bridge: {
-    label: "Bridge",
+  bridgeCandidate: {
+    label: "Bridge candidate",
     description:
-      "A reachable person who connects your network toward a destination. Bridges are the people to cultivate because stronger real relationships with them can move you closer to the destination's social neighborhood.",
+      "A reachable person worth cultivating because they may help connect you toward a destination. Candidate means strategically promising; it does not mean a warm route involving you has been activated yet.",
+  },
+  bridge: {
+    label: "Activated bridge",
+    description:
+      "A person in your warm network whose active or reciprocal relationship with you now creates a validated route into a destination neighborhood. This is a later stage than a bridge candidate.",
   },
   weightedPath: {
     label: "Weighted path",
@@ -108,6 +113,11 @@ export const NETWORK_TERM_DEFINITIONS = {
     description:
       "How much active, independent warm relationship coverage you have around a destination. Passive follow chains count less than activated or converted routes.",
   },
+  expandedNetwork: {
+    label: "Expanded network",
+    description:
+      "The result of developing real bridge relationships: new destination circles, stronger independent routes, and additional communities become reachable for later analysis.",
+  },
   networkLevel: {
     label: "Network Level",
     description:
@@ -146,7 +156,10 @@ export function NetworkTermHelp({ term }: { term: NetworkTermKey }) {
 
 const glossaryOrder: NetworkTermKey[] = [
   "destination",
+  "bridgeCandidate",
+  "targetCircle",
   "bridge",
+  "expandedNetwork",
   "weightedPath",
   "independentPath",
   "tieConfidence",
@@ -158,7 +171,6 @@ const glossaryOrder: NetworkTermKey[] = [
   "marginalCoverage",
   "warmNetwork",
   "mutual",
-  "targetCircle",
   "targetBestie",
   "bridgeBestie",
   "bestieOfBestie",
@@ -180,7 +192,7 @@ export function AdvancedNetworkTerms() {
           <span>
             <span className="block text-sm font-semibold text-white">Network terms</span>
             <span className="mt-0.5 block text-[11px] text-white/34">
-              What bridges, evidence stages, weighted paths, besties, and target circles actually mean.
+              What bridge candidates, activated bridges, target circles, evidence stages, and expanded networks actually mean.
             </span>
           </span>
         </span>

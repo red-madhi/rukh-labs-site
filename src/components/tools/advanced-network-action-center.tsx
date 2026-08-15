@@ -169,7 +169,7 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
               Cultivate the people around your goals.
             </h2>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-white/48">
-              Big accounts are destinations. This section focuses on reachable bridge people and close-network connections that can create genuine social proof around those destinations.
+              Big accounts are destinations. This section focuses on reachable bridge candidates and close-network connections that can create genuine social proof around those destinations.
             </p>
           </div>
           <Button variant="ghost" size="sm" onClick={() => void load()} disabled={working}>
@@ -186,8 +186,8 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
           <div className="mt-5 grid gap-2 sm:grid-cols-3">
             <div className="rounded-xl border border-white/8 bg-black/20 px-4 py-3">
               <p className="inline-flex text-[10px] uppercase tracking-[0.12em] text-white/30">
-                Bridge moves now
-                <NetworkTermHelp term="bridge" />
+                Candidate actions now
+                <NetworkTermHelp term="bridgeCandidate" />
               </p>
               <p className="mt-1 text-xl font-semibold text-white">{data.actions.length}</p>
             </div>
@@ -213,6 +213,52 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
         ) : null}
       </div>
 
+      {data?.runId ? (
+        <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-3 sm:p-4">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.13em] text-white/34">
+                Bridge progression
+              </p>
+              <p className="mt-1 text-xs leading-5 text-white/46">
+                Candidates can appear here before the map has an activated bridge. That is the expected progression—not a contradiction.
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 grid gap-2 sm:grid-cols-4">
+            {([
+              ["1", "Candidate", "Promising person to cultivate", "bridgeCandidate"],
+              ["2", "Target-circle connection", "Verified position near a destination", "targetCircle"],
+              ["3", "Activated bridge", "A warm route now involves you", "bridge"],
+              ["4", "Expanded network", "New circles and routes unlock", "expandedNetwork"],
+            ] as const).map(([number, label, detail, term], index) => (
+              <div
+                key={label}
+                className="relative rounded-xl border border-white/8 bg-white/[0.02] p-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="grid size-6 shrink-0 place-items-center rounded-full border border-[#16c8ff]/20 bg-[#16c8ff]/[0.055] text-[9px] font-semibold text-[#9cecff]">
+                    {number}
+                  </span>
+                  <p className="inline-flex text-[10px] font-semibold text-white/74">
+                    {label}
+                    <NetworkTermHelp term={term} />
+                  </p>
+                </div>
+                <p className="mt-2 text-[10px] leading-4 text-white/32">{detail}</p>
+                {index < 3 ? (
+                  <span
+                    className="absolute -right-2.5 top-1/2 hidden -translate-y-1/2 text-white/20 sm:block"
+                    aria-hidden
+                  >
+                    →
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       {working && !data ? (
         <div className="grid min-h-[260px] place-items-center px-6 text-center">
           <div>
@@ -236,7 +282,7 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8ce8ff]">
-                  Best bridge moves now
+                  Best actions for bridge candidates
                 </p>
                 <p className="mt-1 text-sm text-white/42">
                   Spend attention here—not cold-engaging the destination account.
@@ -328,7 +374,7 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
                 ))
               ) : (
                 <p className="rounded-xl border border-white/8 bg-white/[0.018] p-4 text-xs leading-5 text-white/36">
-                  No tactical bridge account cleared the current threshold. Destination accounts are intentionally excluded from this queue.
+                  No bridge candidate cleared the current action threshold. Destination accounts are intentionally excluded from this queue.
                 </p>
               )}
             </div>
@@ -339,12 +385,12 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
               <div className="flex items-center gap-2">
                 <UsersRound className="size-4 text-[#d8b5ff]" aria-hidden />
                 <p className="inline-flex text-xs font-semibold uppercase tracking-[0.12em] text-[#d8b5ff]">
-                  Bridges to cultivate
-                  <NetworkTermHelp term="bridge" />
+                  Bridge candidates
+                  <NetworkTermHelp term="bridgeCandidate" />
                 </p>
               </div>
               <p className="mt-2 text-[11px] leading-5 text-white/34">
-                The people whose familiarity with you adds the most social proof around your destination neighborhoods.
+                Promising people to cultivate. They are not counted as activated bridges until a real warm route involving you exists.
               </p>
               <div className="mt-4 grid gap-3">
                 {data.topPeople.slice(0, 7).map((person) => (
