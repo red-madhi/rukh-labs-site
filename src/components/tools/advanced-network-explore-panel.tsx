@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Orbit } from "lucide-react";
-import { AdvancedNetworkExploreMapMobile } from "@/components/tools/advanced-network-explore-map-mobile";
+import { AdvancedNetworkExploreMapV2 } from "@/components/tools/advanced-network-explore-map-v2";
 import { useAdvancedBlueskyOAuth } from "@/components/tools/advanced-network-oauth";
 import type { StartingNetworkScope } from "@/lib/advanced-network";
 
@@ -43,7 +43,7 @@ export function AdvancedNetworkExplorePanel() {
           <span className="min-w-0">
             <span className="block text-sm font-semibold text-white">Explore the full network map</span>
             <span className="mt-1 block text-[11px] leading-5 text-white/36">
-              Zoom out for the constellation. Zoom in for individual nodes, labels, bridges, peer links, and destination paths. On touchscreens, drag to pan and pinch to zoom.
+              Zoom out for the constellation. Zoom in up to 10× for individual accounts, labels, bridges, peer links, and destination paths. Tap any circle for account details.
             </span>
           </span>
         </span>
@@ -53,7 +53,7 @@ export function AdvancedNetworkExplorePanel() {
       </summary>
 
       <div className="min-w-0 max-w-full border-t border-white/8 p-2 sm:p-4">
-        <AdvancedNetworkExploreMapMobile scope={scope} targetHandles={[]} />
+        <AdvancedNetworkExploreMapV2 scope={scope} targetHandles={[]} />
       </div>
     </details>
   );
