@@ -46,7 +46,7 @@ export function AdvancedNetworkRequestForm() {
         body: JSON.stringify({
           name: form.name,
           email: form.email,
-          reason: "Advanced Bluesky Network access",
+          reason: "IAZMA PRO access",
           organization: form.organization,
           projectType: "Private beta access",
           message,
@@ -72,7 +72,7 @@ export function AdvancedNetworkRequestForm() {
     return (
       <Card className="border-[#16c8ff]/25 p-6 sm:p-8">
         <CheckCircle2 className="size-8 text-[#8ce8ff]" aria-hidden />
-        <h3 className="mt-4 text-2xl font-semibold text-white">Access request received.</h3>
+        <h3 className="mt-4 text-2xl font-semibold text-white">IAZMA PRO access request received.</h3>
         <p className="mt-3 text-sm leading-7 text-white/58">
           Rukh Labs has your Bluesky account and goals. Private-beta access is reviewed manually so the early cohort stays manageable while the analysis engine is being calibrated.
         </p>
@@ -83,9 +83,9 @@ export function AdvancedNetworkRequestForm() {
   return (
     <Card className="border-[#16c8ff]/22 p-5 sm:p-7">
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Private beta</p>
-        <h3 className="mt-2 text-2xl font-semibold text-white">Request Advanced Network access</h3>
-        <p className="mt-2 text-sm leading-6 text-white/52">Tell us where you want your Bluesky network to go. This is also the waitlist for paid access.</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">IAZMA PRO · Private beta</p>
+        <h3 className="mt-2 text-2xl font-semibold text-white">Request IAZMA PRO access</h3>
+        <p className="mt-2 text-sm leading-6 text-white/52">Tell us where you want your Bluesky network to go. This is also the waitlist for paid IAZMA PRO access.</p>
       </div>
       <form onSubmit={submit} className="grid gap-5" noValidate>
         <div className="grid gap-5 sm:grid-cols-2">
@@ -100,7 +100,7 @@ export function AdvancedNetworkRequestForm() {
         {error ? <p role="alert" className="text-sm text-[#ffb4b8]">{error}</p> : null}
         <Button type="submit" variant="glass" disabled={submitting} className="w-full sm:w-fit">
           {submitting ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Send className="size-4" aria-hidden />}
-          {submitting ? "Sending…" : "Request access"}
+          {submitting ? "Sending…" : "Request IAZMA PRO access"}
         </Button>
       </form>
     </Card>
