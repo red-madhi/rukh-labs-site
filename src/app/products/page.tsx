@@ -11,7 +11,7 @@ import { createPageMetadata, siteConfig } from "@/lib/site-config";
 export const metadata: Metadata = createPageMetadata({
   title: "Products",
   description:
-    "Explore Rukh Labs software: Glass Squares OS, a Linux desktop OS, and Farzin, an Android chess training app.",
+    "Explore Rukh Labs software: Glass Squares OS, Farzin, and IAZMA, the free Bluesky network-discovery tool.",
   path: "/products",
   image: {
     url: "/opengraph-image",
@@ -22,6 +22,7 @@ export const metadata: Metadata = createPageMetadata({
 });
 
 export default function ProductsPage() {
+  const allProducts = [...products, labProduct];
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -29,12 +30,12 @@ export default function ProductsPage() {
     name: "Rukh Labs products",
     url: `${siteConfig.url}/products`,
     description:
-      "Rukh Labs software including Glass Squares OS and Farzin.",
+      "Rukh Labs software including Glass Squares OS, Farzin, and IAZMA.",
     isPartOf: { "@id": `${siteConfig.url}/#website` },
     publisher: { "@id": `${siteConfig.url}/#organization` },
     mainEntity: {
       "@type": "ItemList",
-      itemListElement: products.map((product, index) => ({
+      itemListElement: allProducts.map((product, index) => ({
         "@type": "ListItem",
         position: index + 1,
         item: {
@@ -53,12 +54,12 @@ export default function ProductsPage() {
       <PageHeader
         eyebrow="Products"
         title="Software built with sharper standards."
-        description="Explore Glass Squares OS, Farzin, and future software from Rukh Labs."
+        description="Explore Glass Squares OS, Farzin, IAZMA, and future software from Rukh Labs."
       />
       <Section>
         <Container>
           <div className="grid gap-5 lg:grid-cols-3">
-            {[...products, labProduct].map((product, index) => (
+            {allProducts.map((product, index) => (
               <Reveal key={product.slug} delay={index * 0.06}>
                 <ProductCard
                   product={product}
