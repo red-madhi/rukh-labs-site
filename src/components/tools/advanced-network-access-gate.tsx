@@ -33,17 +33,17 @@ export function AdvancedNetworkAccessGate() {
   return (
     <Card className="mx-auto max-w-xl border-[#16c8ff]/24 p-6 sm:p-8">
       <span className="grid size-12 place-items-center rounded-xl border border-[#16c8ff]/25 bg-[#16c8ff]/10 text-[#8ce8ff]"><ShieldCheck className="size-5" aria-hidden /></span>
-      <h2 className="mt-5 text-2xl font-semibold text-white">Private-beta access required</h2>
-      <p className="mt-3 text-sm leading-7 text-white/56">This is the protected Advanced Network workspace. Enter the access code supplied by Rukh Labs, then connect the Bluesky account the analysis belongs to.</p>
+      <h2 className="mt-5 text-2xl font-semibold text-white">IAZMA PRO access required</h2>
+      <p className="mt-3 text-sm leading-7 text-white/56">This is the protected IAZMA PRO workspace. Enter the access code supplied by Rukh Labs, then connect the Bluesky account the analysis belongs to.</p>
       <form onSubmit={submit} className="mt-6 grid gap-3">
         <label htmlFor="advanced-access-code" className="text-xs font-semibold uppercase tracking-[0.12em] text-white/42">Access code</label>
         <div className="flex flex-col gap-3 sm:flex-row">
           <div className="relative flex-1"><KeyRound className="pointer-events-none absolute left-3.5 top-3.5 size-4 text-white/35" aria-hidden /><input id="advanced-access-code" type="password" autoComplete="current-password" value={code} onChange={(e) => setCode(e.target.value)} className="h-11 w-full rounded-xl border border-white/12 bg-black/25 pl-10 pr-4 text-sm text-white outline-none focus:border-[#16c8ff]/55 focus:ring-4 focus:ring-[#16c8ff]/10" /></div>
-          <Button type="submit" variant="glass" disabled={!code || working}>{working ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}{working ? "Checking…" : "Enter workspace"}</Button>
+          <Button type="submit" variant="glass" disabled={!code || working}>{working ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}{working ? "Checking…" : "Enter IAZMA PRO"}</Button>
         </div>
         {error ? <p role="alert" className="text-sm text-[#ffb4b8]">{error}</p> : null}
       </form>
-      <div className="mt-7 border-t border-white/10 pt-5"><p className="text-sm text-white/48">No code yet?</p><Link href="/tools/bluesky-network-advanced#request-access" className={buttonStyles({ variant: "ghost", size: "sm", className: "mt-2 px-0" })}>Request private-beta access</Link></div>
+      <div className="mt-7 border-t border-white/10 pt-5"><p className="text-sm text-white/48">No code yet?</p><Link href="/tools/bluesky-network-advanced#request-access" className={buttonStyles({ variant: "ghost", size: "sm", className: "mt-2 px-0" })}>Request IAZMA PRO access</Link></div>
     </Card>
   );
 }
