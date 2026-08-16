@@ -261,7 +261,7 @@ export function RequiredBlueskyConnection() {
             Connect the Bluesky account this workspace belongs to.
           </h2>
           <p className="mt-2 text-sm leading-6 text-white/54">
-            Advanced Network is persistent and account-specific. Rukh Labs never
+            IAZMA PRO is persistent and account-specific. Rukh Labs never
             asks for your Bluesky password; authorization happens through AT
             Protocol OAuth.
           </p>
