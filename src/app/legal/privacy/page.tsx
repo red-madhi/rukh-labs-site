@@ -28,8 +28,8 @@ const policySections = [
     copy: "The project inquiry form submits the information you enter directly to Rukh Labs and stores the lead in a database used to manage inquiries. Depending on the form selections, this can include your name, email address, phone number, organization or role, project type, budget, timeline, website, referral source, message, source page, and limited referral or campaign metadata. If you email Rukh Labs directly, the message may include any information you choose to provide.",
   },
   {
-    title: "Bluesky Network Explorer and optional sign-in",
-    copy: "Public Bluesky network scans do not require a Rukh Labs account or Bluesky login. Scan progress and results are stored locally on your device. If you optionally connect a Bluesky or AT Protocol account to follow discoveries inside the tool, authorization is handled through AT Protocol OAuth with your account provider. Rukh Labs does not ask for or receive your Bluesky password. OAuth credentials are managed in browser storage by the OAuth client rather than stored in a Rukh Labs server database. The tool stores the connected account DID locally so it can restore that browser session, and deliberate follow actions are sent to the account's AT Protocol service.",
+    title: "IAZMA and optional sign-in",
+    copy: "IAZMA public network scans do not require a Rukh Labs account or Bluesky login. Scan progress and results are stored locally on your device. If you optionally connect a Bluesky or AT Protocol account to follow discoveries inside IAZMA, authorization is handled through AT Protocol OAuth with your account provider. Rukh Labs does not ask for or receive your Bluesky password. OAuth credentials are managed in browser storage by the OAuth client rather than stored in a Rukh Labs server database. IAZMA stores the connected account DID locally so it can restore that browser session, and deliberate follow actions are sent to the account's AT Protocol service.",
   },
   {
     title: "Beta-interest form",
@@ -49,11 +49,11 @@ const policySections = [
   },
   {
     title: "Retention",
-    copy: "Contact leads, communications, and related project records are kept only as long as reasonably useful for the inquiry, working relationship, recordkeeping, security, or legal needs. Bluesky scan results remain in local browser storage unless you clear them. Optional OAuth credentials and the connected account identifier remain in browser storage according to the OAuth session lifecycle or until you sign out or clear browser storage. Hosting, database, analytics, email, and account providers may retain technical data under their own policies. No fixed deletion period is promised where one has not been implemented.",
+    copy: "Contact leads, communications, and related project records are kept only as long as reasonably useful for the inquiry, working relationship, recordkeeping, security, or legal needs. IAZMA scan results remain in local browser storage unless you clear them. Optional OAuth credentials and the connected account identifier remain in browser storage according to the OAuth session lifecycle or until you sign out or clear browser storage. Hosting, database, analytics, email, and account providers may retain technical data under their own policies. No fixed deletion period is promised where one has not been implemented.",
   },
   {
     title: "Security limitations",
-    copy: "Rukh Labs uses reasonable technical and organizational care, but no website, database, browser storage, email system, OAuth session, or internet transmission can be guaranteed completely secure. Avoid sending credentials, payment-card details, confidential employer data, or other sensitive information through a first-contact message. Rukh Labs does not request Bluesky passwords through the Network Explorer.",
+    copy: "Rukh Labs uses reasonable technical and organizational care, but no website, database, browser storage, email system, OAuth session, or internet transmission can be guaranteed completely secure. Avoid sending credentials, payment-card details, confidential employer data, or other sensitive information through a first-contact message. Rukh Labs does not request Bluesky passwords through IAZMA.",
   },
   {
     title: "Children",
@@ -87,7 +87,7 @@ export default function PrivacyPage() {
         <Container>
           <div className="mb-6 rounded-lg border border-[#d6ad5b]/20 bg-[#d6ad5b]/8 p-5 text-sm leading-7 text-white/68">
             <p className="font-medium text-[color:var(--brand-bronze)]">
-              Last updated: August 14, 2026
+              Last updated: August 16, 2026
             </p>
             <p className="mt-2">
               Looking for the Android app policy? Read the{" "}
