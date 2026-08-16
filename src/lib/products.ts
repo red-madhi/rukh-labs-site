@@ -59,13 +59,13 @@ export const products: Product[] = [
 
 export const labProduct = {
   slug: "bluesky-network",
-  name: "Bluesky Network Explorer",
-  category: "Free Web App",
+  name: "IAZMA",
+  category: "Bluesky Network Discovery",
   status: "Free web app" as const,
   shortDescription:
     "Discover who to follow through either your followers or the accounts you follow, ranked by overlap and reach.",
   longDescription:
-    "Bluesky Network Explorer is a free browser-based social-graph tool that can use followers or the accounts a profile follows as its recommendation source, rank commonly followed accounts, explain every match, keep resumable progress on the user's device, and optionally connect through Bluesky OAuth for deliberate in-tool follows.",
+    "IAZMA is a free browser-based social-graph tool that can use followers or the accounts a profile follows as its recommendation source, rank commonly followed accounts, explain every match, keep resumable progress on the user's device, and optionally connect through Bluesky OAuth for deliberate in-tool follows.",
   features: [
     "Follower or following sources",
     "Second-degree account discovery",
