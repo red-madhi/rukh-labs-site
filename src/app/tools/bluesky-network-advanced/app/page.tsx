@@ -5,9 +5,11 @@ import { AdvancedNetworkDashboard } from "@/components/tools/advanced-network-da
 import { AdvancedNetworkExplorePanel } from "@/components/tools/advanced-network-explore-panel";
 import { AdvancedNetworkFitPanel } from "@/components/tools/advanced-network-fit-panel";
 import { AdvancedNetworkGoal } from "@/components/tools/advanced-network-goal";
+import { AdvancedNetworkPeopleGuide } from "@/components/tools/advanced-network-people-guide";
 import { AdvancedNetworkProgress } from "@/components/tools/advanced-network-progress";
 import { AdvancedNetworkStrategyPanel } from "@/components/tools/advanced-network-strategy-panel";
 import { AdvancedNetworkTerms } from "@/components/tools/advanced-network-terms";
+import { AdvancedNetworkUsabilityEnhancer } from "@/components/tools/advanced-network-usability-enhancer";
 import { AdvancedBlueskyOAuthProvider } from "@/components/tools/advanced-network-oauth";
 import { AdvancedNetworkStartingScope } from "@/components/tools/advanced-network-starting-scope";
 import { buttonStyles } from "@/components/ui/button";
@@ -63,15 +65,20 @@ export default async function AdvancedNetworkAppPage() {
       </Section>
       <Section className="overflow-x-clip py-12 sm:py-20">
         <Container className="min-w-0 max-w-full px-4 sm:px-6 lg:px-8">
-          <div className="grid min-w-0 max-w-full gap-6 [&>*]:min-w-0 [&>*]:max-w-full">
+          <div
+            id="iazma-pro-workspace"
+            className="grid min-w-0 max-w-full gap-6 [&>*]:min-w-0 [&>*]:max-w-full"
+          >
+            <AdvancedNetworkUsabilityEnhancer />
             <AdvancedNetworkStartingScope />
             <AdvancedNetworkGoal />
             <AdvancedNetworkProgress />
-            <AdvancedNetworkTerms />
+            <AdvancedNetworkPeopleGuide />
             <AdvancedNetworkDashboard />
             <AdvancedNetworkStrategyPanel />
             <AdvancedNetworkFitPanel />
             <AdvancedNetworkExplorePanel />
+            <AdvancedNetworkTerms />
           </div>
         </Container>
       </Section>
