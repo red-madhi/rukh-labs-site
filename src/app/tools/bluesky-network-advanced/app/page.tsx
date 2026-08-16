@@ -16,7 +16,7 @@ import { Section } from "@/components/ui/section";
 import { hasAdvancedNetworkAccess } from "@/lib/advanced-network-access";
 
 export const metadata: Metadata = {
-  title: "Advanced Bluesky Network Workspace | Rukh Labs",
+  title: "IAZMA PRO | Rukh Labs",
   robots: { index: false, follow: false },
 };
 
@@ -35,7 +35,7 @@ export default async function AdvancedNetworkAppPage() {
                 className: "px-0",
               })}
             >
-              ← Advanced Network overview
+              ← IAZMA PRO overview
             </Link>
           </div>
           <AdvancedNetworkAccessGate />
@@ -50,7 +50,7 @@ export default async function AdvancedNetworkAppPage() {
         <Container className="min-w-0 max-w-full px-4 sm:px-6 lg:px-8">
           <div className="min-w-0 max-w-full">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
-              Advanced Bluesky Network
+              IAZMA PRO
             </p>
             <h1 className="mt-3 break-words text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
               Network growth workspace
