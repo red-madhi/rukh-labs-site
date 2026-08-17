@@ -21,12 +21,13 @@ export function AdvancedNetworkExplorePanel() {
   const connected = oauth.phase === "connected" && Boolean(oauth.did);
 
   useEffect(() => {
-    if (!oauth.did) return;
-    const frame = window.requestAnimationFrame(() => setScope(readScope(oauth.did)));
+    const did = oauth.did;
+    if (!did) return;
+    const frame = window.requestAnimationFrame(() => setScope(readScope(did)));
 
     const onScope = (event: Event) => {
       const custom = event as CustomEvent<{ did?: string; scope?: StartingNetworkScope }>;
-      if (custom.detail?.did !== oauth.did) return;
+      if (custom.detail?.did !== did) return;
       const next = custom.detail.scope;
       if (next === "all-followers" || next === "mutuals-only") setScope(next);
     };
