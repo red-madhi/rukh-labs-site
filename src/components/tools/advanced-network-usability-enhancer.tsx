@@ -5,6 +5,10 @@ import { useEffect } from "react";
 const WORKSPACE_ID = "iazma-pro-workspace";
 const HANDLE_PATTERN = /@([a-z0-9](?:[a-z0-9.-]*[a-z0-9])?)/gi;
 
+type EnhancementState = {
+  xpAutoOpened: boolean;
+};
+
 function singleBlueskyHandle(text: string) {
   const handles = Array.from(text.matchAll(HANDLE_PATTERN))
     .map((match) => match[1]?.toLowerCase())
@@ -76,9 +80,34 @@ function markRecommendationLayout(root: HTMLElement) {
   }
 }
 
-function enhance(root: HTMLElement) {
+function markPremiumXp(root: HTMLElement, state: EnhancementState) {
+  const xpButton = Array.from(root.querySelectorAll<HTMLButtonElement>("button")).find((button) =>
+    button.textContent?.includes("View the XP chart"),
+  );
+
+  if (xpButton) {
+    const xpPanel = xpButton.parentElement;
+    if (xpPanel) xpPanel.dataset.iazmaXpPanel = "true";
+
+    if (!state.xpAutoOpened) {
+      state.xpAutoOpened = true;
+      if (xpButton.getAttribute("aria-expanded") !== "true") {
+        window.requestAnimationFrame(() => xpButton.click());
+      }
+    }
+  }
+
+  const xpHeading = Array.from(root.querySelectorAll<HTMLHeadingElement>("h3")).find((heading) =>
+    heading.textContent?.includes("Where your Network Level XP came from"),
+  );
+  const chartSurface = xpHeading?.parentElement?.parentElement?.parentElement;
+  if (chartSurface instanceof HTMLElement) chartSurface.dataset.iazmaXpChart = "true";
+}
+
+function enhance(root: HTMLElement, state: EnhancementState) {
   markProfileHotlinks(root);
   markRecommendationLayout(root);
+  markPremiumXp(root, state);
 }
 
 function openProfile(handle: string) {
@@ -95,22 +124,25 @@ export function AdvancedNetworkUsabilityEnhancer() {
     const root = document.getElementById(WORKSPACE_ID);
     if (!root) return;
 
+    const state: EnhancementState = { xpAutoOpened: false };
     let frame = 0;
     const scheduleEnhance = () => {
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
-        enhance(root);
+        enhance(root, state);
       });
     };
 
-    enhance(root);
+    enhance(root, state);
 
     const observer = new MutationObserver(scheduleEnhance);
     observer.observe(root, {
       subtree: true,
       childList: true,
       characterData: true,
+      attributes: true,
+      attributeFilter: ["aria-expanded"],
     });
 
     const onClick = (event: MouseEvent) => {
@@ -179,6 +211,56 @@ export function AdvancedNetworkUsabilityEnhancer() {
         color: #8ce8ff;
         opacity: 0.62;
         text-decoration: none;
+      }
+
+      #${WORKSPACE_ID} [data-iazma-xp-panel="true"] {
+        position: relative;
+        overflow: hidden;
+        border-color: rgba(170, 99, 255, 0.28) !important;
+        background:
+          radial-gradient(circle at 18% 0%, rgba(22, 200, 255, 0.10), transparent 34%),
+          radial-gradient(circle at 86% 4%, rgba(170, 99, 255, 0.17), transparent 42%),
+          linear-gradient(155deg, rgba(15, 12, 22, 0.98), rgba(7, 8, 12, 0.98)) !important;
+        box-shadow:
+          0 22px 70px rgba(0, 0, 0, 0.28),
+          0 0 44px rgba(170, 99, 255, 0.055),
+          inset 0 1px 0 rgba(255, 255, 255, 0.045);
+      }
+
+      #${WORKSPACE_ID} [data-iazma-xp-panel="true"]::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: linear-gradient(115deg, transparent 20%, rgba(255,255,255,0.028) 48%, transparent 72%);
+      }
+
+      #${WORKSPACE_ID} [data-iazma-xp-panel="true"] > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      #${WORKSPACE_ID} [data-iazma-xp-chart="true"] {
+        border-color: rgba(170, 99, 255, 0.24) !important;
+        background:
+          radial-gradient(circle at 8% 0%, rgba(22, 200, 255, 0.07), transparent 32%),
+          radial-gradient(circle at 92% 0%, rgba(170, 99, 255, 0.10), transparent 36%),
+          rgba(0, 0, 0, 0.22) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.025), 0 18px 55px rgba(0,0,0,0.20);
+      }
+
+      #${WORKSPACE_ID} [data-iazma-premium-map="true"] svg {
+        filter: saturate(1.08) contrast(1.025);
+      }
+
+      #${WORKSPACE_ID} [data-iazma-premium-map="true"] button,
+      #${WORKSPACE_ID} [data-iazma-premium-map="true"] a {
+        transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease, transform 160ms ease;
+      }
+
+      #${WORKSPACE_ID} [data-iazma-premium-map="true"] button:hover,
+      #${WORKSPACE_ID} [data-iazma-premium-map="true"] a:hover {
+        transform: translateY(-1px);
       }
 
       @media (max-width: 1023px) {
