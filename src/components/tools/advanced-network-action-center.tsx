@@ -144,11 +144,14 @@ export function AdvancedNetworkActionCenter({ runId }: { runId?: string }) {
   }
 
   useEffect(() => {
-    if (!connected) {
-      setData(null);
-      return;
-    }
-    void load();
+    const frame = window.requestAnimationFrame(() => {
+      if (!connected) {
+        setData(null);
+        return;
+      }
+      void load();
+    });
+    return () => window.cancelAnimationFrame(frame);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connected, oauth.did, runId]);
 

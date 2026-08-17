@@ -222,20 +222,23 @@ export function AdvancedNetworkDashboard() {
 
   useEffect(() => {
     if (!storageKey) return;
-    try {
-      const saved = JSON.parse(window.localStorage.getItem(storageKey) ?? "null") as {
-        mode?: AdvancedTargetMode;
-        targetText?: string;
-        categories?: string[];
-      } | null;
-      if (saved?.mode) {
-        setMode(saved.mode === "profiles" || saved.mode === "hybrid" ? "profiles" : "suggested");
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(storageKey) ?? "null") as {
+          mode?: AdvancedTargetMode;
+          targetText?: string;
+          categories?: string[];
+        } | null;
+        if (saved?.mode) {
+          setMode(saved.mode === "profiles" || saved.mode === "hybrid" ? "profiles" : "suggested");
+        }
+        if (typeof saved?.targetText === "string") setTargetText(saved.targetText);
+        if (Array.isArray(saved?.categories)) setCategories(saved.categories);
+      } catch {
+        // Ignore malformed drafts.
       }
-      if (typeof saved?.targetText === "string") setTargetText(saved.targetText);
-      if (Array.isArray(saved?.categories)) setCategories(saved.categories);
-    } catch {
-      // Ignore malformed drafts.
-    }
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [storageKey]);
 
   useEffect(() => {

@@ -115,11 +115,14 @@ export function AdvancedNetworkLiveMap({ recon }: { recon: ReconResponse | null 
   );
 
   useEffect(() => {
-    if (!connected || !oauth.did) {
-      setGraph(null);
-      return;
-    }
-    void refresh();
+    const frame = window.requestAnimationFrame(() => {
+      if (!connected || !oauth.did) {
+        setGraph(null);
+        return;
+      }
+      void refresh();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [connected, oauth.did, refresh]);
 
   useEffect(() => {
