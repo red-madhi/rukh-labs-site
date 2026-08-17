@@ -294,7 +294,8 @@ export function AdvancedNetworkExploreMapV4({
   }, [oauth.did, scope, targetHandles]);
 
   useEffect(() => {
-    void refresh();
+    const frame = window.requestAnimationFrame(() => void refresh());
+    return () => window.cancelAnimationFrame(frame);
   }, [refresh]);
 
   const positioned = useMemo(() => (graph ? buildPositions(graph) : []), [graph]);

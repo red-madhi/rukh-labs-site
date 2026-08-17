@@ -26,8 +26,9 @@ export function AdvancedNetworkGoal() {
 
   useEffect(() => {
     const saved = normalizeNetworkGoal(window.localStorage.getItem(STORAGE_KEY));
-    setGoal(saved);
     saveGoal(saved);
+    const frame = window.requestAnimationFrame(() => setGoal(saved));
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   const selected = useMemo(

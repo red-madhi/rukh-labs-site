@@ -35,8 +35,11 @@ export function AdvancedNetworkLearningSystem() {
 
   useEffect(() => {
     const done = window.localStorage.getItem(STORAGE_KEY) === "complete";
-    setCompleted(done);
-    if (done) setExpanded(false);
+    const frame = window.requestAnimationFrame(() => {
+      setCompleted(done);
+      if (done) setExpanded(false);
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
   const selected = NODES.find((node) => node.id === selectedNode) ?? NODES[0];

@@ -62,9 +62,9 @@ export function AdvancedNetworkStartingScope() {
   useEffect(() => {
     if (!storageKey) return;
     const saved = window.localStorage.getItem(storageKey);
-    if (saved === "all-followers" || saved === "mutuals-only") {
-      setScope(saved);
-    }
+    if (saved !== "all-followers" && saved !== "mutuals-only") return;
+    const frame = window.requestAnimationFrame(() => setScope(saved));
+    return () => window.cancelAnimationFrame(frame);
   }, [storageKey]);
 
   function choose(next: StartingNetworkScope) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Check, Loader2, UserPlus } from "lucide-react";
 import { useAdvancedBlueskyOAuth } from "@/components/tools/advanced-network-oauth";
 import { Button } from "@/components/ui/button";
@@ -19,12 +19,9 @@ export function AdvancedNetworkFollowButton({
   campaignId?: string | null;
 }) {
   const oauth = useAdvancedBlueskyOAuth();
-  const [state, setState] = useState<FollowState>(following ? "followed" : "idle");
+  const [localState, setState] = useState<FollowState>(following ? "followed" : "idle");
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    if (following) setState("followed");
-  }, [following]);
+  const state: FollowState = following ? "followed" : localState;
 
   async function followAccount() {
     if (!oauth.did || state === "working" || state === "followed") return;
@@ -71,7 +68,6 @@ export function AdvancedNetworkFollowButton({
         size="sm"
         onClick={() => void followAccount()}
         disabled={state === "working" || state === "followed"}
-        title={error || undefined}
         className={
           state === "followed"
             ? "border border-emerald-300/18 bg-emerald-300/[0.055] text-emerald-200"

@@ -300,7 +300,8 @@ export function AdvancedNetworkExploreMapV2({
   }, [oauth.did, scope, targetHandles]);
 
   useEffect(() => {
-    void refresh();
+    const frame = window.requestAnimationFrame(() => void refresh());
+    return () => window.cancelAnimationFrame(frame);
   }, [refresh]);
 
   const positioned = useMemo(() => (graph ? buildPositions(graph) : []), [graph]);
@@ -580,7 +581,7 @@ export function AdvancedNetworkExploreMapV2({
               ref={svgRef}
               viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
               className="block h-[68svh] min-h-[520px] max-h-[760px] w-full select-none sm:h-[680px]"
-              style={{ touchAction: "none", cursor: pointersRef.current.size ? "grabbing" : "grab" }}
+              style={{ touchAction: "none", cursor: "grab" }}
               role="img"
               aria-label="Interactive Bluesky network map. Tap a node for account details, drag to pan, pinch to zoom."
               onWheel={onWheel}

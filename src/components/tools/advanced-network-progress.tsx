@@ -64,13 +64,16 @@ export function AdvancedNetworkProgress() {
   }, [oauth.did]);
 
   useEffect(() => {
-    if (!connected) {
-      setProgress(null);
-      setError("");
-      setSelectedChart(null);
-      return;
-    }
-    void refresh();
+    const frame = window.requestAnimationFrame(() => {
+      if (!connected) {
+        setProgress(null);
+        setError("");
+        setSelectedChart(null);
+        return;
+      }
+      void refresh();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [connected, refresh]);
 
   const metricDefinitions = useMemo<ProgressMetric[]>(() => {

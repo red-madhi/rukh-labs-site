@@ -77,11 +77,14 @@ export function AdvancedNetworkFitPanel() {
   }, [oauth.did]);
 
   useEffect(() => {
-    if (!connected) {
-      setItems([]);
-      return;
-    }
-    void load();
+    const frame = window.requestAnimationFrame(() => {
+      if (!connected) {
+        setItems([]);
+        return;
+      }
+      void load();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [connected, load]);
 
   async function save(item: FitRecommendation, label: HumanFitLabel | null) {
@@ -136,7 +139,7 @@ export function AdvancedNetworkFitPanel() {
         <div className="border-t border-white/8 px-5 py-5 sm:px-6">
           <div className="flex flex-wrap items-center gap-2">
             <HelpPopover label="Why human-fit feedback matters">
-              Network math can find a strategically useful route, but it cannot know whether you actually like the person's work or would want to talk with them. Your labels change future rankings. They do not block, unfollow, mute, or contact anyone on Bluesky.
+              Network math can find a strategically useful route, but it cannot know whether you actually like the person&apos;s work or would want to talk with them. Your labels change future rankings. They do not block, unfollow, mute, or contact anyone on Bluesky.
             </HelpPopover>
             <p className="max-w-3xl text-xs leading-5 text-white/40">
               Open unfamiliar profiles first, then choose the label that best matches your honest judgment. This is how IAZMA learns the difference between technically useful and genuinely relevant.

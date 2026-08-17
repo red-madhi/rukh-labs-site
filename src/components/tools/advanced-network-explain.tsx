@@ -105,7 +105,10 @@ export function HelpPopover({
     width: 288,
   });
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setMounted(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
 
   const placePanel = useCallback(() => {
     const button = buttonRef.current;

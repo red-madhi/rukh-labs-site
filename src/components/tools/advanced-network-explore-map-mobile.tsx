@@ -235,7 +235,8 @@ export function AdvancedNetworkExploreMapMobile({ scope, targetHandles }: { scop
   }, [oauth.did, scope, targetHandles]);
 
   useEffect(() => {
-    void refresh();
+    const frame = window.requestAnimationFrame(() => void refresh());
+    return () => window.cancelAnimationFrame(frame);
   }, [refresh]);
 
   const positioned = useMemo(() => (graph ? buildPositions(graph) : []), [graph]);
@@ -388,7 +389,7 @@ export function AdvancedNetworkExploreMapMobile({ scope, targetHandles }: { scop
               ref={svgRef}
               viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
               className="block h-[470px] w-full select-none sm:h-[620px] lg:h-[700px]"
-              style={{ touchAction: "none", cursor: pointersRef.current.size ? "grabbing" : "grab" }}
+              style={{ touchAction: "none", cursor: "grab" }}
               role="img"
               aria-label="Interactive zoomable Bluesky network map with pinch zoom"
               onWheel={onWheel}

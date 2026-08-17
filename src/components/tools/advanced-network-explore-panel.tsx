@@ -22,7 +22,7 @@ export function AdvancedNetworkExplorePanel() {
 
   useEffect(() => {
     if (!oauth.did) return;
-    setScope(readScope(oauth.did));
+    const frame = window.requestAnimationFrame(() => setScope(readScope(oauth.did)));
 
     const onScope = (event: Event) => {
       const custom = event as CustomEvent<{ did?: string; scope?: StartingNetworkScope }>;
@@ -32,7 +32,10 @@ export function AdvancedNetworkExplorePanel() {
     };
 
     window.addEventListener("rukh:advanced-network:scope-change", onScope);
-    return () => window.removeEventListener("rukh:advanced-network:scope-change", onScope);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("rukh:advanced-network:scope-change", onScope);
+    };
   }, [oauth.did]);
 
   if (!connected) return null;

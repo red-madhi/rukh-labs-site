@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowUpRight,
-  CheckCircle2,
   ChevronDown,
   Compass,
   GitBranch,
@@ -147,13 +146,19 @@ export function AdvancedNetworkStrategyPanel() {
   }, [oauth.did]);
 
   useEffect(() => {
-    if (!connected) {
-      setData(null);
-      return;
-    }
-    void load();
-    const interval = window.setInterval(() => void load(), 30_000);
-    return () => window.clearInterval(interval);
+    let interval: number | undefined;
+    const frame = window.requestAnimationFrame(() => {
+      if (!connected) {
+        setData(null);
+        return;
+      }
+      void load();
+      interval = window.setInterval(() => void load(), 30_000);
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (interval !== undefined) window.clearInterval(interval);
+    };
   }, [connected, load]);
 
   const stageCounts = useMemo(() => data?.run?.stageCounts ?? {}, [data]);
@@ -321,7 +326,7 @@ export function AdvancedNetworkStrategyPanel() {
                 <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#d8b5ff]">New destinations unlocked</p>
               </div>
               <p className="mt-2 max-w-3xl text-xs leading-5 text-white/42">
-                These are new circles your validated footholds made reachable. <strong className="font-semibold text-white/62">They are goals, not today's engagement assignments.</strong>
+                These are new circles your validated footholds made reachable. <strong className="font-semibold text-white/62">They are goals, not today&apos;s engagement assignments.</strong>
               </p>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {data.run.secondWaveTargets.map((handle) => (

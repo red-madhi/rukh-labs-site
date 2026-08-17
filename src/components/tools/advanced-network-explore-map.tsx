@@ -282,7 +282,8 @@ export function AdvancedNetworkExploreMap({
   }, [oauth.did, scope, targetHandles]);
 
   useEffect(() => {
-    void refresh();
+    const frame = window.requestAnimationFrame(() => void refresh());
+    return () => window.cancelAnimationFrame(frame);
   }, [refresh]);
 
   const positioned = useMemo(() => (graph ? buildPositions(graph) : []), [graph]);
@@ -429,7 +430,7 @@ export function AdvancedNetworkExploreMap({
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
             onDoubleClick={(event) => event.preventDefault()}
-            style={{ cursor: dragRef.current ? "grabbing" : "grab" }}
+            style={{ cursor: "grab" }}
           >
             <defs>
               <pattern id="explore-grid" width="36" height="36" patternUnits="userSpaceOnUse">
