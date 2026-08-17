@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Orbit } from "lucide-react";
+import {
+  HelpPopover,
+  PurposeBadge,
+} from "@/components/tools/advanced-network-explain";
 import { AdvancedNetworkExploreMapV4 } from "@/components/tools/advanced-network-explore-map-v4";
 import { useAdvancedBlueskyOAuth } from "@/components/tools/advanced-network-oauth";
 import type { StartingNetworkScope } from "@/lib/advanced-network";
@@ -41,9 +45,12 @@ export function AdvancedNetworkExplorePanel() {
             <Orbit className="size-5 transition group-hover:rotate-12" aria-hidden />
           </span>
           <span className="min-w-0">
-            <span className="block text-sm font-semibold text-white">Explore the full network map</span>
+            <PurposeBadge kind="insight" />
+            <span className="mt-2 block text-sm font-semibold text-white">
+              Optional: explore the full live network map
+            </span>
             <span className="mt-1 block text-[11px] leading-5 text-white/36">
-              Pinch to spread the network apart while people stay readable. Tap either a circle or its name to open that account immediately.
+              This is a visual explanation of the routes—not a list of people you are expected to contact.
             </span>
           </span>
         </span>
@@ -53,6 +60,14 @@ export function AdvancedNetworkExplorePanel() {
       </summary>
 
       <div className="min-w-0 max-w-full border-t border-white/8 p-2 sm:p-4">
+        <div className="mb-2 flex flex-col gap-3 rounded-xl border border-white/8 bg-black/20 p-3 sm:mb-4 sm:flex-row sm:items-start sm:justify-between">
+          <p className="max-w-3xl text-[11px] leading-5 text-white/42">
+            Pinch or zoom to spread the map apart. Drag to move around. Tap either a circle or its name to open that Bluesky account. Use the map to understand where routes and branches exist; use the Action Center for actual next moves.
+          </p>
+          <HelpPopover label="Why the full map is optional">
+            A large network map is useful for exploration but can overwhelm a new user. The route finder and Action Center already turn the graph into practical recommendations, so you only need this view when you want to inspect the structure yourself.
+          </HelpPopover>
+        </div>
         <AdvancedNetworkExploreMapV4 scope={scope} targetHandles={[]} />
       </div>
     </details>

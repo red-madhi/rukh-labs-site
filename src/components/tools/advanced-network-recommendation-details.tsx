@@ -1,6 +1,8 @@
 "use client";
 
 import { ChevronDown, Route, Sparkles } from "lucide-react";
+import { PurposeBadge } from "@/components/tools/advanced-network-explain";
+import { NetworkTermHelp } from "@/components/tools/advanced-network-terms";
 
 type AnalysisPath = {
   kind: string;
@@ -23,12 +25,12 @@ type RecommendationDetails = {
 };
 
 const typeLabels: Record<string, string> = {
-  "warm-follower-bridge": "Warm follower bridge",
-  "target-bestie": "Target bestie",
-  "bestie-of-bestie": "Bestie of bestie",
-  "bridge-bestie": "Bridge bestie",
-  "second-wave-large-target": "Wave 2 large account",
-  "second-wave-bestie": "Wave 2 bestie",
+  "warm-follower-bridge": "Already follows you · route opportunity",
+  "target-bestie": "Strong destination-circle connection",
+  "bestie-of-bestie": "One layer beyond a strong connection",
+  "bridge-bestie": "Strong connection around a bridge",
+  "second-wave-large-target": "Large account found from a new branch",
+  "second-wave-bestie": "Strong connection found from a new branch",
 };
 
 function Path({ path }: { path: AnalysisPath }) {
@@ -60,55 +62,93 @@ export function AdvancedNetworkRecommendationDetails({
           <span className="grid size-6 place-items-center rounded-md border border-[#16c8ff]/14 bg-[#16c8ff]/[0.045]">
             <Sparkles className="size-3 text-[#8ce8ff]" aria-hidden />
           </span>
-          See details
+          Why this person is here
         </span>
-        <ChevronDown className="size-3.5 text-white/30 transition-transform duration-200 group-open:rotate-180" aria-hidden />
+        <ChevronDown
+          className="size-3.5 text-white/30 transition-transform duration-200 group-open:rotate-180"
+          aria-hidden
+        />
       </summary>
 
       <div className="border-t border-white/7 px-3.5 pb-3.5 pt-3">
-        <div className="flex flex-wrap gap-2">
-          {[
-            ["Importance", item.importanceScore, "text-white"],
-            ["Reciprocity", item.reciprocityPotential, "text-emerald-200"],
-            ["Paths", item.independentPaths, "text-[#d8b5ff]"],
-            ["Clusters", item.sharedTargetClusters, "text-[#f1d49a]"],
-          ].map(([label, value, tone]) => (
-            <div
-              key={String(label)}
-              className="min-w-[88px] rounded-lg border border-white/7 bg-white/[0.018] px-2.5 py-2"
-            >
-              <p className={`text-sm font-semibold ${tone}`}>{value}</p>
-              <p className="mt-0.5 text-[9px] uppercase tracking-[0.08em] text-white/27">{label}</p>
-            </div>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <PurposeBadge kind="insight" />
+          <p className="text-[10px] leading-4 text-white/34">
+            These scores explain the ranking. They are not judgments about the person and not automatic instructions to follow them.
+          </p>
+        </div>
+
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-lg border border-white/7 bg-white/[0.018] px-2.5 py-2">
+            <p className="text-sm font-semibold text-white">{item.importanceScore}</p>
+            <p className="mt-0.5 inline-flex items-center text-[9px] uppercase tracking-[0.08em] text-white/27">
+              Recommendation priority
+              <NetworkTermHelp term="importanceScore" />
+            </p>
+          </div>
+          <div className="rounded-lg border border-white/7 bg-white/[0.018] px-2.5 py-2">
+            <p className="text-sm font-semibold text-emerald-200">{item.reciprocityPotential}</p>
+            <p className="mt-0.5 inline-flex items-center text-[9px] uppercase tracking-[0.08em] text-white/27">
+              Follow-back signal
+              <NetworkTermHelp term="reciprocity" />
+            </p>
+          </div>
+          <div className="rounded-lg border border-white/7 bg-white/[0.018] px-2.5 py-2">
+            <p className="text-sm font-semibold text-[#d8b5ff]">{item.independentPaths}</p>
+            <p className="mt-0.5 inline-flex items-center text-[9px] uppercase tracking-[0.08em] text-white/27">
+              Separate routes
+              <NetworkTermHelp term="independentPath" />
+            </p>
+          </div>
+          <div className="rounded-lg border border-white/7 bg-white/[0.018] px-2.5 py-2">
+            <p className="text-sm font-semibold text-[#f1d49a]">{item.sharedTargetClusters}</p>
+            <p className="mt-0.5 inline-flex items-center text-[9px] uppercase tracking-[0.08em] text-white/27">
+              Destination groups
+              <NetworkTermHelp term="sharedTargetClusters" />
+            </p>
+          </div>
         </div>
 
         <div className="mt-3 grid gap-2.5 xl:grid-cols-2">
           <div className="rounded-lg border border-white/7 bg-white/[0.015] p-3">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-[#8ce8ff]">
-              Why this person
-            </p>
-            <p className="mt-1.5 text-[11px] leading-5 text-white/48">{item.reason}</p>
+            <div className="flex items-center gap-2">
+              <PurposeBadge kind="insight" />
+              <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-[#8ce8ff]">
+                Why this person
+              </p>
+            </div>
+            <p className="mt-2 text-[11px] leading-5 text-white/48">{item.reason}</p>
           </div>
 
           <div className="rounded-lg border border-[#e6bd73]/12 bg-[#e6bd73]/[0.025] p-3">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-[#f1d49a]">
-              What to do
-            </p>
-            <p className="mt-1.5 text-[11px] leading-5 text-white/46">{item.strategy}</p>
+            <div className="flex items-center gap-2">
+              <PurposeBadge kind="action" />
+              <p className="text-[9px] font-semibold uppercase tracking-[0.11em] text-[#f1d49a]">
+                Reasonable next move
+              </p>
+            </div>
+            <p className="mt-2 text-[11px] leading-5 text-white/46">{item.strategy}</p>
           </div>
         </div>
 
         {strongestPath ? (
           <div className="mt-2.5 rounded-lg border border-white/7 bg-black/20 p-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-white/30">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="inline-flex items-center gap-1.5 text-[9px] font-semibold uppercase tracking-[0.1em] text-white/30">
                 <Route className="size-3 text-[#8ce8ff]" aria-hidden />
-                Strongest verified path
+                Strongest route found
+                <NetworkTermHelp term="weightedPath" />
               </p>
-              <span className="text-[9px] text-white/25">
-                distance {strongestPath.distanceAfterReciprocity} · strength {strongestPath.interactionStrength}
-              </span>
+              <div className="flex flex-wrap gap-2 text-[9px] text-white/25">
+                <span className="inline-flex items-center">
+                  {strongestPath.distanceAfterReciprocity} relationship steps
+                  <NetworkTermHelp term="routeDistance" />
+                </span>
+                <span className="inline-flex items-center">
+                  activity {strongestPath.interactionStrength}
+                  <NetworkTermHelp term="interactionStrength" />
+                </span>
+              </div>
             </div>
             <Path path={strongestPath} />
           </div>
@@ -123,12 +163,12 @@ export function AdvancedNetworkRecommendationDetails({
               key={handle}
               className="rounded-full border border-[#aa63ff]/14 bg-[#aa63ff]/[0.025] px-2 py-1 text-[9px] text-[#d8b5ff]/80"
             >
-              toward @{handle}
+              route toward @{handle}
             </span>
           ))}
           {item.targetHandles.length > 3 ? (
             <span className="rounded-full border border-white/8 px-2 py-1 text-[9px] text-white/30">
-              +{item.targetHandles.length - 3} more
+              +{item.targetHandles.length - 3} more destinations
             </span>
           ) : null}
         </div>

@@ -5,10 +5,9 @@ import { AdvancedNetworkDashboard } from "@/components/tools/advanced-network-da
 import { AdvancedNetworkExplorePanel } from "@/components/tools/advanced-network-explore-panel";
 import { AdvancedNetworkFitPanel } from "@/components/tools/advanced-network-fit-panel";
 import { AdvancedNetworkGoal } from "@/components/tools/advanced-network-goal";
-import { AdvancedNetworkPeopleGuide } from "@/components/tools/advanced-network-people-guide";
+import { AdvancedNetworkLearningSystem } from "@/components/tools/advanced-network-learning-system";
 import { AdvancedNetworkProgress } from "@/components/tools/advanced-network-progress";
 import { AdvancedNetworkStrategyPanel } from "@/components/tools/advanced-network-strategy-panel";
-import { AdvancedNetworkTerms } from "@/components/tools/advanced-network-terms";
 import { AdvancedNetworkUsabilityEnhancer } from "@/components/tools/advanced-network-usability-enhancer";
 import { AdvancedBlueskyOAuthProvider } from "@/components/tools/advanced-network-oauth";
 import { AdvancedNetworkStartingScope } from "@/components/tools/advanced-network-starting-scope";
@@ -54,11 +53,11 @@ export default async function AdvancedNetworkAppPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
               IAZMA PRO
             </p>
-            <h1 className="mt-3 break-words text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
-              Network growth workspace
+            <h1 className="mt-3 max-w-5xl break-words text-4xl font-semibold tracking-[-0.04em] text-white sm:text-5xl">
+              See the hidden routes already inside your Bluesky network.
             </h1>
             <p className="mt-4 max-w-3xl text-base leading-7 text-white/54">
-              Build several genuine, independent relationships toward the communities and accounts that matter. The evidence-weighted engine separates mathematical paths from active, activated, and converted relationships before it expands into round two.
+              IAZMA starts with people already connected to you, traces the strongest public relationship routes toward larger accounts and communities, and turns those routes into a short list of reachable people worth checking. Genuine new connections create new branches for the next round of discovery.
             </p>
           </div>
         </Container>
@@ -70,15 +69,14 @@ export default async function AdvancedNetworkAppPage() {
             className="grid min-w-0 max-w-full gap-6 [&>*]:min-w-0 [&>*]:max-w-full"
           >
             <AdvancedNetworkUsabilityEnhancer />
+            <AdvancedNetworkLearningSystem />
             <AdvancedNetworkStartingScope />
             <AdvancedNetworkGoal />
             <AdvancedNetworkProgress />
-            <AdvancedNetworkPeopleGuide />
             <AdvancedNetworkDashboard />
             <AdvancedNetworkStrategyPanel />
             <AdvancedNetworkFitPanel />
             <AdvancedNetworkExplorePanel />
-            <AdvancedNetworkTerms />
           </div>
         </Container>
       </Section>

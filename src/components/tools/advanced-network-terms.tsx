@@ -1,127 +1,188 @@
 "use client";
 
-import { BookOpen, HelpCircle } from "lucide-react";
+import { BookOpen } from "lucide-react";
+import { HelpPopover } from "@/components/tools/advanced-network-explain";
 
 export const NETWORK_TERM_DEFINITIONS = {
   destination: {
     label: "Destination / target",
     description:
-      "A larger account or network neighborhood you want to become socially closer to. Destinations guide the strategy; they are usually not the people you should spend most of your effort cold-replying to.",
+      "A larger account or community you want to become closer to. It gives the map a direction. It is usually context—not the next person you should cold-message or chase.",
+  },
+  destinationNeighborhood: {
+    label: "Destination neighborhood",
+    description:
+      "The group of people who regularly connect or interact around a destination account. IAZMA looks for reachable people near that community instead of treating the large account as the only goal.",
   },
   warmNetwork: {
     label: "Warm network",
     description:
-      "People already close to you in the graph: followers, mutuals, and accounts with an existing interaction or relationship foothold. Warmth is weighted; a person who actually talks with you is warmer than a silent mutual.",
+      "People already close to you: followers, mutuals, and accounts with signs of an existing public relationship. A person who actually interacts with you counts as warmer than a silent follow.",
   },
   mutual: {
     label: "Mutual",
     description:
-      "You follow them and they follow you back. A mutual follow is useful evidence, but it does not by itself prove friendship, trust, or active social influence.",
+      "You follow each other. That is a useful starting signal, but it does not automatically mean friendship, trust, or an active relationship.",
   },
   bridgeCandidate: {
     label: "Bridge candidate",
     description:
-      "A reachable person worth cultivating because they may help connect you toward a destination. Candidate means strategically promising; it does not mean a warm route involving you has been activated yet.",
+      "A reachable person who may connect your current network toward a destination community. Candidate means worth checking—not someone you owe a follow and not yet a proven relationship.",
   },
   bridge: {
     label: "Activated bridge",
     description:
-      "A person in your warm network whose active or reciprocal relationship with you now creates a validated route into a destination neighborhood. This is a later stage than a bridge candidate.",
+      "A person whose real, active or reciprocal relationship with you now creates a usable route toward another community. This is earned later; it is stronger than a bridge candidate.",
+  },
+  foothold: {
+    label: "Foothold",
+    description:
+      "A genuine relationship that gives your network a real starting point inside another community. Keep treating the person normally; a foothold is evidence of connection, not permission to use them.",
   },
   weightedPath: {
     label: "Weighted path",
     description:
-      "A route ranked by relationship quality, not just hop count. Reciprocal interaction, recency, target-to-bridge attention, and confidence can make a three-hop route stronger than a hollow two-hop route.",
+      "A route scored by how real and recent the public relationships look, not only by the number of hops. A slightly longer active route can rank above a short chain of silent follows.",
   },
   independentPath: {
-    label: "Node-independent path",
+    label: "Independent path",
     description:
-      "A route that does not rely on the same internal bridge person as another counted route. Four paths that all collapse through one person are not treated as four independent sources of social proof.",
+      "A separate route that does not depend on the same middle person as another route. Two independent routes are stronger than several routes that all collapse through one account.",
   },
   tieConfidence: {
-    label: "Tie confidence",
+    label: "Connection confidence",
     description:
-      "How much evidence supports a relationship: reciprocal follow status, interaction in both directions, repeated activity on separate days, recency, and attention flowing from the destination. Possible, likely, and strong are confidence bands—not claims of friendship.",
+      "How much public evidence supports the connection: reciprocal follows, interaction in both directions, repeated activity, recency, and attention from the destination side. It is not a claim about private friendship.",
   },
   structuralPath: {
-    label: "Structural path",
+    label: "Discovered path",
     description:
-      "The follow chain exists, but the route has not shown enough meaningful public activity to count as an active social relationship yet.",
+      "The follow route exists, but there is not enough public activity yet to treat it as a live social relationship. Read it as a possibility, not an action.",
   },
   activePath: {
-    label: "Active path",
+    label: "Warming path",
     description:
-      "People on the route repeatedly interact with one another. The route is socially alive, but it may not yet create visible overlap involving you.",
+      "People on the route interact repeatedly, so the route looks socially alive. Your own relationship with the reachable person may still be developing.",
   },
   activatedPath: {
     label: "Activated path",
     description:
-      "The bridge relationship has started creating visible overlap involving you—for example, replies, quotes, reposts, or a warm follower relationship connected to an active route.",
+      "The route now includes visible overlap involving you, such as replies, quotes, reposts, or another active public connection.",
   },
   convertedPath: {
-    label: "Converted path",
+    label: "Reciprocal foothold",
     description:
-      "The relationship involving you is reciprocal and can support a durable warm route. Converted does not mean the final destination followed you; it means the foothold itself became real.",
+      "The reachable relationship involving you became reciprocal and can support a durable warm route. This does not mean the final destination account followed you.",
   },
   targetCircle: {
     label: "Target-circle connection",
     description:
-      "Someone who appears in or near a destination account's reciprocal interaction neighborhood. This describes their position around the target; it does not mean they are already your friend.",
+      "A person who appears in or near a destination account's active public network. This describes where they sit on the map; it does not mean they are already close to you.",
   },
   targetBestie: {
     label: "Target-circle bestie",
     description:
-      "Product shorthand for a high-confidence reciprocal interaction tie in the destination's neighborhood. It requires more than a mutual follow, but it is still an evidence label—not a literal claim about private friendship.",
+      "IAZMA shorthand for a strong, repeated, two-way public interaction around a destination. It is an evidence label—not a literal claim that the people are private best friends.",
   },
   bridgeBestie: {
     label: "Bridge-circle bestie",
     description:
-      "A high-confidence reciprocal interaction tie around one of your bridge accounts. Cultivating this person can widen your independent routes into a destination neighborhood.",
+      "A strong, repeated, two-way public interaction around one of your bridge accounts. This person may add another route into the same community.",
   },
   bestieOfBestie: {
     label: "Bestie-of-bestie",
     description:
-      "One evidence-discounted layer beyond a strong reciprocal interaction relationship. It is an exploration signal, not automatic proof that the person is close to the destination.",
+      "One exploration layer beyond a strong reciprocal public relationship. It is a lead worth inspecting, not proof that the person is close to you or the destination.",
   },
   emergingRelationship: {
     label: "Your emerging relationship",
     description:
-      "A relationship involving your own account that is strengthening through reciprocity and repeated interaction. This term is reserved for evidence about you and that person directly.",
+      "A connection between you and another person that is strengthening through reciprocity and repeated public interaction.",
   },
   wave2: {
-    label: "Wave 2 / round two",
+    label: "Round 2 / new branch",
     description:
-      "A new destination neighborhood discovered only after a round-one foothold becomes activated or converted. The engine no longer expands round two from every speculative recommendation.",
+      "A new community that becomes worth exploring only after a first-round relationship becomes genuinely active or reciprocal. IAZMA waits for a real foothold instead of expanding from every guess.",
+  },
+  roundTwo: {
+    label: "Round 2",
+    description:
+      "The next layer of discovery unlocked by a real first-round foothold. It means the tool can look outward from a new branch; it does not mean you should immediately contact everyone it finds.",
   },
   reciprocity: {
     label: "Reciprocity potential",
     description:
-      "A heuristic signal for how promising a relationship may be to turn mutual. It is not a probability or a promise of a follow-back.",
+      "A ranking signal for how plausible a two-way connection may be based on visible network evidence. It is not a probability and never promises a follow-back.",
   },
   marginalCoverage: {
-    label: "Marginal coverage",
+    label: "New network coverage",
     description:
-      "How much genuinely new network territory a person adds. The first useful route into a new target subcluster is worth more than the seventh redundant person from the same clique.",
+      "How much genuinely new territory a person adds. The first useful route into a new part of a community matters more than another nearly identical route through the same clique.",
   },
   observable: {
-    label: "Observable graph",
+    label: "Observable network",
     description:
-      "The portion of the network Bluesky's graph endpoint can currently enumerate. It can be smaller than the profile's total follower count because some relationships are not publicly enumerable.",
+      "The part of the network Bluesky currently lets the tool enumerate. It can be smaller than the profile's displayed follower total, so treat it as the visible map—not the entire social world.",
   },
   socialProof: {
     label: "Destination social proof",
     description:
-      "How much active, independent warm relationship coverage you have around a destination. Passive follow chains count less than activated or converted routes.",
+      "How much independent, active warm-network coverage you have around a destination. Several real routes can make your name familiar through normal overlap without cold outreach.",
   },
   expandedNetwork: {
     label: "Expanded network",
     description:
-      "The result of developing real bridge relationships: new destination circles, stronger independent routes, and additional communities become reachable for later analysis.",
+      "The new circles and routes that become visible after genuine bridge relationships develop. New branches are an outcome of real connections, not mass-following.",
   },
   networkLevel: {
     label: "Network Level",
     description:
-      "A quality-growth score based on progress from your saved baseline: mutual growth, real follow-backs, bridge coverage, independent warm paths, and relationship interaction. Raw mass-following is intentionally not rewarded.",
+      "A progress score based on change from your saved baseline: mutual growth, real follow-backs, active bridge coverage, separate warm paths, and interaction. Raw mass-following is deliberately not rewarded.",
+  },
+  bridgeLeverage: {
+    label: "Bridge leverage",
+    description:
+      "How much useful network access this person could add based on route quality, destination coverage, and separate paths. It ranks the opportunity; it is not a judgment of the person's value.",
+  },
+  importanceScore: {
+    label: "Recommendation priority",
+    description:
+      "The overall score IAZMA uses to sort this recommendation list. Higher means the account looks more useful for your current goal—not that the person is objectively more important.",
+  },
+  sharedTargetClusters: {
+    label: "Destination groups",
+    description:
+      "How many different destination communities this person helps connect toward. More groups can make the person broadly relevant, but personal fit still matters.",
+  },
+  routeDistance: {
+    label: "Route distance",
+    description:
+      "The number of relationship steps between your starting network and the destination along this route. Shorter can help, but IAZMA also weighs whether those connections look active.",
+  },
+  interactionStrength: {
+    label: "Interaction strength",
+    description:
+      "A score based on visible public activity along the route. Higher means the route shows more evidence of real interaction; it does not reveal private relationships.",
+  },
+  signalStrength: {
+    label: "Signal strength",
+    description:
+      "How strongly the available public evidence supports this specific connection pattern. Use it to compare results, not as a claim of certainty.",
+  },
+  clusterStrength: {
+    label: "Community strength",
+    description:
+      "How much active, separate warm-network coverage supports this destination community. Higher means the result is backed by more than one fragile route.",
+  },
+  humanFit: {
+    label: "Human-fit feedback",
+    description:
+      "Your judgment about whether you would genuinely want this person in your network. This teaches future rankings what graph math cannot know about your taste.",
+  },
+  relationshipStage: {
+    label: "Relationship stage",
+    description:
+      "Where the route currently sits: discovered, warming, active, or reciprocal. The stage describes public evidence and helps separate context from an actual next action.",
   },
 } as const;
 
@@ -130,35 +191,19 @@ export type NetworkTermKey = keyof typeof NETWORK_TERM_DEFINITIONS;
 export function NetworkTermHelp({ term }: { term: NetworkTermKey }) {
   const definition = NETWORK_TERM_DEFINITIONS[term];
   return (
-    <span className="group relative inline-flex align-middle">
-      <button
-        type="button"
-        className="ml-1 inline-grid size-4 place-items-center rounded-full border border-white/10 bg-white/[0.025] text-white/30 outline-none transition hover:border-[#16c8ff]/30 hover:text-[#9cecff] focus:border-[#16c8ff]/35 focus:text-[#9cecff]"
-        aria-label={`What does ${definition.label} mean?`}
-        title={definition.description}
-      >
-        <HelpCircle className="size-2.5" aria-hidden />
-      </button>
-      <span
-        role="tooltip"
-        className="pointer-events-none absolute left-1/2 top-full z-50 mt-2 hidden w-72 -translate-x-1/2 rounded-xl border border-white/10 bg-[#090c11]/98 p-3 text-left shadow-2xl backdrop-blur-xl group-hover:block group-focus-within:block"
-      >
-        <span className="block text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8ce8ff]">
-          {definition.label}
-        </span>
-        <span className="mt-1.5 block text-[11px] leading-5 text-white/58">
-          {definition.description}
-        </span>
-      </span>
-    </span>
+    <HelpPopover label={definition.label} className="ml-1">
+      {definition.description}
+    </HelpPopover>
   );
 }
 
 const glossaryOrder: NetworkTermKey[] = [
   "destination",
+  "destinationNeighborhood",
   "bridgeCandidate",
   "targetCircle",
   "bridge",
+  "foothold",
   "expandedNetwork",
   "weightedPath",
   "independentPath",
@@ -179,6 +224,9 @@ const glossaryOrder: NetworkTermKey[] = [
   "reciprocity",
   "observable",
   "networkLevel",
+  "bridgeLeverage",
+  "interactionStrength",
+  "humanFit",
 ];
 
 export function AdvancedNetworkTerms() {
@@ -190,13 +238,15 @@ export function AdvancedNetworkTerms() {
             <BookOpen className="size-4" aria-hidden />
           </span>
           <span>
-            <span className="block text-sm font-semibold text-white">Network terms</span>
+            <span className="block text-sm font-semibold text-white">Term reference</span>
             <span className="mt-0.5 block text-[11px] text-white/34">
-              What bridge candidates, activated bridges, target circles, evidence stages, and expanded networks actually mean.
+              The same plain-language explanations used by the info buttons throughout IAZMA PRO.
             </span>
           </span>
         </span>
-        <span className="rounded-full border border-white/8 px-2.5 py-1 text-[10px] text-white/32">Glossary</span>
+        <span className="rounded-full border border-white/8 px-2.5 py-1 text-[10px] text-white/32">
+          Optional
+        </span>
       </summary>
 
       <div className="mt-5 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
@@ -205,7 +255,9 @@ export function AdvancedNetworkTerms() {
           return (
             <div key={key} className="rounded-xl border border-white/7 bg-black/15 p-3.5">
               <p className="text-xs font-semibold text-white/78">{definition.label}</p>
-              <p className="mt-1.5 text-[11px] leading-5 text-white/40">{definition.description}</p>
+              <p className="mt-1.5 text-[11px] leading-5 text-white/40">
+                {definition.description}
+              </p>
             </div>
           );
         })}
