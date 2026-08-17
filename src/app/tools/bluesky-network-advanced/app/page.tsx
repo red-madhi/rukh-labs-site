@@ -73,10 +73,10 @@ export default async function AdvancedNetworkAppPage() {
             <AdvancedNetworkStartingScope />
             <AdvancedNetworkGoal />
             <AdvancedNetworkProgress />
+            <AdvancedNetworkExplorePanel />
             <AdvancedNetworkDashboard />
             <AdvancedNetworkStrategyPanel />
             <AdvancedNetworkFitPanel />
-            <AdvancedNetworkExplorePanel />
           </div>
         </Container>
       </Section>
