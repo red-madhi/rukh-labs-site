@@ -39,23 +39,23 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
   try {
     page = await fetchPublicPage(parsed.toString(), 12_000, 2_000_000);
   } catch (error) {
-    const score = clamp(82 + Math.min(10, candidate.prioritySeed / 10));
     return {
       finalUrl: parsed.toString(),
-      score,
-      qualified: Boolean(candidate.phone || candidate.email || candidate.sourceUrl),
-      summary: "The listed business website could not be reached during repeated public checks.",
-      pitch: `I found ${candidate.organizationName} while reviewing businesses in ${candidate.city || candidate.state || "your area"}. The website currently appears unreachable from a normal public request. I build practical small-business sites and can help diagnose or replace it without turning this into a drawn-out project.`,
-      signals: [
-        "Official website could not be reached",
-        "A broken web presence can directly block inquiries",
+      score: 45,
+      qualified: false,
+      summary: "The automated audit could not reach the listed website, so no sales conclusion was made.",
+      pitch: "Manual verification required before outreach.",
+      signals: ["Automated website request did not complete"],
+      risks: [
+        "The site may be temporarily unavailable or may block automated requests",
+        "Verify the website manually before treating this as an opportunity",
       ],
-      risks: ["The outage may be temporary and should be verified manually before outreach"],
       contactEmail: candidate.email,
       contactPhone: candidate.phone,
       contactUrl: candidate.sourceUrl,
       audit: {
         reachable: false,
+        inconclusive: true,
         error: error instanceof Error ? error.message : "Website request failed",
         checkedAt: new Date().toISOString(),
       },
@@ -63,23 +63,46 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
   }
 
   if (page.status >= 400 || !page.text) {
-    const score = clamp(78 + Math.min(10, candidate.prioritySeed / 10));
+    const accessBlocked = [401, 403, 429].includes(page.status);
+    const clearlyBroken = page.status === 404 || page.status === 410 || page.status >= 500;
+    const score = accessBlocked
+      ? 42
+      : clearlyBroken
+        ? clamp(78 + Math.min(10, candidate.prioritySeed / 10))
+        : 50;
+    const qualified =
+      clearlyBroken && Boolean(candidate.phone || candidate.email || candidate.sourceUrl);
+
     return {
       finalUrl: page.finalUrl,
       score,
-      qualified: Boolean(candidate.phone || candidate.email || candidate.sourceUrl),
-      summary: `The listed website returned HTTP ${page.status} instead of a usable homepage.`,
-      pitch: `I came across ${candidate.organizationName} and noticed the public website is returning an error instead of a usable homepage. I build straightforward business sites and can help restore a reliable contact/booking path.`,
-      signals: [
-        `Website returned HTTP ${page.status}`,
-        "Visitors may be unable to reach the business online",
-      ],
-      risks: ["The error may be temporary and should be checked once more before contacting"],
+      qualified,
+      summary: accessBlocked
+        ? `The website returned HTTP ${page.status} to the crawler. That may be bot protection, so the result is inconclusive.`
+        : `The listed website returned HTTP ${page.status} instead of a usable homepage.`,
+      pitch: qualified
+        ? `I came across ${candidate.organizationName} and noticed the public website is returning an error instead of a usable homepage. I build straightforward business sites and can help restore a reliable contact or booking path.`
+        : "Manual verification required before outreach.",
+      signals: accessBlocked
+        ? [`Automated audit was blocked with HTTP ${page.status}`]
+        : [
+            `Website returned HTTP ${page.status}`,
+            clearlyBroken
+              ? "Visitors may be unable to reach the business online"
+              : "The homepage did not return usable public HTML",
+          ],
+      risks: accessBlocked
+        ? [
+            "The website may be healthy and merely blocking automated traffic",
+            "Do not contact the business about an outage without checking in a normal browser",
+          ]
+        : ["The error may be temporary and should be checked once more before contacting"],
       contactEmail: candidate.email,
       contactPhone: candidate.phone,
       contactUrl: candidate.sourceUrl,
       audit: {
         reachable: false,
+        inconclusive: accessBlocked,
         status: page.status,
         responseMs: page.responseMs,
         checkedAt: new Date().toISOString(),
