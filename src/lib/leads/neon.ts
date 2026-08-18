@@ -14,6 +14,15 @@ function getNeonEndpoint(connectionString: string) {
   return `https://${hostParts.join(".")}/sql`;
 }
 
+function cleanErrorDetail(value: string) {
+  return value
+    .replace(/postgres(?:ql)?:\/\/[^\s"']+/gi, "[database connection redacted]")
+    .replace(/password=[^\s"']+/gi, "password=[redacted]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 500);
+}
+
 export async function leadNeonQuery(
   query: string,
   params: Array<string | null> = [],
@@ -33,7 +42,12 @@ export async function leadNeonQuery(
     cache: "no-store",
   });
 
-  if (!response.ok) throw new Error(`Lead query failed with ${response.status}.`);
+  if (!response.ok) {
+    const detail = cleanErrorDetail(await response.text().catch(() => ""));
+    throw new Error(
+      `Lead query failed with ${response.status}${detail ? `: ${detail}` : "."}`,
+    );
+  }
   return (await response.json()) as NeonQueryResponse;
 }
 
