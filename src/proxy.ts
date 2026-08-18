@@ -17,7 +17,10 @@ function challenge(message = "Authentication required.") {
 }
 
 export function proxy(request: NextRequest) {
-  const isCollector = request.nextUrl.pathname.startsWith("/api/leads/collect/");
+  const pathname = request.nextUrl.pathname;
+  const isCollector =
+    pathname === "/api/leads/collect" ||
+    pathname.startsWith("/api/leads/collect/");
 
   if (isCollector) {
     if (!process.env.CRON_SECRET) {
