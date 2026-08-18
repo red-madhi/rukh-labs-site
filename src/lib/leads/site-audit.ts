@@ -71,7 +71,7 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
         ? clamp(78 + Math.min(10, candidate.prioritySeed / 10))
         : 50;
     const qualified =
-      clearlyBroken && Boolean(candidate.phone || candidate.email || candidate.sourceUrl);
+      clearlyBroken && Boolean(candidate.phone || candidate.email);
 
     return {
       finalUrl: page.finalUrl,
@@ -136,7 +136,7 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
   const phones = Array.from(
     new Set([candidate.phone, ...home.phones, ...(contactSignals?.phones ?? [])].filter(Boolean)),
   ) as string[];
-  const contactUrl = contactPage?.finalUrl || home.contactUrl || candidate.sourceUrl;
+  const contactUrl = contactPage?.finalUrl || home.contactUrl;
   const currentYear = new Date().getFullYear();
 
   let score = 18 + Math.min(10, candidate.prioritySeed / 8);
