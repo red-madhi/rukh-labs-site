@@ -2,12 +2,14 @@ name: Rukh Leads Scheduler
 
 on:
   schedule:
-    # Fast public-intent scan. Offset from :00 to reduce GitHub scheduler congestion.
+    # Fast social-intent scan. Offset from :00 to reduce GitHub scheduler congestion.
     - cron: "3,13,23,33,43,53 * * * *"
     # Sync direct Rukh Labs website inquiries twice an hour.
     - cron: "8,38 * * * *"
-    # Run the full multi-source collector every four hours.
+    # Search the broader public web every four hours. This is the paid/limited search source.
     - cron: "27 */4 * * *"
+    # Daily catch-all for slower sources such as registries, nonprofit data, and audits as they come online.
+    - cron: "52 11 * * *"
   workflow_dispatch:
     inputs:
       source:
@@ -18,6 +20,7 @@ on:
         options:
           - all
           - bluesky
+          - web
           - inbound
 
 permissions:
@@ -65,9 +68,26 @@ jobs:
             -H "Authorization: Bearer $CRON_SECRET" \
             "$LEADS_BASE_URL/api/leads/collect/inbound"
 
-  all-sources:
+  web-intent:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '27 */4 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'web' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Scan public web intent
+        env:
+          CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
+          curl --silent --show-error --fail-with-body \
+            --retry 2 --retry-delay 2 --max-time 55 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/collect/web-intent"
+
+  all-sources:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '52 11 * * *' ||
       github.event_name == 'workflow_dispatch' && inputs.source == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 4
