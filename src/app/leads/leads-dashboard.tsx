@@ -36,6 +36,15 @@ const statusOptions: LeadStatus[] = [
   "ignored",
 ];
 
+type ScanResult = {
+  id: string;
+  label: string;
+  status: "success" | "error" | "needs-setup" | "planned";
+  stored?: number;
+  qualified?: number;
+  message?: string;
+};
+
 function relativeTime(value?: string) {
   if (!value) return "Never";
   const ms = Date.now() - new Date(value).getTime();
@@ -152,18 +161,39 @@ export function LeadsDashboard() {
 
   async function runScan() {
     setScanning(true);
-    setScanMessage("");
+    setScanMessage("Scanning every configured source…");
     try {
-      const response = await fetch("/api/leads/collect/bluesky", {
+      const response = await fetch("/api/leads/collect", {
         cache: "no-store",
         credentials: "same-origin",
       });
-      const body = (await response.json()) as { stored?: number; qualified?: number; error?: string };
-      if (!response.ok) throw new Error(body.error || "Collector failed.");
-      setScanMessage(`Scan complete · ${body.qualified ?? 0} qualified · ${body.stored ?? 0} stored`);
+      const body = (await response.json()) as {
+        stored?: number;
+        results?: ScanResult[];
+        error?: string;
+      };
+      if (!response.ok) throw new Error(body.error || "Multi-source collector failed.");
+
+      const results = Array.isArray(body.results) ? body.results : [];
+      const successCount = results.filter((result) => result.status === "success").length;
+      const errorCount = results.filter((result) => result.status === "error").length;
+      const setupCount = results.filter((result) => result.status === "needs-setup").length;
+      const plannedCount = results.filter((result) => result.status === "planned").length;
+      const details = results
+        .filter((result) => result.status === "error" || result.status === "needs-setup")
+        .map((result) => `${result.label}: ${result.message || result.status}`)
+        .join(" · ");
+
+      setScanMessage(
+        `Scan finished · ${successCount} source${successCount === 1 ? "" : "s"} ran · ${body.stored ?? 0} stored` +
+          (errorCount ? ` · ${errorCount} error${errorCount === 1 ? "" : "s"}` : "") +
+          (setupCount ? ` · ${setupCount} need setup` : "") +
+          (plannedCount ? ` · ${plannedCount} coming next` : "") +
+          (details ? ` — ${details}` : ""),
+      );
       await load();
     } catch (caught) {
-      setScanMessage(caught instanceof Error ? caught.message : "Collector failed.");
+      setScanMessage(caught instanceof Error ? caught.message : "Multi-source collector failed.");
     } finally {
       setScanning(false);
     }
@@ -213,7 +243,7 @@ export function LeadsDashboard() {
                 <span className="text-[#f2eee2]">Rukh</span> <span className="text-[#d7a45f]">Leads</span>
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/48 sm:text-base">
-                Nationwide lead intelligence for website sales. Find the buying signal, rank it, and get there before the pile-on.
+                Nationwide lead intelligence for website sales. Find buying signals across multiple sources, rank them, and get there before the pile-on.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -221,11 +251,11 @@ export function LeadsDashboard() {
                 <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden /> Refresh
               </button>
               <button onClick={() => void runScan()} disabled={scanning} className="inline-flex h-11 items-center gap-2 border border-[#ef2a26]/45 bg-[#ef2a26]/12 px-4 text-xs font-bold uppercase tracking-[.12em] text-[#ff9288] hover:bg-[#ef2a26]/18 disabled:opacity-50">
-                <Zap className={`size-4 ${scanning ? "animate-pulse" : ""}`} aria-hidden /> {scanning ? "Scanning" : "Run scan"}
+                <Zap className={`size-4 ${scanning ? "animate-pulse" : ""}`} aria-hidden /> {scanning ? "Scanning all" : "Scan all sources"}
               </button>
             </div>
           </div>
-          {scanMessage ? <p className="relative mt-4 border-t border-white/8 pt-3 text-xs text-white/48 md:ml-20">{scanMessage}</p> : null}
+          {scanMessage ? <p className="relative mt-4 border border-[#d7a45f]/20 bg-[#d7a45f]/[.05] px-4 py-3 text-xs leading-5 text-[#efd09b] md:ml-20">{scanMessage}</p> : null}
         </header>
 
         <section className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -267,7 +297,7 @@ export function LeadsDashboard() {
               <section className={`${styles.cut} border border-white/10 bg-[#090807]/95 p-5 sm:p-6`}>
                 <div className="flex items-end justify-between gap-4 border-b border-white/8 pb-4">
                   <div><p className="text-[9px] font-bold uppercase tracking-[.2em] text-[#d7a45f]">Collector network</p><h2 className="mt-2 text-2xl font-black tracking-[-.04em]">Sources & automation</h2></div>
-                  <button onClick={() => void runScan()} disabled={scanning} className="border border-[#ef2a26]/40 bg-[#ef2a26]/10 px-3 py-2 text-xs font-bold text-[#ff9288]">Run Bluesky now</button>
+                  <button onClick={() => void runScan()} disabled={scanning} className="border border-[#ef2a26]/40 bg-[#ef2a26]/10 px-3 py-2 text-xs font-bold text-[#ff9288]">Scan all sources</button>
                 </div>
                 <div className="mt-4 grid gap-3 xl:grid-cols-2">
                   {collectors.map((collector) => (
@@ -292,7 +322,7 @@ export function LeadsDashboard() {
 
                   {error ? <div className="m-4 border border-[#ef2a26]/30 bg-[#ef2a26]/8 p-4 text-sm text-[#ff9a91]">{error}</div> : null}
                   {!loading && !error && visibleLeads.length === 0 ? (
-                    <div className="px-6 py-20 text-center"><Target className="mx-auto size-9 text-white/22"/><h3 className="mt-4 text-lg font-semibold">No leads in this queue yet.</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/38">Run the Bluesky scan now. As collectors find qualifying opportunities, they will appear here automatically.</p></div>
+                    <div className="px-6 py-20 text-center"><Target className="mx-auto size-9 text-white/22"/><h3 className="mt-4 text-lg font-semibold">No leads in this queue yet.</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-white/38">Run a multi-source scan. As each collector finds qualifying opportunities, they will appear here automatically.</p></div>
                   ) : null}
 
                   <div className="divide-y divide-white/7">
