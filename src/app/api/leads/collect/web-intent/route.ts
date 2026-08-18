@@ -104,7 +104,7 @@ function qualify(result: BraveResult, config: (typeof searchConfigs)[number]): C
   const combined = `${title} ${description}`;
   if (!intentPattern.test(combined) || promoPattern.test(combined)) return null;
 
-  let score = config.score;
+  let score: number = config.score;
   const signals = [`Fresh public-web result matched ${config.query}`];
   const risks = ["Business identity and budget may still need verification"];
   if (/\b(asap|urgent|this week|launch|opening|deadline)\b/i.test(combined)) {
