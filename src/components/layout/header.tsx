@@ -24,8 +24,9 @@ export function Header() {
     pathname.endsWith("/sample");
   const isPrivatePortfolio = pathname.startsWith("/portfolio/brett-gallaher");
   const isCareerPortfolioDemo = pathname === "/services/career-portfolios/demo";
+  const isPrivateLeads = pathname.startsWith("/leads");
 
-  if (isWebsiteSample || isPrivatePortfolio || isCareerPortfolioDemo) {
+  if (isWebsiteSample || isPrivatePortfolio || isCareerPortfolioDemo || isPrivateLeads) {
     return null;
   }
 
