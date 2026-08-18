@@ -88,19 +88,19 @@ export async function GET(request: NextRequest) {
 
   const startedAt = Date.now();
   const mode = request.nextUrl.searchParams.get("mode") || "all";
-  const seedSteps =
-    mode === "process"
-      ? []
-      : [
-          ["rukh-inbound", "Rukh Labs inbound", "/api/leads/collect/inbound", 16_000],
-          ["intent-bluesky", "Bluesky intent", "/api/leads/collect/bluesky", 24_000],
-          ["web-intent", "Public web intent", "/api/leads/collect/web-intent", 18_000],
-          ["web-business-discovery", "Public business discovery", "/api/leads/collect/web-businesses", 18_000],
-          ["registry-colorado", "Colorado business registry", "/api/leads/collect/colorado", 18_000],
-          ["registry-nppes", "National healthcare organizations", "/api/leads/collect/nppes", 18_000],
-          ["national-nonprofits", "National nonprofit filings", "/api/leads/collect/irs-nonprofits", 24_000],
-          ["openstreetmap-businesses", "OpenStreetMap businesses", "/api/leads/collect/openstreetmap", 24_000],
-        ] as const;
+  const processOnly = mode === "process";
+  const seedSteps = processOnly
+    ? []
+    : [
+        ["rukh-inbound", "Rukh Labs inbound", "/api/leads/collect/inbound", 16_000],
+        ["intent-bluesky", "Bluesky intent", "/api/leads/collect/bluesky", 24_000],
+        ["web-intent", "Public web intent", "/api/leads/collect/web-intent", 18_000],
+        ["web-business-discovery", "Public business discovery", "/api/leads/collect/web-businesses", 18_000],
+        ["registry-colorado", "Colorado business registry", "/api/leads/collect/colorado", 18_000],
+        ["registry-nppes", "National healthcare organizations", "/api/leads/collect/nppes", 18_000],
+        ["national-nonprofits", "National nonprofit filings", "/api/leads/collect/irs-nonprofits", 24_000],
+        ["openstreetmap-businesses", "OpenStreetMap businesses", "/api/leads/collect/openstreetmap", 24_000],
+      ] as const;
 
   const seedResults = await Promise.all(
     seedSteps.map(([id, label, path, timeout]) =>
@@ -108,20 +108,22 @@ export async function GET(request: NextRequest) {
     ),
   );
 
+  const domainLimit = processOnly ? 8 : 3;
+  const auditLimit = processOnly ? 12 : 4;
   const processResults = await Promise.all([
     callStep(
       request,
       "domain-research",
       "Website discovery",
-      "/api/leads/process/domains?limit=3",
-      18_000,
+      `/api/leads/process/domains?limit=${domainLimit}`,
+      processOnly ? 34_000 : 18_000,
     ),
     callStep(
       request,
       "website-auditor",
       "Website auditor",
-      "/api/leads/process/audits?limit=4",
-      20_000,
+      `/api/leads/process/audits?limit=${auditLimit}`,
+      processOnly ? 36_000 : 20_000,
     ),
   ]);
 
