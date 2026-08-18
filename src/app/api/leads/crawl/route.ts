@@ -24,7 +24,7 @@ async function callStep(
   id: string,
   label: string,
   path: string,
-  timeoutMs = 40_000,
+  timeoutMs = 24_000,
 ): Promise<StepResult> {
   try {
     const authorization = request.headers.get("authorization");
@@ -92,14 +92,14 @@ export async function GET(request: NextRequest) {
     mode === "process"
       ? []
       : [
-          ["rukh-inbound", "Rukh Labs inbound", "/api/leads/collect/inbound", 20_000],
-          ["intent-bluesky", "Bluesky intent", "/api/leads/collect/bluesky", 35_000],
-          ["web-intent", "Public web intent", "/api/leads/collect/web-intent", 25_000],
-          ["web-business-discovery", "Public business discovery", "/api/leads/collect/web-businesses", 25_000],
-          ["registry-colorado", "Colorado business registry", "/api/leads/collect/colorado", 25_000],
-          ["registry-nppes", "National healthcare organizations", "/api/leads/collect/nppes", 25_000],
-          ["national-nonprofits", "National nonprofit filings", "/api/leads/collect/irs-nonprofits", 38_000],
-          ["openstreetmap-businesses", "OpenStreetMap businesses", "/api/leads/collect/openstreetmap", 32_000],
+          ["rukh-inbound", "Rukh Labs inbound", "/api/leads/collect/inbound", 16_000],
+          ["intent-bluesky", "Bluesky intent", "/api/leads/collect/bluesky", 24_000],
+          ["web-intent", "Public web intent", "/api/leads/collect/web-intent", 18_000],
+          ["web-business-discovery", "Public business discovery", "/api/leads/collect/web-businesses", 18_000],
+          ["registry-colorado", "Colorado business registry", "/api/leads/collect/colorado", 18_000],
+          ["registry-nppes", "National healthcare organizations", "/api/leads/collect/nppes", 18_000],
+          ["national-nonprofits", "National nonprofit filings", "/api/leads/collect/irs-nonprofits", 24_000],
+          ["openstreetmap-businesses", "OpenStreetMap businesses", "/api/leads/collect/openstreetmap", 24_000],
         ] as const;
 
   const seedResults = await Promise.all(
@@ -114,14 +114,14 @@ export async function GET(request: NextRequest) {
       "domain-research",
       "Website discovery",
       "/api/leads/process/domains?limit=3",
-      24_000,
+      18_000,
     ),
     callStep(
       request,
       "website-auditor",
       "Website auditor",
       "/api/leads/process/audits?limit=4",
-      28_000,
+      20_000,
     ),
   ]);
 
