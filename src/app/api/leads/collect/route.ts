@@ -69,37 +69,28 @@ export async function GET(request: NextRequest) {
   const startedAt = Date.now();
   const results = await Promise.all([
     callCollector(request, "rukh-inbound", "Rukh Labs inbound", "/api/leads/collect/inbound"),
+    callCollector(request, "web-intent", "Public web intent", "/api/leads/collect/web-intent"),
     callCollector(request, "intent-bluesky", "Bluesky intent", "/api/leads/collect/bluesky"),
   ]);
-
-  if (!process.env.BRAVE_SEARCH_API_KEY) {
-    results.push({
-      id: "web-intent",
-      label: "Public web intent",
-      status: "needs-setup",
-      message: "Add BRAVE_SEARCH_API_KEY to enable fresh public-web lead discovery.",
-    });
-  } else {
-    results.push({
-      id: "web-intent",
-      label: "Public web intent",
-      status: "planned",
-      message: "Search credential is present; the public-web collector is next in the source pipeline.",
-    });
-  }
 
   results.push(
     {
       id: "business-registries",
       label: "Business registries",
       status: "planned",
-      message: "Nationwide state and federal registry adapters are being added independently of social sources.",
+      message: "Nationwide state and federal registry adapters are independent source modules and do not depend on Bluesky.",
+    },
+    {
+      id: "national-nonprofits",
+      label: "National nonprofit filings",
+      status: "planned",
+      message: "IRS exempt-organization data is queued as a free nationwide filing source.",
     },
     {
       id: "website-auditor",
       label: "Website auditor",
       status: "planned",
-      message: "Website discovery and audit scoring will run after external businesses enter the queue.",
+      message: "Website discovery and audit scoring will enrich businesses after they enter the queue.",
     },
   );
 
