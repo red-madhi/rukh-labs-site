@@ -1,0 +1,83 @@
+name: Rukh Leads Scheduler
+
+on:
+  schedule:
+    # Fast public-intent scan. Offset from :00 to reduce GitHub scheduler congestion.
+    - cron: "3,13,23,33,43,53 * * * *"
+    # Sync direct Rukh Labs website inquiries twice an hour.
+    - cron: "8,38 * * * *"
+    # Run the full multi-source collector every four hours.
+    - cron: "27 */4 * * *"
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Collector to run"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - bluesky
+          - inbound
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rukh-leads-${{ github.event_name }}-${{ github.event.schedule || inputs.source || 'manual' }}
+  cancel-in-progress: false
+
+env:
+  LEADS_BASE_URL: https://rukhlabs.com
+
+jobs:
+  bluesky:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '3,13,23,33,43,53 * * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'bluesky' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Scan Bluesky intent
+        env:
+          CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
+          curl --silent --show-error --fail-with-body \
+            --retry 2 --retry-delay 2 --max-time 55 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/collect/bluesky"
+
+  inbound:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '8,38 * * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'inbound' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Sync Rukh Labs inbound leads
+        env:
+          CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
+          curl --silent --show-error --fail-with-body \
+            --retry 2 --retry-delay 2 --max-time 55 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/collect/inbound"
+
+  all-sources:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '27 */4 * * *' ||
+      github.event_name == 'workflow_dispatch' && inputs.source == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Run full Rukh Leads scan
+        env:
+          CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
+          curl --silent --show-error --fail-with-body \
+            --retry 2 --retry-delay 2 --max-time 55 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/collect"
