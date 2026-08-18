@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { crawlStats } from "@/lib/leads/crawl";
 import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 import type {
   LeadCollectorState,
@@ -118,7 +119,7 @@ export async function GET(request: NextRequest) {
     const minimumScore = Math.min(100, Math.max(0, Number(request.nextUrl.searchParams.get("minScore") ?? 0) || 0));
     const limit = Math.min(500, Math.max(1, Number(request.nextUrl.searchParams.get("limit") ?? 250) || 250));
 
-    const [leadResult, collectorResult] = await Promise.all([
+    const [leadResult, collectorResult, stats] = await Promise.all([
       leadNeonQuery(
         `SELECT
           id::text,
@@ -165,11 +166,13 @@ export async function GET(request: NextRequest) {
         FROM public.lead_source_state
         ORDER BY sort_order, source_id`,
       ),
+      crawlStats(),
     ]);
 
     return privateJson({
       leads: neonRowsToObjects(leadResult).map(toLead),
       collectors: neonRowsToObjects(collectorResult).map(toCollector),
+      stats,
     });
   } catch (error) {
     console.error("Rukh Leads GET failed", error);

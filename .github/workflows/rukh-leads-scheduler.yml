@@ -1,27 +1,40 @@
-name: Rukh Leads Scheduler
+name: Rukh Leads Crawler
 
 on:
   schedule:
-    # Fast social-intent scan. Offset from :00 to reduce GitHub scheduler congestion.
+    # High-intent social signal monitor.
     - cron: "3,13,23,33,43,53 * * * *"
-    # Sync direct Rukh Labs website inquiries twice an hour.
+    # Direct Rukh Labs inquiries.
     - cron: "8,38 * * * *"
-    # Search the broader public web every four hours through the Brave Search source.
-    - cron: "27 */4 * * *"
-    # Daily catch-all for slower sources such as registries, nonprofit data, and audits as they come online.
+    # Domain discovery and website-audit queue.
+    - cron: "7,27,47 * * * *"
+    # Fast-changing public registries.
+    - cron: "12 * * * *"
+    # IRS state-file rotation.
+    - cron: "22 */2 * * *"
+    # OpenStreetMap metro rotation.
+    - cron: "32 */4 * * *"
+    # Broad public-web intent and direct-business discovery; intentionally limited to protect free credits.
+    - cron: "42 */12 * * *"
+    # Daily catch-all and recovery run.
     - cron: "52 11 * * *"
   workflow_dispatch:
     inputs:
       source:
-        description: "Collector to run"
+        description: "Crawler segment to run"
         required: true
         default: "all"
         type: choice
         options:
           - all
+          - process
           - bluesky
-          - web
           - inbound
+          - web
+          - colorado
+          - nppes
+          - irs
+          - osm
 
 permissions:
   contents: read
@@ -58,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Sync Rukh Labs inbound leads
+      - name: Sync Rukh Labs inquiries
         env:
           CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
         run: |
@@ -68,14 +81,99 @@ jobs:
             -H "Authorization: Bearer $CRON_SECRET" \
             "$LEADS_BASE_URL/api/leads/collect/inbound"
 
-  web-intent:
+  process:
     if: >-
-      github.event_name == 'schedule' && github.event.schedule == '27 */4 * * *' ||
+      github.event_name == 'schedule' && github.event.schedule == '7,27,47 * * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'process' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Discover domains and audit websites
+        env:
+          CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
+          curl --silent --show-error --fail-with-body \
+            --retry 1 --retry-delay 2 --max-time 58 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/crawl?mode=process"
+
+  colorado:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '12 * * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'colorado' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Import Colorado businesses
+        env:
+          CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
+          curl --silent --show-error --fail-with-body \
+            --retry 2 --retry-delay 2 --max-time 55 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/collect/colorado"
+
+  nppes:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '12 * * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'nppes' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Import national healthcare organizations
+        env:
+          CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
+          curl --silent --show-error --fail-with-body \
+            --retry 2 --retry-delay 2 --max-time 55 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/collect/nppes"
+
+  irs:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '22 */2 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'irs' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Import IRS nonprofit batch
+        env:
+          CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
+          curl --silent --show-error --fail-with-body \
+            --retry 1 --retry-delay 3 --max-time 58 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/collect/irs-nonprofits"
+
+  osm:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '32 */4 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'osm' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Import OpenStreetMap business websites
+        env:
+          CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
+        run: |
+          test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
+          curl --silent --show-error --fail-with-body \
+            --retry 1 --retry-delay 3 --max-time 58 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/collect/openstreetmap"
+
+  web:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '42 */12 * * *' ||
       github.event_name == 'workflow_dispatch' && (inputs.source == 'web' || inputs.source == 'all')
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Scan public web intent
+      - name: Scan broader public web
         env:
           CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
         run: |
@@ -84,20 +182,25 @@ jobs:
             --retry 2 --retry-delay 2 --max-time 55 \
             -H "Authorization: Bearer $CRON_SECRET" \
             "$LEADS_BASE_URL/api/leads/collect/web-intent"
+          echo
+          curl --silent --show-error --fail-with-body \
+            --retry 2 --retry-delay 2 --max-time 55 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$LEADS_BASE_URL/api/leads/collect/web-businesses"
 
-  all-sources:
+  all:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '52 11 * * *' ||
       github.event_name == 'workflow_dispatch' && inputs.source == 'all'
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 5
     steps:
-      - name: Run full Rukh Leads scan
+      - name: Run complete Rukh Leads crawl
         env:
           CRON_SECRET: ${{ secrets.RUKH_LEADS_CRON_SECRET }}
         run: |
           test -n "$CRON_SECRET" || { echo "Missing GitHub secret RUKH_LEADS_CRON_SECRET"; exit 1; }
           curl --silent --show-error --fail-with-body \
-            --retry 2 --retry-delay 2 --max-time 55 \
+            --retry 1 --retry-delay 3 --max-time 58 \
             -H "Authorization: Bearer $CRON_SECRET" \
-            "$LEADS_BASE_URL/api/leads/collect"
+            "$LEADS_BASE_URL/api/leads/crawl"

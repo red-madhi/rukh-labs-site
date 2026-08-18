@@ -23,7 +23,18 @@ export type LeadAudit = {
   seo?: number;
   mobile?: number;
   https?: boolean;
+  reachable?: boolean;
+  status?: number;
+  responseMs?: number;
+  htmlBytes?: number;
+  hasCta?: boolean;
   contactForm?: "working" | "broken" | "missing" | "unknown";
+  title?: string | null;
+  description?: string | null;
+  technology?: string | null;
+  copyrightYear?: number | null;
+  checkedAt?: string;
+  error?: string;
 };
 
 export type LeadOpportunity = {
@@ -64,4 +75,13 @@ export type LeadCollectorState = {
   lastSuccess?: string;
   lastItems?: number;
   lastError?: string;
+};
+
+export type LeadCrawlStats = {
+  candidates: number;
+  websites_found: number;
+  domain_queue: number;
+  audit_queue: number;
+  audited: number;
+  qualified: number;
 };

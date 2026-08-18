@@ -18,11 +18,14 @@ function challenge(message = "Authentication required.") {
 
 export function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const isCollector =
+  const isAutomation =
     pathname === "/api/leads/collect" ||
-    pathname.startsWith("/api/leads/collect/");
+    pathname.startsWith("/api/leads/collect/") ||
+    pathname === "/api/leads/crawl" ||
+    pathname.startsWith("/api/leads/crawl/") ||
+    pathname.startsWith("/api/leads/process/");
 
-  if (isCollector) {
+  if (isAutomation) {
     if (!process.env.CRON_SECRET) {
       return new NextResponse(
         "Lead automation is locked until CRON_SECRET is configured in the server environment.",
