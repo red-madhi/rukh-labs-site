@@ -127,7 +127,7 @@ function qualifyPost(post: BskyPostView, config: (typeof searchConfigs)[number])
 }
 
 async function searchBluesky(config: (typeof searchConfigs)[number]) {
-  const url = new URL("https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts");
+  const url = new URL("https://api.bsky.app/xrpc/app.bsky.feed.searchPosts");
   url.searchParams.set("q", config.query);
   url.searchParams.set("sort", "latest");
   url.searchParams.set("limit", "50");
@@ -136,7 +136,10 @@ async function searchBluesky(config: (typeof searchConfigs)[number]) {
     cache: "no-store",
     signal: AbortSignal.timeout(12_000),
   });
-  if (!response.ok) throw new Error(`Bluesky search failed for “${config.query}” with ${response.status}.`);
+  if (!response.ok) {
+    const detail = normalizeText(await response.text().catch(() => ""), 180);
+    throw new Error(`Bluesky search failed for “${config.query}” with ${response.status}${detail ? `: ${detail}` : "."}`);
+  }
   const payload = (await response.json()) as BskySearchResponse;
   return (payload.posts ?? []).map((post) => qualifyPost(post, config)).filter((lead): lead is QualifiedLead => Boolean(lead));
 }
