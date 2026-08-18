@@ -6,7 +6,7 @@ on:
     - cron: "3,13,23,33,43,53 * * * *"
     # Sync direct Rukh Labs website inquiries twice an hour.
     - cron: "8,38 * * * *"
-    # Search the broader public web every four hours. This is the paid/limited search source.
+    # Search the broader public web every four hours through the Brave Search source.
     - cron: "27 */4 * * *"
     # Daily catch-all for slower sources such as registries, nonprofit data, and audits as they come online.
     - cron: "52 11 * * *"
