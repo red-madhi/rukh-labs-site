@@ -11,6 +11,7 @@ const SOURCE_ID = "web-intent";
 const searchConfigs = [
   { query: '"looking for a web designer"', score: 88, tag: "designer request" },
   { query: '"need a web designer"', score: 90, tag: "designer request" },
+  { query: '"recommend a web designer"', score: 88, tag: "recommendation request" },
   { query: '"looking for a web developer"', score: 86, tag: "developer request" },
   { query: '"need a web developer"', score: 88, tag: "developer request" },
   { query: '"who can build me a website"', score: 92, tag: "build request" },
@@ -18,8 +19,23 @@ const searchConfigs = [
   { query: '"website redesign" "looking for"', score: 80, tag: "redesign" },
 ] as const;
 
-const intentPattern = /\b(looking for|need|seeking|recommend|recommendation|who can|hiring|want someone|could use help)\b.{0,80}\b(web(?:site)?\s*(?:designer|developer)|website|site redesign|website redesign)\b|\b(web(?:site)?\s*(?:designer|developer)|website|site redesign|website redesign)\b.{0,80}\b(looking for|need|seeking|recommend|recommendation|who can|hiring|want someone|could use help)\b/i;
-const promoPattern = /\b(i am|i'm|we are|available for|hire me|my services|our services|portfolio|freelance web designer|web design agency)\b/i;
+const intentPattern = /\b(looking for|need|seeking|recommend|recommendation|who can|want someone|could use help|trying to find|anyone know)\b.{0,90}\b(web(?:site)?\s*(?:designer|developer)|website|site redesign|website redesign|web design|website design|web development)\b|\b(web(?:site)?\s*(?:designer|developer)|website|site redesign|website redesign|web design|website design|web development)\b.{0,90}\b(looking for|need|seeking|recommend|recommendation|who can|want someone|could use help|trying to find|anyone know)\b/i;
+const prospectPattern = /\b(?:i|we|our business|my business|our company|my company|our nonprofit|my nonprofit|our organization|my organization|our shop|my shop)\b.{0,90}\b(?:need|needs|want|looking for|seeking|could use|trying to find)\b.{0,100}\b(?:website|web designer|website designer|web developer|website developer|site redesign|website redesign|web design|web development)\b|\b(?:looking for|seeking|trying to find|need|want)\b.{0,55}\b(?:someone|a freelancer|an agency|a designer|a developer)\b.{0,90}\b(?:website|web design|website design|web development|website development|redesign)\b|\b(?:can anyone|anyone know|recommend|recommendation|who can|who could)\b.{0,100}\b(?:web designer|website designer|web developer|website developer|website|build (?:me|us|our business)? ?(?:a )?website)\b/i;
+const promoPattern = /\b(i am|i'm|we are|available for|hire me|my services|our services|portfolio|freelance web designer|web design agency|book a call|request a quote from us)\b/i;
+const editorialPattern = /\b(resume|résumé|curriculum vitae|\bcv\b|template|examples?|guide|how to|tutorial|blog post|article|case study|definitive answer|best web|top web|top \d+|web design companies|web design agencies|agency directory|marketplace|salary|career|interview|job hunting|job board|job listing|vacanc(?:y|ies)|apply now|hiring manager)\b/i;
+const employmentPattern = /\b(full[- ]time|part[- ]time|contract role|job|jobs|position|candidate|applicant|employment|salary|benefits|join our team|apply for|apply now|careers?|working with (?:a |our )?team|engineers?, testers?|project managers?|system administrators?)\b/i;
+const blockedPathPattern = /\/(?:blog|blogs|article|articles|guides?|resources?|resume|resumes|careers?|jobs?|job|agency|agencies|companies)(?:\/|$)/i;
+const blockedHosts = new Set([
+  "resume.io",
+  "designrush.com",
+  "clutch.co",
+  "goodfirms.co",
+  "upcity.com",
+  "theuxjobs.com",
+  "indeed.com",
+  "glassdoor.com",
+  "ziprecruiter.com",
+]);
 
 type BraveResult = {
   title?: string;
@@ -54,16 +70,39 @@ function privateJson(body: unknown, init?: ResponseInit) {
   return response;
 }
 
+function decodeSnippet(value: string) {
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&#x27;|&#39;|&apos;/gi, "'")
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&nbsp;/gi, " ");
+}
+
 function normalize(value: string, max = 500) {
-  const cleaned = value.replace(/\s+/g, " ").trim();
+  const cleaned = decodeSnippet(value).replace(/\s+/g, " ").trim();
   return cleaned.length > max ? `${cleaned.slice(0, max - 1).trimEnd()}…` : cleaned;
 }
 
 function hostname(url: string) {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
   } catch {
-    return "Public web";
+    return "public-web";
+  }
+}
+
+function isBlockedUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+    if (blockedHosts.has(host)) return true;
+    if (blockedPathPattern.test(parsed.pathname)) return true;
+    return false;
+  } catch {
+    return true;
   }
 }
 
@@ -97,21 +136,32 @@ async function braveSearch(apiKey: string, config: (typeof searchConfigs)[number
 
 function qualify(result: BraveResult, config: (typeof searchConfigs)[number]): Candidate | null {
   const url = result.url?.trim();
-  if (!url || !/^https?:\/\//i.test(url)) return null;
+  if (!url || !/^https?:\/\//i.test(url) || isBlockedUrl(url)) return null;
 
   const title = normalize(result.title || hostname(url), 180);
   const description = normalize(result.description || "", 500);
   const combined = `${title} ${description}`;
-  if (!intentPattern.test(combined) || promoPattern.test(combined)) return null;
+
+  if (!intentPattern.test(combined)) return null;
+  if (!prospectPattern.test(combined)) return null;
+  if (promoPattern.test(combined) || editorialPattern.test(combined) || employmentPattern.test(combined)) return null;
 
   let score: number = config.score;
-  const signals = [`Fresh public-web result matched ${config.query}`];
+  const signals = [
+    `Fresh public-web result matched ${config.query}`,
+    "Language looks like a first-person or organization request rather than editorial content",
+  ];
   const risks = ["Business identity and budget may still need verification"];
-  if (/\b(asap|urgent|this week|launch|opening|deadline)\b/i.test(combined)) {
+
+  if (/\b(business|company|startup|shop|store|restaurant|nonprofit|organization|practice|studio|brand|launch|opening)\b/i.test(combined)) {
+    score += 4;
+    signals.push("Business or organization context detected");
+  }
+  if (/\b(asap|urgent|urgently|this week|this month|launch|opening|deadline)\b/i.test(combined)) {
     score += 4;
     signals.push("Urgency or launch timing detected");
   }
-  if (/\b(paid|budget|hire|hiring|quote|estimate|proposal)\b/i.test(combined)) {
+  if (/\b(paid|budget|quote|estimate|proposal|freelancer|contractor)\b/i.test(combined)) {
     score += 4;
     signals.push("Commercial intent detected");
   }
@@ -127,7 +177,7 @@ function qualify(result: BraveResult, config: (typeof searchConfigs)[number]): C
     signals,
     risks,
     tags: ["public web", config.tag, hostname(url)],
-    pitch: "I came across your public post/request about website help. I build practical small-business sites and can send a concise scope and fixed-price route based on what you actually need.",
+    pitch: "I came across your public request for website help. I build practical small-business sites and can send a concise scope and fixed-price route based on what you actually need.",
     raw_payload: {
       matchedQuery: config.query,
       resultAge: result.age ?? result.page_age ?? null,
@@ -169,7 +219,9 @@ export async function GET(request: NextRequest) {
       [runId, SOURCE_ID],
     );
 
-    const batches = await Promise.all(searchConfigs.map(async (config) => ({ config, results: await braveSearch(apiKey, config) })));
+    const batches = await Promise.all(
+      searchConfigs.map(async (config) => ({ config, results: await braveSearch(apiKey, config) })),
+    );
     const seen = batches.reduce((total, batch) => total + batch.results.length, 0);
     const candidates = new Map<string, Candidate>();
 
