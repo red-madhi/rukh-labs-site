@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
 
     const payload = (await response.json()) as BravePayload;
     const rows = payload.web?.results ?? [];
-    const candidates = rows.flatMap((result, index) => {
+    const rawCandidates = rows.flatMap((result, index) => {
       const website = normalizeWebsiteUrl(result.url);
       if (!website || isBlockedProspectUrl(website)) return [];
       const host = hostFromUrl(website);
@@ -167,6 +167,9 @@ export async function GET(request: NextRequest) {
         },
       }];
     });
+    const candidates = Array.from(
+      new Map(rawCandidates.map((candidate) => [candidate.sourceKey, candidate])).values(),
+    );
 
     const upserted = await upsertCandidates(candidates);
     const cursor = nextCursor(metroIndex, verticalIndex);
