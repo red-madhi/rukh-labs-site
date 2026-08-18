@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/leads/collect/bluesky",
-      "schedule": "*/10 * * * *"
+      "schedule": "0 13 * * *"
     }
   ]
 }
