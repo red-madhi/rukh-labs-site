@@ -13,7 +13,10 @@ const blockedHosts = new Set([
 ]);
 
 const parkedPattern =
-  /\b(?:domain (?:is )?for sale|buy this domain|parked free|sedo domain parking|coming soon|under construction|website coming soon|this site can'?t be reached)\b/i;
+  /\b(?:domain(?: name)? (?:is |may be )?for sale|is for sale|buy this domain|get this domain|own it today|lease to own|make an offer|inquire about this domain|this domain is available|domain parking|parked free|sedo domain parking|coming soon|under construction|website coming soon|this site can'?t be reached)\b/i;
+
+const parkingServicePattern =
+  /(?:forsale\.godaddy\.com|afternic\.com|sedo\.com|sedoparking\.com|dan\.com|hugedomains\.com|bodis\.com|parkingcrew\.(?:com|net)|undeveloped\.com|domainmarket\.com|above\.com|sav\.com\/domains?|atom\.com\/name|squadhelp\.com\/name)/i;
 
 const privateIpPattern =
   /^(?:127\.|10\.|0\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|\[?::1\]?$|\[?(?:fc|fd|fe80))/i;
@@ -43,7 +46,13 @@ export function isBlockedProspectUrl(value: string) {
   const parsed = safePublicUrl(value);
   if (!parsed) return true;
   const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
-  if (blockedHosts.has(host)) return true;
+  if (
+    blockedHosts.has(host) ||
+    Array.from(blockedHosts).some((blocked) => host.endsWith(`.${blocked}`)) ||
+    parkingServicePattern.test(parsed.toString())
+  ) {
+    return true;
+  }
   return /\/(?:jobs?|careers?|blog|articles?|guides?|resources?|directory|agencies|companies|marketplace)(?:\/|$)/i.test(
     parsed.pathname,
   );
@@ -306,6 +315,7 @@ export function inspectHtml(html: string, baseUrl: string): PageSignals {
   );
   const images = html.match(/<img\b[^>]*>/gi) ?? [];
   const altImageCount = images.filter((tag) => /\balt\s*=\s*["'][^"']+["']/i.test(tag)).length;
+  const parkingEvidence = `${baseUrl} ${title} ${description} ${visibleText} ${html.slice(0, 50_000)}`;
 
   return {
     title,
@@ -325,7 +335,7 @@ export function inspectHtml(html: string, baseUrl: string): PageSignals {
     altImageCount,
     copyrightYear: newestCopyrightYear(visibleText),
     technology: technology(html),
-    parked: parkedPattern.test(visibleText),
+    parked: parkedPattern.test(parkingEvidence) || parkingServicePattern.test(parkingEvidence),
   };
 }
 
