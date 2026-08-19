@@ -7,9 +7,9 @@ import {
   completeCollectorRun,
   failCollectorRun,
   getSourceConfig,
-  mapLimit,
   privateJson,
 } from "@/lib/leads/crawl";
+import { mapLimit } from "@/lib/leads/pipeline";
 import { BRAVE_MONTHLY_REQUEST_LIMIT, reserveMonthlyApiUsage } from "@/lib/leads/api-budget";
 import { expirePowerBiJobBoardGigs, upsertPowerBiGigs, type PowerBiGigInput } from "@/lib/leads/power-bi";
 
