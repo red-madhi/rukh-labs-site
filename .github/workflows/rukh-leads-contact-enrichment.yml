@@ -1,0 +1,24 @@
+name: Rukh Leads Contact Enrichment
+
+on:
+  schedule:
+    - cron: "37 9,21 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  GATEWAY_URL: https://rukhlabs.com/api/github-crawl-v2
+
+jobs:
+  contact-email:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Backfill missing public emails on strong website leads
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=email"
