@@ -5,6 +5,7 @@ export type PowerBiGigInput = {
   sourceKey: string;
   sourceUrl: string;
   companyName: string;
+  accountKey?: string;
   summary: string;
   score: number;
   signals: string[];
@@ -22,23 +23,49 @@ export type PowerBiGigInput = {
   rawPayload?: Record<string, unknown>;
 };
 
-function accountKey(value: string) {
-  return cleanText(value, 260).toLowerCase().replace(/\s+/g, " ").trim();
+function normalizeAccount(value: string) {
+  return cleanText(value, 300)
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function looksLikeJobTitle(value: string) {
+  return /\b(?:power\s*bi|fabric|business intelligence)\b.*\b(?:developer|analyst|engineer|consultant|manager|architect|specialist|lead|role|job|position)\b|\b(?:developer|analyst|engineer|consultant|manager|architect|specialist|lead)\b.*\b(?:power\s*bi|fabric|business intelligence)\b/i.test(value);
+}
+
+function inputAccountKey(input: PowerBiGigInput) {
+  const explicit = normalizeAccount(input.accountKey || "");
+  if (explicit) return explicit;
+
+  const payloadAccount = typeof input.rawPayload?.accountKey === "string"
+    ? normalizeAccount(input.rawPayload.accountKey)
+    : typeof input.rawPayload?.hiringOrganization === "string"
+      ? normalizeAccount(input.rawPayload.hiringOrganization)
+      : "";
+  if (payloadAccount) return payloadAccount;
+
+  const jobBoard = input.tags.some((tag) => /job[- ]board/i.test(tag));
+  if (jobBoard && looksLikeJobTitle(input.companyName)) return "";
+  return normalizeAccount(input.companyName);
 }
 
 async function recentAccountSignals(inputs: PowerBiGigInput[]) {
-  const keys = Array.from(new Set(inputs.map((input) => accountKey(input.companyName)).filter(Boolean)));
+  const keys = Array.from(new Set(inputs.map(inputAccountKey).filter(Boolean)));
   const result = keys.length
     ? await leadNeonQuery(
         `WITH requested AS (
            SELECT value AS account_key
            FROM jsonb_array_elements_text($1::jsonb)
          )
-         SELECT lower(regexp_replace(trim(company_name), '\\s+', ' ', 'g')) AS account_key,
+         SELECT COALESCE(NULLIF(raw_payload->>'accountKey', ''), lower(regexp_replace(trim(company_name), '\\s+', ' ', 'g'))) AS account_key,
                 source_key
          FROM public.lead_opportunities
          JOIN requested
-           ON requested.account_key = lower(regexp_replace(trim(company_name), '\\s+', ' ', 'g'))
+           ON requested.account_key = COALESCE(NULLIF(raw_payload->>'accountKey', ''), lower(regexp_replace(trim(company_name), '\\s+', ' ', 'g')))
          WHERE source = 'power-bi'
            AND archived_at IS NULL
            AND COALESCE(source_published_at, discovered_at) >= now() - interval '45 days'`,
@@ -74,11 +101,11 @@ export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
   const accountSignals = await recentAccountSignals(inputs);
   const rows = inputs
     .map((input) => {
-      const key = accountKey(input.companyName);
-      const recentKeys = new Set(accountSignals.get(key) ?? []);
-      recentKeys.add(cleanText(input.sourceKey, 500));
-      const accountSignalCount = recentKeys.size;
-      const convergenceBonus = accountSignalCount >= 2
+      const key = inputAccountKey(input);
+      const recentKeys = new Set(key ? accountSignals.get(key) ?? [] : []);
+      if (key) recentKeys.add(cleanText(input.sourceKey, 500));
+      const accountSignalCount = key ? recentKeys.size : 1;
+      const convergenceBonus = key && accountSignalCount >= 2
         ? Math.min(12, (accountSignalCount - 1) * 4)
         : 0;
       const score = clamp(input.score + convergenceBonus);
@@ -86,9 +113,12 @@ export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
       const tags = input.tags.map((tag) => cleanText(tag, 120)).filter(Boolean);
       if (convergenceBonus) {
         signals.push(
-          `This company has ${accountSignalCount} distinct Power BI/Fabric signals in the feed within the last 45 days`,
+          `This account has ${accountSignalCount} distinct Power BI/Fabric signals in the feed within the last 45 days`,
         );
         tags.push("signal-convergence");
+      }
+      if (!key && tags.some((tag) => /job[- ]board/i.test(tag))) {
+        signals.push("Company identity was not reliable enough to use this job posting for account-level convergence");
       }
 
       return {
@@ -112,6 +142,7 @@ export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
         discovered_at: input.discoveredAt || null,
         raw_payload: {
           ...(input.rawPayload ?? {}),
+          accountKey: key || null,
           accountSignalCount,
           convergenceBonus,
           convergenceWindowDays: 45,
