@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
        WHERE o.archived_at IS NULL
          AND o.source IN ('site-audit', 'new-business')
          AND o.contact_email IS NULL
-         AND o.score >= 70
+         AND o.score >= 54
          AND c.website_url IS NOT NULL
          AND (
            o.raw_payload->>'emailEnrichmentLastAttempt' IS NULL
@@ -127,7 +127,12 @@ export async function GET(request: NextRequest) {
       const candidate = toCandidate(row);
       if (!candidate.websiteUrl) return { found: false, candidateId: candidate.id };
 
-      const enrichment = await enrichPublicEmail(candidate, candidate.websiteUrl, true);
+      const leadScore = Number(row.lead_score ?? 0);
+      const enrichment = await enrichPublicEmail(
+        candidate,
+        candidate.websiteUrl,
+        leadScore >= 70,
+      );
       const found = Boolean(enrichment.email);
       const details = {
         emailEnrichmentLastAttempt: new Date().toISOString(),
