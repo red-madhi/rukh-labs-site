@@ -25,6 +25,7 @@ const routes: Record<string, string> = {
   directories: "/api/leads/collect/pipeline-v3?mode=directories",
   motion: "/api/leads/collect/aurora-motion",
   "denver-motion": "/api/leads/collect/denver-permit-motion",
+  "la-motion": "/api/leads/collect/la-permit-motion",
   "spending-motion": "/api/leads/collect/usaspending-motion",
   "discover-free": "/api/leads/process/domains-free?limit=12",
   discover: "/api/leads/process/domains?limit=12",
