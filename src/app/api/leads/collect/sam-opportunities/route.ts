@@ -17,14 +17,21 @@ export const maxDuration = 60;
 
 const SOURCE_ID = "sam-opportunities";
 const LOOKBACK_DAYS = 30;
-const SEARCH_TITLES = ["website", "web", "digital", "content management"] as const;
+const SEARCH_TITLES = [
+  "website",
+  "web",
+  "digital",
+  "content management",
+  "digital services",
+] as const;
 const API_ENDPOINTS = [
   "https://api.sam.gov/opportunities/v2/search",
   "https://api.sam.gov/prod/opportunities/v2/search",
 ] as const;
+const MAX_DESCRIPTION_FETCHES = 24;
 
-const websiteTitlePattern =
-  /\b(?:website|web site|web design|website design|website redesign|web development|website development|web portal|internet site|public website|content management system|cms)\b/i;
+const websiteEvidencePattern =
+  /\b(?:website|web site|web design|website design|website redesign|web development|website development|web portal|internet site|public website|content management system|cms|web content migration|website modernization|digital experience platform)\b/i;
 const educationFalsePositivePattern =
   /\b(?:course|courses|curriculum|instructional|training|classroom|student materials?|textbook|digital imaging|digital media|digital publishing|video communications?)\b/i;
 const technicalWebServicesPattern =
@@ -56,6 +63,8 @@ type SamOpportunity = {
   active?: string;
   additionalInfoLink?: string;
   uiLink?: string;
+  description?: string;
+  resourceLinks?: string[];
   officeAddress?: {
     city?: string;
     state?: string;
@@ -121,7 +130,8 @@ async function searchSam(apiKey: string, title: string) {
     url.searchParams.set("title", title);
     url.searchParams.set("limit", "250");
     url.searchParams.set("offset", "0");
-    for (const type of ["o", "k", "r", "p"]) url.searchParams.append("ptype", type);
+    // Include early market-research/pre-solicitation notices as well as live solicitations.
+    for (const type of ["o", "k", "r", "p", "s"]) url.searchParams.append("ptype", type);
 
     try {
       const response = await fetch(url, {
@@ -143,14 +153,43 @@ async function searchSam(apiKey: string, title: string) {
   throw new Error(lastError);
 }
 
-function qualify(opportunity: SamOpportunity, matchedTitle: string) {
+async function fetchSamDescription(apiKey: string, opportunity: SamOpportunity) {
+  const value = cleanText(opportunity.description, 1200);
+  if (!/^https?:\/\//i.test(value)) return "";
+  try {
+    const url = new URL(value);
+    if (!url.searchParams.has("api_key")) url.searchParams.set("api_key", apiKey);
+    const response = await fetch(url, {
+      headers: {
+        Accept: "text/plain,text/html,application/json;q=0.8,*/*;q=0.5",
+        "User-Agent": "Rukh-Leads/1.0 (+https://rukhlabs.com)",
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return "";
+    return cleanText(await response.text(), 8_000);
+  } catch {
+    return "";
+  }
+}
+
+function qualify(
+  opportunity: SamOpportunity,
+  matchedTitle: string,
+  descriptionText: string,
+) {
   const noticeId = cleanText(opportunity.noticeId, 100);
   const title = cleanText(opportunity.title, 300);
   if (!noticeId || !title) return null;
-  if (!websiteTitlePattern.test(title)) return null;
-  if (educationFalsePositivePattern.test(title)) return null;
-  if (technicalWebServicesPattern.test(title) && !explicitWebsitePattern.test(title)) return null;
 
+  const resources = (opportunity.resourceLinks ?? []).map((item) => cleanText(item, 800)).join(" ");
+  const evidence = `${title} ${descriptionText} ${resources}`;
+  if (!websiteEvidencePattern.test(evidence)) return null;
+  if (educationFalsePositivePattern.test(evidence) && !explicitWebsitePattern.test(evidence)) return null;
+  if (technicalWebServicesPattern.test(title) && !explicitWebsitePattern.test(evidence)) return null;
+
+  const titleHasScope = websiteEvidencePattern.test(title);
   const organization = cleanText(opportunity.fullParentPathName, 260) || "Federal procurement office";
   const contact = contactFor(opportunity);
   const contactEmail = cleanText(contact?.email, 220).toLowerCase() || undefined;
@@ -164,9 +203,11 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
     cleanText(opportunity.additionalInfoLink || opportunity.uiLink, 1000) ||
     `https://sam.gov/opp/${encodeURIComponent(noticeId)}/view`;
 
-  let score = 93;
+  let score = titleHasScope ? 93 : 89;
   const signals = [
-    "Active federal procurement notice references website or web-development work",
+    titleHasScope
+      ? "Active federal procurement notice explicitly references website or web-development work"
+      : "Website scope was found in the SAM.gov description or resource metadata even though the notice title is broader",
     `The opportunity was posted within the last ${LOOKBACK_DAYS} days`,
   ];
   const risks = [
@@ -174,6 +215,10 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
     "Federal opportunities can require registrations, representations, insurance, or past-performance documentation",
   ];
 
+  if (/special notice|sources sought|presolicitation/i.test(`${opportunity.type} ${opportunity.baseType}`)) {
+    score += 3;
+    signals.push("This is an early-stage procurement/market-research signal that may precede a formal solicitation");
+  }
   if (contactEmail || contactPhone) {
     score += 2;
     signals.push("A public contracting contact is available");
@@ -191,18 +236,19 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
     sourceKey: `sam:${noticeId}`,
     sourceUrl,
     companyName: title,
-    summary: `${organization} published a federal opportunity for website-related work${deadline ? ` with a listed response deadline of ${deadline}` : ""}. Open the notice for the complete scope, attachments, and submission rules.`,
+    summary: `${organization} published a federal opportunity with website-related scope${deadline ? ` and a listed response deadline of ${deadline}` : ""}. Open the notice for the complete scope, attachments, and submission rules.`,
     score,
     signals,
     risks,
     tags: [
       "sam.gov",
       "federal procurement",
+      titleHasScope ? "explicit website scope" : "description-level website scope",
       cleanText(opportunity.type || opportunity.baseType, 80) || "opportunity",
       cleanText(opportunity.setAside || opportunity.setAsideCode, 120),
     ].filter(Boolean),
     pitch:
-      "I found your SAM.gov website opportunity and would like to review the full scope, required deliverables, and submission format. Rukh Labs builds maintainable websites and can provide a clear, requirements-mapped proposal where the procurement is a fit.",
+      "I found your SAM.gov website-related opportunity and would like to review the full scope, required deliverables, and submission format. Rukh Labs builds maintainable websites and can provide a clear, requirements-mapped proposal where the procurement is a fit.",
     location: placeLabel(opportunity),
     industry: "Federal procurement",
     contactName,
@@ -219,6 +265,9 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
       responseDeadline: deadline || null,
       naicsCode: cleanText(opportunity.naicsCode, 30) || null,
       setAside: cleanText(opportunity.setAside || opportunity.setAsideCode, 120) || null,
+      scopeEvidence: titleHasScope ? "title" : "description-or-resource-metadata",
+      descriptionPreview: descriptionText ? cleanText(descriptionText, 900) : null,
+      resourceLinks: opportunity.resourceLinks ?? [],
     },
   };
 }
@@ -250,10 +299,21 @@ export async function GET(request: NextRequest) {
       0,
     );
     const leads = new Map<string, NonNullable<ReturnType<typeof qualify>>>();
+    let descriptionsFetched = 0;
 
     for (const batch of batches) {
       for (const opportunity of batch.payload.opportunitiesData ?? []) {
-        const lead = qualify(opportunity, batch.title);
+        const title = cleanText(opportunity.title, 300);
+        const resources = (opportunity.resourceLinks ?? []).join(" ");
+        let descriptionText = "";
+        if (
+          !websiteEvidencePattern.test(`${title} ${resources}`) &&
+          descriptionsFetched < MAX_DESCRIPTION_FETCHES
+        ) {
+          descriptionsFetched += 1;
+          descriptionText = await fetchSamDescription(apiKey, opportunity);
+        }
+        const lead = qualify(opportunity, batch.title, descriptionText);
         if (!lead) continue;
         const current = leads.get(lead.sourceKey);
         if (!current || lead.score > current.score) leads.set(lead.sourceKey, lead);
@@ -265,6 +325,8 @@ export async function GET(request: NextRequest) {
     await completeCollectorRun(runId, SOURCE_ID, seen, stored, {
       searches: SEARCH_TITLES,
       lookbackDays: LOOKBACK_DAYS,
+      descriptionsFetched,
+      includesSpecialNotices: true,
       totalRecords: batches.map((batch) => ({
         title: batch.title,
         totalRecords: batch.payload.totalRecords ?? 0,
@@ -277,6 +339,8 @@ export async function GET(request: NextRequest) {
       seen,
       qualified: rows.length,
       stored,
+      descriptionsFetched,
+      includesSpecialNotices: true,
       totalRecords: batches.map((batch) => ({
         title: batch.title,
         totalRecords: batch.payload.totalRecords ?? 0,
