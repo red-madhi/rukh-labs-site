@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { crawlStats } from "@/lib/leads/crawl";
+import { cleanText, crawlStats } from "@/lib/leads/crawl";
 import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 import type {
   LeadCollectorState,
@@ -24,6 +24,7 @@ const allowedSources: LeadSource[] = [
 const allowedStatuses: LeadStatus[] = ["new", "contacted", "replied", "meeting", "proposal", "won", "lost", "ignored"];
 const allowedPriorities: LeadPriority[] = ["hot", "strong", "watch"];
 const allowedCollectorStatuses: LeadCollectorStatus[] = ["ready", "needs-setup", "planned", "error"];
+const allowedChannels = ["email", "phone", "contact-form", "linkedin", "bluesky", "x", "other"] as const;
 
 const sourceLabels: Record<LeadSource, string> = {
   intent: "Public buying signal",
@@ -50,9 +51,6 @@ function parseAudit(value: string | null) {
     const parsed = JSON.parse(value) as LeadOpportunity["audit"];
     if (!parsed || typeof parsed !== "object") return undefined;
 
-    // Older audits called crawler response time "performance" and a detected form
-    // "working". Preserve the underlying evidence while removing those overclaims
-    // before it reaches the UI.
     if (typeof parsed.performance === "number" && typeof parsed.serverResponseScore !== "number") {
       parsed.serverResponseScore = parsed.performance;
     }
@@ -220,18 +218,21 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Rukh Leads GET failed", error);
-    return privateJson(
-      {
-        error: "The live lead database is not ready.",
-      },
-      { status: 503 },
-    );
+    return privateJson({ error: "The live lead database is not ready." }, { status: 503 });
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    const body = (await request.json()) as { id?: unknown; status?: unknown };
+    const body = (await request.json()) as {
+      id?: unknown;
+      status?: unknown;
+      channel?: unknown;
+      message?: unknown;
+      estimatedValue?: unknown;
+      lossReason?: unknown;
+      note?: unknown;
+    };
     const id = typeof body.id === "string" ? body.id.trim() : "";
     const status = typeof body.status === "string" ? body.status : "";
 
@@ -241,6 +242,29 @@ export async function PATCH(request: NextRequest) {
     if (!allowedStatuses.includes(status as LeadStatus)) {
       return privateJson({ error: "Lead status is invalid." }, { status: 400 });
     }
+
+    const channelValue = cleanText(body.channel, 40).toLowerCase();
+    const channel = allowedChannels.includes(channelValue as (typeof allowedChannels)[number])
+      ? channelValue
+      : "";
+    const message = cleanText(body.message, 6000);
+    const lossReason = cleanText(body.lossReason, 700);
+    const note = cleanText(body.note, 1500);
+    const parsedValue = typeof body.estimatedValue === "number"
+      ? body.estimatedValue
+      : Number(String(body.estimatedValue ?? "").replace(/[^0-9.-]/g, ""));
+    const estimatedValue = Number.isFinite(parsedValue) && parsedValue >= 0 && parsedValue <= 10_000_000
+      ? Math.round(parsedValue * 100) / 100
+      : null;
+
+    const context = {
+      ...(channel ? { outreachChannel: channel } : {}),
+      ...(message ? { messageUsed: message } : {}),
+      ...(estimatedValue !== null ? { estimatedValue } : {}),
+      ...(lossReason ? { lossReason } : {}),
+      ...(note ? { note } : {}),
+    };
+    const contextJson = JSON.stringify(context);
 
     const result = await leadNeonQuery(
       `WITH previous AS (
@@ -263,24 +287,29 @@ export async function PATCH(request: NextRequest) {
                    'score', previous.score,
                    'signals', previous.signals,
                    'tags', previous.tags,
-                   'pitch', previous.pitch
-                 )
+                   'suggestedPitchAtEvent', previous.pitch
+                 ) || $3::jsonb
                ),
                true
              ),
              updated_at = now()
          FROM previous
          WHERE lead.id = previous.id
-           AND lead.status IS DISTINCT FROM $2
+           AND (lead.status IS DISTINCT FROM $2 OR $3::jsonb <> '{}'::jsonb)
          RETURNING lead.id, previous.status AS old_status
        ), activity AS (
-         INSERT INTO public.lead_activity (lead_id, action, from_status, to_status)
-         SELECT id, 'status_changed', old_status, $2
+         INSERT INTO public.lead_activity (lead_id, action, from_status, to_status, note)
+         SELECT
+           id,
+           CASE WHEN old_status IS DISTINCT FROM $2 THEN 'status_changed' ELSE 'outcome_note' END,
+           old_status,
+           $2,
+           NULLIF($3, '{}')
          FROM updated
          RETURNING lead_id
        )
        SELECT lead_id::text FROM activity`,
-      [id, status],
+      [id, status, contextJson],
     );
 
     if (!(result.rows?.length ?? 0)) {
@@ -293,9 +322,9 @@ export async function PATCH(request: NextRequest) {
       }
       return privateJson({ ok: true, id, status, unchanged: true });
     }
-    return privateJson({ ok: true, id, status });
+    return privateJson({ ok: true, id, status, captured: context });
   } catch (error) {
     console.error("Rukh Leads PATCH failed", error);
-    return privateJson({ error: "Lead status could not be updated." }, { status: 503 });
+    return privateJson({ error: "Lead outcome could not be updated." }, { status: 503 });
   }
 }
