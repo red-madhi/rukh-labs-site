@@ -8,12 +8,16 @@ export const maxDuration = 60;
 const ALLOWED_WORKFLOWS = ["rukh-leads-oidc-scheduler-v2.yml"];
 const routes: Record<string, string> = {
   bluesky: "/api/leads/collect/bluesky",
+  social: "/api/leads/collect/social-search",
+  mastodon: "/api/leads/collect/mastodon",
   inbound: "/api/leads/collect/inbound",
   web: "/api/leads/collect/web-intent",
+  procurement: "/api/leads/collect/procurement-rfp",
+  sam: "/api/leads/collect/sam-opportunities",
   directories: "/api/leads/collect/pipeline-v3?mode=directories",
   discover: "/api/leads/collect/discover-v3",
   audit: "/api/leads/collect/audit-sites-v2",
-  all: "/api/leads/collect/mega",
+  all: "/api/leads/crawl",
 };
 
 export async function GET(request: NextRequest) {
