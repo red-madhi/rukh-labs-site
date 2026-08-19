@@ -148,7 +148,7 @@ function qualify(
     "Open the source and confirm that the post is still public and genuinely relevant before replying",
   ];
 
-  let score = search.baseScore;
+  let score: number = search.baseScore;
   if (/\b(?:urgent|urgently|asap|this week|deadline|launching|opening soon)\b/i.test(combined)) {
     score += 4;
     signals.push("Urgency or launch timing was detected");
