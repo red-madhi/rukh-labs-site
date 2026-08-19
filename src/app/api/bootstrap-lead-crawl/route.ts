@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
     all: "/api/leads/crawl",
     process: "/api/leads/crawl?mode=process",
     audit: "/api/leads/collect/audit-sites-v2",
+    email: "/api/leads/process/contact-emails",
     sam: "/api/leads/collect/sam-opportunities",
     powerbi: "/api/leads/collect/power-bi",
   };
