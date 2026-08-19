@@ -2,14 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  Activity,
   ArrowUpRight,
   BriefcaseBusiness,
   Check,
-  Clipboard,
   Database,
   ExternalLink,
-  Flame,
   Link2,
   Mail,
   MapPin,
@@ -23,6 +20,7 @@ import {
   Zap,
 } from "lucide-react";
 import type { LeadCollectorState, LeadOpportunity, LeadStatus } from "@/lib/leads/types";
+import { OutreachPlaybook } from "../outreach-playbook";
 import styles from "../leads.module.css";
 
 const statusOptions: LeadStatus[] = [
@@ -126,6 +124,7 @@ function ContactRow({ icon: Icon, label, value, href }: { icon: typeof Mail; lab
 }
 
 function opportunityType(lead: LeadOpportunity) {
+  if (lead.tags.some((tag) => /job-board|job board/i.test(tag))) return "Fresh job board";
   if (lead.tags.includes("direct ask")) return "Direct ask";
   if (lead.tags.includes("rfp") || lead.tags.includes("procurement") || lead.tags.includes("sam.gov")) return "Procurement";
   if (lead.tags.includes("proactive signal") || lead.tags.includes("proactive opportunity")) return "Proactive";
@@ -142,7 +141,6 @@ export function PowerBiGigsDashboard() {
   const [scanning, setScanning] = useState(false);
   const [error, setError] = useState("");
   const [scanMessage, setScanMessage] = useState("");
-  const [copied, setCopied] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -179,7 +177,7 @@ export function PowerBiGigsDashboard() {
 
   async function runScan() {
     setScanning(true);
-    setScanMessage("Scanning fresh public Power BI signals, RFPs, and federal opportunities…");
+    setScanMessage("Scanning fresh public Power BI signals, RFPs, federal opportunities, and ≤12-hour job-board posts…");
     try {
       const response = await fetch("/api/leads/collect/power-bi", { cache: "no-store", credentials: "same-origin" });
       const body = (await response.json()) as { stored?: number; qualified?: number; results?: ScanResult[]; error?: string };
@@ -214,13 +212,6 @@ export function PowerBiGigsDashboard() {
     }
   }
 
-  async function copyPitch() {
-    if (!selected) return;
-    await navigator.clipboard.writeText(selected.pitch);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
-  }
-
   return (
     <div className={`${styles.shell} min-h-screen text-[#f4efe3]`}>
       <div className={styles.stars} aria-hidden />
@@ -230,10 +221,11 @@ export function PowerBiGigsDashboard() {
             <div className="min-w-0">
               <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-2 border border-sky-300/25 bg-sky-300/[.06] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.18em] text-sky-200"><BriefcaseBusiness className="size-3" /> Separate freelance feed</span>
-                <span className="inline-flex items-center gap-2 border border-emerald-300/20 bg-emerald-300/[.06] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.18em] text-emerald-200"><span className="size-1.5 rounded-full bg-emerald-300" /> Low-saturation focus</span>
+                <span className="inline-flex items-center gap-2 border border-emerald-300/20 bg-emerald-300/[.06] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.18em] text-emerald-200"><span className="size-1.5 rounded-full bg-emerald-300" /> Freshness-first</span>
+                <span className="inline-flex items-center gap-2 border border-sky-300/20 bg-sky-300/[.04] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.18em] text-sky-200"><Mail className="size-3" /> Data-backed outreach</span>
               </div>
               <h1 className="mt-3 break-words text-[clamp(2.2rem,8vw,4.8rem)] font-black uppercase leading-[.9] tracking-[-.06em]"><span className="text-[#f2eee2]">Power BI</span> <span className="text-sky-300">Gigs</span></h1>
-              <p className="mt-3 max-w-3xl break-words text-sm leading-6 text-white/48 sm:text-base">Fresh public asks, direct social posts, Power BI/Fabric migration signals, RFPs and federal BI opportunities. Normal saturated job-board listings are deliberately excluded.</p>
+              <p className="mt-3 max-w-3xl break-words text-sm leading-6 text-white/48 sm:text-base">Fresh public asks, Power BI/Fabric migration signals, RFPs, federal BI opportunities, and public job-board posts only while they can be verified as 12 hours old or newer. Each lead gets a research-backed outreach sequence.</p>
             </div>
             <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
               <button onClick={() => void load()} disabled={loading} className="inline-flex min-h-11 items-center justify-center gap-2 border border-white/12 bg-white/[.035] px-4 py-2 text-xs font-bold uppercase tracking-[.1em] text-white/65"><RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} /> Refresh</button>
@@ -245,7 +237,7 @@ export function PowerBiGigsDashboard() {
 
         <section className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <Metric label="Active gigs" value={leads.length} note="Separate from website leads" />
-          <Metric label="Fresh <24h" value={freshCount} note="Extreme-fresh public signals" hot={freshCount > 0} />
+          <Metric label="Fresh <24h" value={freshCount} note="Very fresh public signals" hot={freshCount > 0} />
           <Metric label="Direct asks" value={directCount} note="Someone publicly asking for BI help" />
           <Metric label="Proactive / RFP" value={proactiveCount} note="Migration signals and procurement" />
         </section>
@@ -257,7 +249,7 @@ export function PowerBiGigsDashboard() {
             <button onClick={() => setView("sources")} className={`mb-1 flex w-full items-center gap-3 border px-3 py-3 text-left text-sm font-semibold ${view === "sources" ? "border-sky-300/30 bg-sky-300/[.07] text-white" : "border-transparent text-white/48"}`}><Database className="size-4 text-sky-200/70" /> Sources</button>
             <div className="mt-5 border-t border-white/8 px-3 pt-4">
               <div className="flex items-center gap-2 text-[9px] font-bold uppercase tracking-[.15em] text-emerald-200/70"><ShieldCheck className="size-4" /> Filtered</div>
-              <p className="mt-2 break-words text-[11px] leading-5 text-white/28">Job boards, staffing spam, generic full-time openings and freelance marketplaces are rejected before storage.</p>
+              <p className="mt-2 break-words text-[11px] leading-5 text-white/28">Generic stale job listings and staffing noise are rejected. Normal job boards are allowed only when the posting is verified at ≤12 hours old.</p>
             </div>
             <div className="mt-5 border-t border-white/8 px-3 pt-4"><p className="text-[8px] uppercase tracking-[.16em] text-white/25">Hot opportunities</p><p className="mt-1 text-3xl font-black text-[#ff766b]">{hotCount}</p></div>
           </aside>
@@ -280,21 +272,21 @@ export function PowerBiGigsDashboard() {
                 </div>
               </section>
             ) : (
-              <section className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_500px]">
+              <section className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_540px]">
                 <div className={`${styles.cut} min-w-0 border border-white/10 bg-[#090807]/95`}>
                   <div className="flex min-w-0 flex-col gap-3 border-b border-white/8 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0"><p className="text-[9px] font-bold uppercase tracking-[.18em] text-sky-300">Ranked feed</p><h2 className="mt-1 break-words text-xl font-black">Best current Power BI opportunities</h2></div>
                     <label className="flex min-h-10 min-w-0 items-center gap-2 border border-white/10 bg-black/30 px-3 sm:w-72"><Search className="size-4 shrink-0 text-white/25" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search gigs" className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/22" /></label>
                   </div>
                   {error ? <div className="m-4 break-words border border-[#ef2a26]/30 bg-[#ef2a26]/8 p-4 text-sm leading-6 text-[#ff9a91]">{error}</div> : null}
-                  {!loading && !error && visibleLeads.length === 0 ? <div className="px-5 py-16 text-center"><Radar className="mx-auto size-9 text-white/22" /><h3 className="mt-4 text-lg font-semibold">No qualifying Power BI gigs yet.</h3><p className="mx-auto mt-2 max-w-lg break-words text-sm leading-6 text-white/38">That means the filters are doing their job. This feed intentionally ignores ordinary job boards and waits for fresh public asks, proactive migration signals, or procurement work.</p></div> : null}
+                  {!loading && !error && visibleLeads.length === 0 ? <div className="px-5 py-16 text-center"><Radar className="mx-auto size-9 text-white/22" /><h3 className="mt-4 text-lg font-semibold">No qualifying Power BI gigs right now.</h3><p className="mx-auto mt-2 max-w-lg break-words text-sm leading-6 text-white/38">The collectors are still scanning. A lead appears when it is a fresh direct/proactive opportunity, procurement item, or a job-board posting whose age can be verified at 12 hours or newer.</p></div> : null}
                   <div className="divide-y divide-white/7">
                     {visibleLeads.map((lead) => (
                       <article key={lead.id} className={`${selected?.id === lead.id ? "bg-sky-300/[.045]" : "hover:bg-white/[.018]"} min-w-0 p-4`}>
                         <button onClick={() => setSelectedId(lead.id)} className="grid min-w-0 w-full gap-3 text-left sm:grid-cols-[64px_minmax(0,1fr)_auto]">
                           <div className={`grid h-14 w-14 place-items-center border text-lg font-black ${scoreTone(lead.score)}`}>{lead.score}</div>
                           <div className="min-w-0">
-                            <div className="flex min-w-0 flex-wrap items-center gap-2"><span className="break-words text-[9px] font-bold uppercase tracking-[.13em] text-sky-200">{opportunityType(lead)}</span><span className={`border px-2 py-0.5 text-[8px] font-bold uppercase tracking-[.11em] ${statusTone(lead.status)}`}>{lead.status}</span>{lead.tags.includes("extreme fresh") ? <span className="border border-emerald-300/20 bg-emerald-300/[.05] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[.11em] text-emerald-200">Fresh</span> : null}</div>
+                            <div className="flex min-w-0 flex-wrap items-center gap-2"><span className="break-words text-[9px] font-bold uppercase tracking-[.13em] text-sky-200">{opportunityType(lead)}</span><span className={`border px-2 py-0.5 text-[8px] font-bold uppercase tracking-[.11em] ${statusTone(lead.status)}`}>{lead.status}</span>{lead.tags.includes("extreme fresh") || lead.tags.some((tag) => /fresh <12h/i.test(tag)) ? <span className="border border-emerald-300/20 bg-emerald-300/[.05] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[.11em] text-emerald-200">Fresh</span> : null}<span className="inline-flex items-center gap-1 border border-sky-300/15 bg-sky-300/[.035] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[.11em] text-sky-200"><Mail className="size-2.5" /> email playbook</span></div>
                             <h3 className="mt-2 break-words text-base font-semibold leading-6 text-white/88">{lead.company}</h3>
                             <p className="mt-1 whitespace-normal break-words text-xs leading-5 text-white/45">{lead.summary}</p>
                             <p className="mt-2 flex min-w-0 flex-wrap items-center gap-1.5 break-words text-[10px] text-white/28"><MapPin className="size-3 shrink-0" />{lead.location}<span>·</span>{relativeTime(lead.discoveredAt)}</p>
@@ -320,7 +312,7 @@ export function PowerBiGigsDashboard() {
                     <div className="mt-5 min-w-0 border border-white/9 bg-black/20 p-3"><p className="mb-1 text-[9px] font-bold uppercase tracking-[.16em] text-sky-300">Contact & source</p><ContactRow icon={UserRound} label="Contact" value={selected.contactName} /><ContactRow icon={Mail} label="Email" value={selected.contactEmail} href={selected.contactEmail ? `mailto:${selected.contactEmail}` : undefined} /><ContactRow icon={Phone} label="Phone" value={selected.contactPhone} href={selected.contactPhone ? `tel:${selected.contactPhone}` : undefined} /><ContactRow icon={Link2} label="Contact URL" value={selected.contactUrl} href={selected.contactUrl} /><ContactRow icon={ExternalLink} label="Source" value={selected.sourceUrl} href={selected.sourceUrl} /></div>
                     <div className="mt-5"><p className="text-[8px] font-bold uppercase tracking-[.16em] text-white/25">Why it scored</p><ul className="mt-2 space-y-2">{selected.signals.map((signal) => <li key={signal} className="flex min-w-0 gap-2 text-xs leading-5 text-white/52"><Check className="mt-0.5 size-3.5 shrink-0 text-emerald-200/70" /><span className="min-w-0 break-words">{signal}</span></li>)}</ul></div>
                     {selected.risks.length ? <div className="mt-5"><p className="text-[8px] font-bold uppercase tracking-[.16em] text-white/25">Verify first</p><ul className="mt-2 space-y-2">{selected.risks.map((risk) => <li key={risk} className="break-words text-xs leading-5 text-[#e9b36b]/75">• {risk}</li>)}</ul></div> : null}
-                    <div className="mt-5 border-t border-white/8 pt-4"><div className="flex items-center justify-between gap-3"><p className="text-[8px] font-bold uppercase tracking-[.16em] text-white/25">Suggested opener</p><button onClick={() => void copyPitch()} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-sky-200">{copied ? <Check className="size-3" /> : <Clipboard className="size-3" />}{copied ? "Copied" : "Copy"}</button></div><p className="mt-2 break-words border border-white/8 bg-black/25 p-3 text-xs leading-6 text-white/52">{selected.pitch}</p></div>
+                    <OutreachPlaybook lead={selected} />
                     <label className="mt-5 block min-w-0 border border-white/10 bg-black/25 px-3 py-2"><span className="block text-[8px] uppercase tracking-[.14em] text-white/24">Pipeline status</span><select value={selected.status} onChange={(event) => void updateStatus(event.target.value as LeadStatus)} className="mt-1 w-full min-w-0 bg-transparent text-xs text-white/70 outline-none">{statusOptions.map((status) => <option key={status} value={status} className="bg-[#090807]">{status}</option>)}</select></label>
                   </> : <div className="py-16 text-center text-sm text-white/35">Select a gig to inspect it.</div>}
                 </aside>
