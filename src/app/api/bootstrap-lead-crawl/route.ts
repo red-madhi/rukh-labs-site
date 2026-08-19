@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
   const allowedTargets: Record<string, string> = {
     all: "/api/leads/crawl",
     process: "/api/leads/crawl?mode=process",
+    audit: "/api/leads/collect/audit-sites-v2",
     sam: "/api/leads/collect/sam-opportunities",
     powerbi: "/api/leads/collect/power-bi",
   };
