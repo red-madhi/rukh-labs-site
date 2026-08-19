@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hasValidBasicAuth, hasValidCronAuth } from "@/lib/leads/auth";
 import { leadNeonQuery } from "@/lib/leads/neon";
+import { BRAVE_MONTHLY_REQUEST_LIMIT, reserveMonthlyApiUsage } from "@/lib/leads/api-budget";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -210,6 +211,20 @@ export async function GET(request: NextRequest) {
       [SOURCE_ID, message],
     ).catch(() => undefined);
     return privateJson({ error: message, source: SOURCE_ID }, { status: 428 });
+  }
+
+  const budget = await reserveMonthlyApiUsage(
+    "brave-search",
+    searchConfigs.length,
+    BRAVE_MONTHLY_REQUEST_LIMIT,
+  );
+  if (!budget.allowed) {
+    const message = `Monthly Brave Search budget reached (${budget.limit} requests).`;
+    await leadNeonQuery(
+      `UPDATE public.lead_source_state SET status = 'ready', last_run_at = now(), last_error = $2, updated_at = now() WHERE source_id = $1`,
+      [SOURCE_ID, message],
+    ).catch(() => undefined);
+    return privateJson({ error: message, source: SOURCE_ID, budget }, { status: 429 });
   }
 
   const runId = crypto.randomUUID();

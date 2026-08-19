@@ -8,6 +8,7 @@ import {
   privateJson,
 } from "@/lib/leads/pipeline";
 import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
+import { BRAVE_MONTHLY_REQUEST_LIMIT, reserveMonthlyApiUsage } from "@/lib/leads/api-budget";
 import {
   candidateDomainGuesses,
   cleanSearchResultUrl,
@@ -118,11 +119,14 @@ export async function GET(request: NextRequest) {
     const candidates = neonRowsToObjects(result);
     const guesses = await mapLimit(candidates, 4, async (candidate) => ({ candidate, discovery: await freeGuess(candidate) }));
     const apiKey = process.env.BRAVE_SEARCH_API_KEY?.trim();
+    const budget = apiKey
+      ? await reserveMonthlyApiUsage("brave-search", BRAVE_LIMIT, BRAVE_MONTHLY_REQUEST_LIMIT)
+      : { allowed: false, used: 0, limit: BRAVE_MONTHLY_REQUEST_LIMIT };
     let braveUsed = 0;
     let found = 0;
     for (const item of guesses) {
       let discovery = item.discovery;
-      if (!discovery && apiKey && braveUsed < BRAVE_LIMIT) {
+      if (!discovery && apiKey && budget.allowed && braveUsed < BRAVE_LIMIT) {
         braveUsed += 1;
         discovery = await paidSearch(item.candidate, apiKey);
       }
