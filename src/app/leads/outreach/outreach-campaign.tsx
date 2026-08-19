@@ -7,7 +7,7 @@ import { buildOutreachPlan } from "@/lib/leads/outreach";
 
 type OutreachMessage = {
   direction: "outbound" | "inbound";
-  kind: "initial" | "follow-up" | "reply";
+  kind: "initial" | "follow-up" | "reply" | "bounce";
   at: string;
   subject?: string;
   body?: string;
@@ -27,6 +27,8 @@ type OutreachState = {
   followUpCount?: number;
   lastReplyAt?: string;
   lastReplySnippet?: string;
+  lastBounceAt?: string;
+  lastBounceReason?: string;
   lastError?: string;
   messages?: OutreachMessage[];
 };
@@ -127,7 +129,7 @@ export function OutreachCampaign() {
     .filter((lead) => feed === "all" || (feed === "power-bi" ? lead.source === "power-bi" : lead.source !== "power-bi"))
     .sort((a, b) => b.score - a.score || new Date(b.discoveredAt).getTime() - new Date(a.discoveredAt).getTime()), [leads, feed]);
 
-  const ready = eligible.filter((lead) => !["sent", "replied", "completed"].includes(states[lead.id]?.state || ""));
+  const ready = eligible.filter((lead) => !["sent", "replied", "bounced", "completed"].includes(states[lead.id]?.state || ""));
 
   function patchDraft(leadId: string, patch: Partial<Draft>) {
     setDrafts((current) => ({ ...current, [leadId]: { ...current[leadId], ...patch } }));
@@ -179,7 +181,7 @@ export function OutreachCampaign() {
       if (!response.ok) throw new Error(result.error || "Email could not be sent.");
       if (result.state) setStates((current) => ({ ...current, [leadId]: result.state! }));
       setSelected((current) => { const next = new Set(current); next.delete(leadId); return next; });
-      setMessage("Email sent from the outreach queue.");
+      setMessage("Email accepted by Gmail. Delivery failures will be caught by the reply/bounce check.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Email could not be sent.");
     } finally {
@@ -205,7 +207,7 @@ export function OutreachCampaign() {
       const sent = results.filter((item) => item.ok).length;
       const failed = results.length - sent;
       setSelected(new Set(results.filter((item) => !item.ok).map((item) => item.leadId)));
-      setMessage(`${sent} sent${failed ? ` · ${failed} failed` : ""}.`);
+      setMessage(`${sent} accepted by Gmail${failed ? ` · ${failed} failed` : ""}. Delivery failures are checked separately.`);
       await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Bulk send failed.");
@@ -216,7 +218,7 @@ export function OutreachCampaign() {
 
   async function syncReplies() {
     setWorking(true);
-    setMessage("Checking active Gmail threads and due follow-ups…");
+    setMessage("Checking active Gmail threads for replies, bounces, and due follow-ups…");
     try {
       const response = await fetch("/api/leads/outreach", {
         method: "POST",
@@ -224,9 +226,9 @@ export function OutreachCampaign() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "cycle", limit: 60 }),
       });
-      const result = (await response.json()) as { checked?: number; replies?: number; followUps?: number; errors?: string[]; error?: string };
+      const result = (await response.json()) as { checked?: number; replies?: number; bounces?: number; followUps?: number; errors?: string[]; error?: string };
       if (!response.ok) throw new Error(result.error || "Reply sync failed.");
-      setMessage(`Checked ${result.checked || 0} threads · ${result.replies || 0} replies found · ${result.followUps || 0} follow-ups sent${result.errors?.length ? ` · ${result.errors.length} errors` : ""}.`);
+      setMessage(`Checked ${result.checked || 0} threads · ${result.replies || 0} replies · ${result.bounces || 0} bounces · ${result.followUps || 0} follow-ups sent${result.errors?.length ? ` · ${result.errors.length} errors` : ""}.`);
       await load();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Reply sync failed.");
@@ -243,7 +245,7 @@ export function OutreachCampaign() {
             <div>
               <div className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[.2em] text-[#d7a45f]"><ShieldCheck className="size-4" /> Private outreach console</div>
               <h1 className="mt-2 text-3xl font-black tracking-[-.05em] sm:text-5xl">Email campaign queue</h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-white/45">Review and edit every message, send individually or in a batch, and let the daily cycle stop follow-ups automatically when a reply appears.</p>
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-white/45">Review and edit every message, send individually or in a batch, and let the daily cycle stop follow-ups automatically when a reply or delivery failure appears.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <button type="button" disabled={working} onClick={() => void syncReplies()} className="inline-flex min-h-10 items-center gap-2 border border-white/12 bg-white/[.035] px-3 py-2 text-xs font-bold text-white/65 disabled:opacity-40"><RefreshCw className={`size-4 ${working ? "animate-spin" : ""}`} /> Check replies now</button>
@@ -270,6 +272,7 @@ export function OutreachCampaign() {
             const state = states[lead.id] || {};
             const draft = drafts[lead.id] || defaultDraft(lead);
             const alreadySent = ["sent", "replied", "completed"].includes(state.state || "");
+            const bounced = state.state === "bounced";
             const checked = selected.has(lead.id);
             return (
               <article key={lead.id} className="border border-white/10 bg-[#090807] p-4 sm:p-5">
@@ -279,16 +282,18 @@ export function OutreachCampaign() {
                       {!alreadySent ? <button type="button" onClick={() => toggle(lead.id)} className={`grid size-7 place-items-center border ${checked ? "border-[#d7a45f]/50 bg-[#d7a45f]/15 text-[#efc37c]" : "border-white/15 text-transparent"}`}>{checked ? <Check className="size-4" /> : null}</button> : null}
                       <span className="border border-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-[.12em] text-white/45">{lead.source === "power-bi" ? "Power BI" : "Website"}</span>
                       <span className="border border-white/10 px-2 py-1 text-[9px] font-black uppercase tracking-[.12em] text-white/45">Score {lead.score}</span>
-                      <span className="border border-[#d7a45f]/20 px-2 py-1 text-[9px] font-black uppercase tracking-[.12em] text-[#e7b66f]">{state.state || "draft"}</span>
+                      <span className={`border px-2 py-1 text-[9px] font-black uppercase tracking-[.12em] ${bounced ? "border-red-300/25 text-red-200/80" : "border-[#d7a45f]/20 text-[#e7b66f]"}`}>{state.state || "draft"}</span>
                     </div>
                     <h2 className="mt-2 break-words text-lg font-bold text-white/85">{lead.company}</h2>
                     <p className="mt-1 break-all text-xs text-white/42">{lead.contactName ? `${lead.contactName} · ` : ""}{lead.contactEmail}</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {!alreadySent ? <button type="button" disabled={working} onClick={() => void save(lead.id)} className="border border-white/12 px-3 py-2 text-[10px] font-bold text-white/55 disabled:opacity-35">Save draft</button> : null}
-                    {!alreadySent ? <button type="button" disabled={working || !configuration?.configured} onClick={() => void sendOne(lead.id)} className="inline-flex items-center gap-2 border border-[#d7a45f]/35 bg-[#d7a45f]/10 px-3 py-2 text-[10px] font-bold text-[#efc37c] disabled:opacity-35"><Mail className="size-3.5" /> Send</button> : null}
+                    {!alreadySent ? <button type="button" disabled={working || !configuration?.configured} onClick={() => void sendOne(lead.id)} className="inline-flex items-center gap-2 border border-[#d7a45f]/35 bg-[#d7a45f]/10 px-3 py-2 text-[10px] font-bold text-[#efc37c] disabled:opacity-35"><Mail className="size-3.5" /> {bounced ? "Retry" : "Send"}</button> : null}
                   </div>
                 </div>
+
+                {bounced ? <div className="mt-4 border border-red-300/20 bg-red-300/[.05] p-3 text-xs leading-5 text-red-100/75"><strong>Delivery failed.</strong> Automatic follow-up has been cancelled.{state.lastBounceReason ? ` ${state.lastBounceReason}` : ""}</div> : null}
 
                 {!alreadySent ? (
                   <div className="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px]">
@@ -300,13 +305,13 @@ export function OutreachCampaign() {
                     <div className="border border-white/8 bg-black/20 p-3 text-xs text-white/45">
                       <label className="flex items-center gap-2"><input type="checkbox" checked={draft.autoFollowUp} onChange={(event) => patchDraft(lead.id, { autoFollowUp: event.target.checked })} /> Automatic follow-up</label>
                       <label className="mt-4 block"><span className="mb-1 block text-[8px] font-bold uppercase tracking-[.12em] text-white/25">Days after send</span><input type="number" min={1} max={30} value={draft.followUpDays} onChange={(event) => patchDraft(lead.id, { followUpDays: Number(event.target.value) || 7 })} className="w-full border border-white/10 bg-black/30 px-2 py-2 text-white/65" /></label>
-                      <p className="mt-4 leading-5 text-white/30">If a reply is found first, the follow-up is cancelled and the lead becomes replied automatically.</p>
+                      <p className="mt-4 leading-5 text-white/30">If a reply or bounce is found first, the follow-up is cancelled automatically.</p>
                     </div>
                   </div>
                 ) : (
                   <div className="mt-4 grid gap-3 lg:grid-cols-2">
                     <div className="border border-white/8 bg-black/20 p-3 text-xs leading-5 text-white/45"><p><strong className="text-white/65">Sent:</strong> {when(state.sentAt)}</p><p className="mt-1"><strong className="text-white/65">Next follow-up:</strong> {when(state.nextFollowUpAt)}</p><p className="mt-1"><strong className="text-white/65">Follow-ups:</strong> {state.followUpCount || 0}</p>{state.lastReplyAt ? <p className="mt-1 text-emerald-200/70"><strong>Reply:</strong> {when(state.lastReplyAt)} · {state.lastReplySnippet}</p> : null}</div>
-                    <details className="border border-white/8 bg-black/20 p-3"><summary className="cursor-pointer text-[10px] font-bold text-white/50">Conversation history ({state.messages?.length || 0})</summary><div className="mt-3 space-y-2">{(state.messages || []).map((item, index) => <div key={`${item.gmailMessageId || item.at}-${index}`} className="border border-white/8 p-2 text-[10px] leading-5 text-white/45"><div className="flex justify-between gap-2"><strong className={item.direction === "inbound" ? "text-emerald-200/75" : "text-[#e7b66f]"}>{item.direction === "inbound" ? "Reply" : item.kind === "follow-up" ? "Follow-up" : "Sent"}</strong><span>{when(item.at)}</span></div><p className="mt-1 whitespace-pre-wrap break-words">{item.body || item.snippet || "Message recorded"}</p></div>)}</div></details>
+                    <details className="border border-white/8 bg-black/20 p-3"><summary className="cursor-pointer text-[10px] font-bold text-white/50">Conversation history ({state.messages?.length || 0})</summary><div className="mt-3 space-y-2">{(state.messages || []).map((item, index) => <div key={`${item.gmailMessageId || item.at}-${index}`} className="border border-white/8 p-2 text-[10px] leading-5 text-white/45"><div className="flex justify-between gap-2"><strong className={item.kind === "bounce" ? "text-red-200/80" : item.direction === "inbound" ? "text-emerald-200/75" : "text-[#e7b66f]"}>{item.kind === "bounce" ? "Bounce" : item.direction === "inbound" ? "Reply" : item.kind === "follow-up" ? "Follow-up" : "Sent"}</strong><span>{when(item.at)}</span></div><p className="mt-1 whitespace-pre-wrap break-words">{item.body || item.snippet || "Message recorded"}</p></div>)}</div></details>
                   </div>
                 )}
               </article>
