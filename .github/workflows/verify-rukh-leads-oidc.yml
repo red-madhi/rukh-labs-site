@@ -1,0 +1,35 @@
+name: Verify Rukh Leads OIDC gateway
+
+on:
+  push:
+    paths:
+      - ".github/workflows/verify-rukh-leads-oidc.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Call Rukh Leads with a short-lived GitHub OIDC token
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --max-time 55 -H "Authorization: Bearer $TOKEN" \
+            "https://rukhlabs.com/api/github-crawl?stage=inbound"
+      - name: Record successful verification
+        run: |
+          printf 'Rukh Leads OIDC gateway verified at %s\n' "$(date -u +%FT%TZ)" > .github/rukh-leads-oidc-verified.txt
+          git add .github/rukh-leads-oidc-verified.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Verify Rukh Leads OIDC scheduler gateway"
+          git push origin HEAD:main
