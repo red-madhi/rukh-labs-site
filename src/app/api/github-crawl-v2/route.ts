@@ -19,8 +19,10 @@ const routes: Record<string, string> = {
   procurement: "/api/leads/collect/procurement-rfp",
   sam: "/api/leads/collect/sam-opportunities",
   directories: "/api/leads/collect/pipeline-v3?mode=directories",
-  discover: "/api/leads/collect/discover-v3",
-  audit: "/api/leads/collect/audit-sites-v2",
+  // The legacy discover-v2/v3 routes use an obsolete candidate schema. Send all
+  // scheduled domain work through the current queue processor instead.
+  discover: "/api/leads/process/domains?limit=12",
+  audit: "/api/leads/collect/audit-sites-v2?limit=12",
   email: "/api/leads/process/contact-emails",
   powerbi: "/api/leads/collect/power-bi",
   "powerbi-live": "/api/leads/collect/power-bi-live",
