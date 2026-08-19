@@ -6,6 +6,7 @@ import {
   cleanText,
   completeCollectorRun,
   failCollectorRun,
+  getSourceConfig,
   privateJson,
 } from "@/lib/leads/crawl";
 import { upsertPowerBiGigs } from "@/lib/leads/power-bi";
@@ -54,19 +55,19 @@ type SamOpportunity = {
   data?: { pointOfContact?: SamContact[]; officeAddress?: { city?: string; state?: string } };
 };
 type SamPayload = { totalRecords?: number; opportunitiesData?: SamOpportunity[] };
+type SamSearchResult =
+  | { ok: true; payload: SamPayload }
+  | { ok: false; rateLimited: boolean; message: string };
 
 function formatSamDate(date: Date) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}/${date.getFullYear()}`;
 }
 
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function searchSam(apiKey: string, title: string) {
+async function searchSam(apiKey: string, title: string): Promise<SamSearchResult> {
   const now = new Date();
   const from = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
   let lastError = "SAM.gov Power BI search failed.";
+
   for (const endpoint of API_ENDPOINTS) {
     const url = new URL(endpoint);
     url.searchParams.set("api_key", apiKey);
@@ -76,26 +77,42 @@ async function searchSam(apiKey: string, title: string) {
     url.searchParams.set("limit", "250");
     url.searchParams.set("offset", "0");
     for (const type of ["o", "k", "r", "p"]) url.searchParams.append("ptype", type);
+
     try {
       const response = await fetch(url, {
-        headers: { Accept: "application/json", "User-Agent": "Rukh-Leads/1.0 (+https://rukhlabs.com)" },
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Rukh-Leads/1.0 (+https://rukhlabs.com)",
+        },
         cache: "no-store",
         signal: AbortSignal.timeout(15_000),
       });
-      if (response.ok) return (await response.json()) as SamPayload;
+      if (response.ok) {
+        return { ok: true, payload: (await response.json()) as SamPayload };
+      }
+      if (response.status === 429) {
+        return {
+          ok: false,
+          rateLimited: true,
+          message: "SAM.gov rate limit is temporarily active; this query will be retried on the next scheduled pass.",
+        };
+      }
       lastError = `SAM.gov returned ${response.status}.`;
       if (![404, 405].includes(response.status)) break;
     } catch (error) {
       lastError = error instanceof Error ? error.message : lastError;
     }
   }
-  throw new Error(lastError);
+
+  return { ok: false, rateLimited: false, message: lastError };
 }
 
 function qualify(opportunity: SamOpportunity, matchedTitle: string) {
   const noticeId = cleanText(opportunity.noticeId, 120);
   const title = cleanText(opportunity.title, 360);
-  if (!noticeId || !title || !relevantPattern.test(title) || falsePositivePattern.test(title)) return null;
+  if (!noticeId || !title || !relevantPattern.test(title) || falsePositivePattern.test(title)) {
+    return null;
+  }
 
   const organization = cleanText(opportunity.fullParentPathName, 280) || "Federal contracting office";
   const contacts = opportunity.pointOfContact || opportunity.data?.pointOfContact || [];
@@ -105,7 +122,9 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
     cleanText(opportunity.additionalInfoLink || opportunity.uiLink, 1000) ||
     `https://sam.gov/opp/${encodeURIComponent(noticeId)}/view`;
   const office = opportunity.officeAddress || opportunity.data?.officeAddress;
-  const location = [cleanText(office?.city, 100), cleanText(office?.state, 60)].filter(Boolean).join(", ") || "United States";
+  const location =
+    [cleanText(office?.city, 100), cleanText(office?.state, 60)].filter(Boolean).join(", ") ||
+    "United States";
 
   let score = 92;
   const signals = [
@@ -144,7 +163,8 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
       "proactive opportunity",
       cleanText(opportunity.type || opportunity.baseType, 80) || "federal opportunity",
     ],
-    pitch: "I found your SAM.gov Power BI / analytics opportunity and would like to review the scope and required deliverables. I work hands-on with Power BI, DAX, Power Query, data modeling and Microsoft Fabric, and can provide a concise requirements-mapped proposal where the procurement is a fit.",
+    pitch:
+      "I found your SAM.gov Power BI / analytics opportunity and would like to review the scope and required deliverables. I work hands-on with Power BI, DAX, Power Query, data modeling and Microsoft Fabric, and can provide a concise requirements-mapped proposal where the procurement is a fit.",
     contactName: cleanText(contact?.fullname, 180) || undefined,
     contactEmail: cleanText(contact?.email, 220).toLowerCase() || undefined,
     contactPhone: cleanText(contact?.phone, 80) || undefined,
@@ -167,37 +187,73 @@ export async function GET(request: NextRequest) {
   if (!hasValidCronAuth(request) && !hasValidBasicAuth(request)) {
     return privateJson({ error: "Collector authentication failed." }, { status: 401 });
   }
+
   const apiKey = process.env.SAM_GOV_API_KEY?.trim();
   if (!apiKey) {
-    return privateJson({ error: "SAM_GOV_API_KEY is not configured.", source: SOURCE_ID }, { status: 428 });
+    return privateJson(
+      { error: "SAM_GOV_API_KEY is not configured.", source: SOURCE_ID },
+      { status: 428 },
+    );
   }
 
   const runId = await beginCollectorRun(SOURCE_ID);
   try {
-    const batches: Array<{ title: string; payload: SamPayload }> = [];
-    for (const title of SEARCH_TITLES) {
-      const payload = await searchSam(apiKey, title);
-      batches.push({ title, payload });
-      await wait(850);
+    const config = await getSourceConfig(SOURCE_ID, { searchIndex: 0 });
+    const searchIndex = Math.max(0, Number(config.searchIndex ?? 0) || 0) % SEARCH_TITLES.length;
+    const title = SEARCH_TITLES[searchIndex];
+    const search = await searchSam(apiKey, title);
+
+    if (!search.ok) {
+      if (search.rateLimited) {
+        await completeCollectorRun(runId, SOURCE_ID, 0, 0, {
+          searchIndex,
+          lastQuery: title,
+          rateLimited: true,
+          rateLimitedAt: new Date().toISOString(),
+        });
+        return privateJson({
+          ok: true,
+          source: SOURCE_ID,
+          seen: 0,
+          qualified: 0,
+          stored: 0,
+          rateLimited: true,
+          query: title,
+          message: search.message,
+        });
+      }
+      throw new Error(search.message);
     }
 
-    const seen = batches.reduce((total, batch) => total + (batch.payload.opportunitiesData?.length ?? 0), 0);
+    const opportunities = search.payload.opportunitiesData ?? [];
     const gigs = new Map<string, NonNullable<ReturnType<typeof qualify>>>();
-    for (const batch of batches) {
-      for (const opportunity of batch.payload.opportunitiesData ?? []) {
-        const gig = qualify(opportunity, batch.title);
-        if (!gig) continue;
-        const current = gigs.get(gig.sourceKey);
-        if (!current || gig.score > current.score) gigs.set(gig.sourceKey, gig);
-      }
+    for (const opportunity of opportunities) {
+      const gig = qualify(opportunity, title);
+      if (!gig) continue;
+      const current = gigs.get(gig.sourceKey);
+      if (!current || gig.score > current.score) gigs.set(gig.sourceKey, gig);
     }
+
     const rows = Array.from(gigs.values());
     const stored = await upsertPowerBiGigs(rows);
-    await completeCollectorRun(runId, SOURCE_ID, seen, stored, {
-      lookbackDays: LOOKBACK_DAYS,
-      searches: SEARCH_TITLES,
+    const nextSearchIndex = (searchIndex + 1) % SEARCH_TITLES.length;
+    await completeCollectorRun(runId, SOURCE_ID, opportunities.length, stored, {
+      searchIndex: nextSearchIndex,
+      lastQuery: title,
+      lastTotalRecords: search.payload.totalRecords ?? opportunities.length,
+      rateLimited: false,
+      lastSuccessfulQueryAt: new Date().toISOString(),
     });
-    return privateJson({ ok: true, source: SOURCE_ID, seen, qualified: rows.length, stored });
+
+    return privateJson({
+      ok: true,
+      source: SOURCE_ID,
+      seen: opportunities.length,
+      qualified: rows.length,
+      stored,
+      query: title,
+      nextQuery: SEARCH_TITLES[nextSearchIndex],
+    });
   } catch (error) {
     const message = await failCollectorRun(runId, SOURCE_ID, error);
     return privateJson({ error: message, source: SOURCE_ID }, { status: 503 });
