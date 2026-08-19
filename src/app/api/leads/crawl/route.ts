@@ -94,7 +94,11 @@ export async function GET(request: NextRequest) {
     : [
         ["rukh-inbound", "Rukh Labs inbound", "/api/leads/collect/inbound", 16_000],
         ["intent-bluesky", "Bluesky intent", "/api/leads/collect/bluesky", 24_000],
+        ["social-linkedin-x", "Public LinkedIn and X discovery", "/api/leads/collect/social-search", 20_000],
+        ["mastodon-intent", "Mastodon public intent", "/api/leads/collect/mastodon", 20_000],
         ["web-intent", "Public web intent", "/api/leads/collect/web-intent", 18_000],
+        ["procurement-rfp", "Public website RFPs", "/api/leads/collect/procurement-rfp", 20_000],
+        ["sam-opportunities", "SAM.gov opportunities", "/api/leads/collect/sam-opportunities", 24_000],
         ["web-business-discovery", "Public business discovery", "/api/leads/collect/web-businesses", 18_000],
         ["registry-colorado", "Colorado business registry", "/api/leads/collect/colorado", 18_000],
         ["registry-nppes", "National healthcare organizations", "/api/leads/collect/nppes", 18_000],
