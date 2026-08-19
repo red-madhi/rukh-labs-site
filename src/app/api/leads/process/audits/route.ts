@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { hasValidBasicAuth, hasValidCronAuth } from "@/lib/leads/auth";
 import {
   beginCollectorRun,
+  clamp,
   claimAuditCandidates,
   completeCollectorRun,
   failCollectorRun,
@@ -9,7 +10,7 @@ import {
   privateJson,
 } from "@/lib/leads/crawl";
 import type { CandidateRow } from "@/lib/leads/crawl";
-import { leadNeonQuery } from "@/lib/leads/neon";
+import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 import { auditWebsite } from "@/lib/leads/site";
 import type { WebsiteAuditResult } from "@/lib/leads/site";
 import { isThirdPartyBusinessUrl } from "@/lib/leads/site-fetch";
@@ -20,6 +21,12 @@ export const maxDuration = 60;
 
 const SOURCE_ID = "website-auditor";
 const DEFAULT_LIMIT = 6;
+
+type AccountContext = {
+  matchedCandidates: number;
+  sources: string[];
+  motionSignal: boolean;
+};
 
 async function mapWithConcurrency<T, R>(
   values: readonly T[],
@@ -39,6 +46,63 @@ async function mapWithConcurrency<T, R>(
     Array.from({ length: Math.min(concurrency, values.length) }, () => run()),
   );
   return results;
+}
+
+function phoneDigits(value?: string) {
+  return (value ?? "").replace(/\D/g, "").slice(-10);
+}
+
+function parseStringArray(value: string | null) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string")
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+async function strictAccountContext(candidate: CandidateRow): Promise<AccountContext> {
+  const phone = phoneDigits(candidate.phone);
+  const result = await leadNeonQuery(
+    `SELECT
+       count(*)::text AS matched_candidates,
+       COALESCE(to_jsonb(array_agg(DISTINCT source))::text, '[]') AS sources,
+       bool_or(metadata ? 'motionSignal')::text AS motion_signal
+     FROM public.lead_candidates
+     WHERE archived_at IS NULL
+       AND id <> $1::uuid
+       AND (
+         ($2::text IS NOT NULL AND email IS NOT NULL AND lower(email) = lower($2))
+         OR (
+           $3::text <> ''
+           AND phone IS NOT NULL
+           AND right(regexp_replace(phone, '[^0-9]', '', 'g'), 10) = $3
+         )
+         OR (
+           lower(regexp_replace(trim(organization_name), '\\s+', ' ', 'g')) =
+             lower(regexp_replace(trim($4::text), '\\s+', ' ', 'g'))
+           AND lower(COALESCE(city, '')) = lower(COALESCE($5::text, ''))
+           AND lower(COALESCE(state, '')) = lower(COALESCE($6::text, ''))
+         )
+       )`,
+    [
+      candidate.id,
+      candidate.email || null,
+      phone,
+      candidate.organizationName,
+      candidate.city || null,
+      candidate.state || null,
+    ],
+  );
+  const row = neonRowsToObjects(result)[0] ?? {};
+  return {
+    matchedCandidates: Number(row.matched_candidates ?? 0),
+    sources: parseStringArray(row.sources ?? null),
+    motionSignal: row.motion_signal === "true",
+  };
 }
 
 function isParkedAudit(audit: WebsiteAuditResult) {
@@ -99,10 +163,16 @@ async function saveAudit(candidate: CandidateRow, audit: WebsiteAuditResult) {
 async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) {
   if (!audit.qualified) return false;
 
+  const account = await strictAccountContext(candidate);
+  const independentSources = Array.from(new Set([candidate.source, ...account.sources].filter(Boolean)));
+  const convergenceBonus = independentSources.length >= 2
+    ? Math.min(8, (independentSources.length - 1) * 3)
+    : 0;
+  const adjustedScore = clamp(audit.score + convergenceBonus);
   const parked = isParkedAudit(audit);
   const leadSource = parked ? "new-business" : "site-audit";
   const sourceKey = `candidate:${candidate.id}`;
-  const priority = audit.score >= 85 ? "hot" : audit.score >= 70 ? "strong" : "watch";
+  const priority = adjustedScore >= 85 ? "hot" : adjustedScore >= 70 ? "strong" : "watch";
   const location = locationLabel(candidate);
   const websiteUrl = parked ? null : audit.finalUrl;
   const contactUrl = audit.contactUrl || candidate.sourceUrl || (parked ? null : audit.finalUrl);
@@ -119,7 +189,16 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
           ...audit.signals.filter((signal) => !/missing|viewport|heading|meta description|canonical|open graph|call-to-action|form/i.test(signal)),
         ]),
       )
-    : audit.signals;
+    : [...audit.signals];
+  if (independentSources.length >= 2) {
+    signals.push(
+      `Strict account match appears across ${independentSources.length} independent lead sources: ${independentSources.slice(0, 5).join(", ")}`,
+    );
+  }
+  const candidateMotion = typeof candidate.metadata.motionSignal === "string";
+  if (candidateMotion || account.motionSignal) {
+    signals.push("A recent official business-activity signal is attached to this account");
+  }
   const risks = parked
     ? Array.from(
         new Set([
@@ -127,11 +206,35 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
           "The organization may use another official domain; verify that before outreach",
         ]),
       )
-    : audit.risks;
+    : [...audit.risks];
+  if (independentSources.length >= 2) {
+    risks.push("Cross-source account matching is intentionally strict; name/location, email, or phone must agree before signals are stacked");
+  }
   const tags = parked
     ? ["parked domain", "no usable website", candidate.source, candidate.category || "unclassified"]
     : ["website audit", candidate.source, candidate.category || "unclassified"];
+  if (independentSources.length >= 2) tags.push("signal-convergence");
+  if (candidateMotion || account.motionSignal) tags.push("business-in-motion");
+
   const auditPayload = parkedAuditPayload(audit, parked);
+  const dimensions =
+    auditPayload.dimensions && typeof auditPayload.dimensions === "object"
+      ? (auditPayload.dimensions as Record<string, unknown>)
+      : {};
+  const crossSourceConvergence = Math.min(
+    100,
+    independentSources.length * 25 + (candidateMotion || account.motionSignal ? 20 : 0),
+  );
+  auditPayload.dimensions = {
+    ...dimensions,
+    convergence: Math.max(Number(dimensions.convergence ?? 0), crossSourceConvergence),
+  };
+  auditPayload.accountSignals = {
+    strictMatchedCandidates: account.matchedCandidates,
+    independentSources,
+    motionSignal: candidateMotion || account.motionSignal,
+    convergenceBonus,
+  };
 
   await leadNeonQuery(
     `UPDATE public.lead_opportunities
@@ -224,11 +327,11 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
       location,
       candidate.category || "Unclassified",
       summary,
-      String(audit.score),
+      String(adjustedScore),
       priority,
-      JSON.stringify(signals),
-      JSON.stringify(risks),
-      JSON.stringify(tags),
+      JSON.stringify(Array.from(new Set(signals))),
+      JSON.stringify(Array.from(new Set(risks))),
+      JSON.stringify(Array.from(new Set(tags))),
       pitch,
       JSON.stringify(auditPayload),
       JSON.stringify({
@@ -237,6 +340,10 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
         domainConfidence: candidate.domainConfidence,
         prioritySeed: candidate.prioritySeed,
         parkedDomain: parked ? audit.finalUrl : null,
+        accountSignalCount: independentSources.length,
+        accountSources: independentSources,
+        accountMotionSignal: candidateMotion || account.motionSignal,
+        convergenceBonus,
       }),
     ],
   );
@@ -332,6 +439,7 @@ export async function GET(request: NextRequest) {
         lastQualified: qualified,
         lastErrors: errors,
         lastThirdPartyPagesRequeued: requeuedThirdParty,
+        accountMatching: "strict email/phone or exact normalized name+location",
       },
     );
 
