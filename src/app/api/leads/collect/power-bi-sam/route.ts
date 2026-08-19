@@ -23,14 +23,19 @@ const SEARCH_TITLES = [
   "data visualization",
   "dashboard",
   "Microsoft Fabric",
+  "report modernization",
+  "enterprise reporting",
+  "analytics platform",
+  "Tableau migration",
 ] as const;
 const API_ENDPOINTS = [
   "https://api.sam.gov/opportunities/v2/search",
   "https://api.sam.gov/prod/opportunities/v2/search",
 ] as const;
+const MAX_DESCRIPTION_FETCHES = 20;
 
 const relevantPattern =
-  /\b(?:power\s*bi|microsoft fabric|business intelligence|data visualization|analytics dashboard|reporting dashboard|dashboard development|dashboard modernization|data analytics|reporting analytics)\b/i;
+  /\b(?:power\s*bi|microsoft fabric|business intelligence|data visualization|analytics dashboard|reporting dashboard|dashboard development|dashboard modernization|data analytics|reporting analytics|report(?:ing)? modernization|enterprise reporting|analytics platform|tableau migration|tableau.*power\s*bi|legacy reporting|reporting platform modernization)\b/i;
 const falsePositivePattern =
   /\b(?:training course|training services|curriculum|instructional materials?|student|classroom|medical imaging|digital imaging|vehicle dashboard|instrument panel|dashboard camera|web dashboard camera)\b/i;
 
@@ -50,6 +55,8 @@ type SamOpportunity = {
   naicsCode?: string;
   additionalInfoLink?: string;
   uiLink?: string;
+  description?: string;
+  resourceLinks?: string[];
   pointOfContact?: SamContact[];
   officeAddress?: { city?: string; state?: string };
   data?: { pointOfContact?: SamContact[]; officeAddress?: { city?: string; state?: string } };
@@ -76,7 +83,7 @@ async function searchSam(apiKey: string, title: string): Promise<SamSearchResult
     url.searchParams.set("title", title);
     url.searchParams.set("limit", "250");
     url.searchParams.set("offset", "0");
-    for (const type of ["o", "k", "r", "p"]) url.searchParams.append("ptype", type);
+    for (const type of ["o", "k", "r", "p", "s"]) url.searchParams.append("ptype", type);
 
     try {
       const response = await fetch(url, {
@@ -107,13 +114,41 @@ async function searchSam(apiKey: string, title: string): Promise<SamSearchResult
   return { ok: false, rateLimited: false, message: lastError };
 }
 
-function qualify(opportunity: SamOpportunity, matchedTitle: string) {
+async function fetchSamDescription(apiKey: string, opportunity: SamOpportunity) {
+  const value = cleanText(opportunity.description, 1200);
+  if (!/^https?:\/\//i.test(value)) return "";
+  try {
+    const url = new URL(value);
+    if (!url.searchParams.has("api_key")) url.searchParams.set("api_key", apiKey);
+    const response = await fetch(url, {
+      headers: {
+        Accept: "text/plain,text/html,application/json;q=0.8,*/*;q=0.5",
+        "User-Agent": "Rukh-Leads/1.0 (+https://rukhlabs.com)",
+      },
+      cache: "no-store",
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!response.ok) return "";
+    return cleanText(await response.text(), 8_000);
+  } catch {
+    return "";
+  }
+}
+
+function qualify(
+  opportunity: SamOpportunity,
+  matchedTitle: string,
+  descriptionText: string,
+) {
   const noticeId = cleanText(opportunity.noticeId, 120);
   const title = cleanText(opportunity.title, 360);
-  if (!noticeId || !title || !relevantPattern.test(title) || falsePositivePattern.test(title)) {
+  const resources = (opportunity.resourceLinks ?? []).map((item) => cleanText(item, 800)).join(" ");
+  const evidence = `${title} ${descriptionText} ${resources}`;
+  if (!noticeId || !title || !relevantPattern.test(evidence) || falsePositivePattern.test(evidence)) {
     return null;
   }
 
+  const titleHasScope = relevantPattern.test(title);
   const organization = cleanText(opportunity.fullParentPathName, 280) || "Federal contracting office";
   const contacts = opportunity.pointOfContact || opportunity.data?.pointOfContact || [];
   const contact = contacts.find((item) => item.email || item.phone) || contacts[0];
@@ -126,11 +161,17 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
     [cleanText(office?.city, 100), cleanText(office?.state, 60)].filter(Boolean).join(", ") ||
     "United States";
 
-  let score = 92;
+  let score = titleHasScope ? 92 : 88;
   const signals = [
-    "Active federal procurement notice is explicitly related to Power BI, business intelligence, data visualization, or analytics dashboards",
+    titleHasScope
+      ? "Active federal procurement notice is explicitly related to Power BI, BI, data visualization, reporting modernization, or analytics"
+      : "Power BI / reporting-modernization scope was found in the SAM.gov description or resource metadata behind a broader notice title",
     `Posted within the last ${LOOKBACK_DAYS} days`,
   ];
+  if (/special notice|sources sought|presolicitation/i.test(`${opportunity.type} ${opportunity.baseType}`)) {
+    score += 4;
+    signals.push("Early-stage federal market-research/procurement signal may provide visibility before a formal solicitation");
+  }
   if (contact?.email || contact?.phone) {
     score += 3;
     signals.push("A public contracting contact is available");
@@ -149,7 +190,7 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
     sourceKey: `power-bi:sam:${noticeId}`,
     sourceUrl,
     companyName: title,
-    summary: `${organization} published a federal Power BI / BI opportunity${deadline ? ` with a listed response deadline of ${deadline}` : ""}. Open the SAM.gov notice for the complete scope and submission requirements.`,
+    summary: `${organization} published a federal BI/reporting opportunity${deadline ? ` with a listed response deadline of ${deadline}` : ""}. Open the SAM.gov notice for the complete scope and submission requirements.`,
     score,
     signals,
     risks: [
@@ -161,10 +202,11 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
       "sam.gov",
       "procurement",
       "proactive opportunity",
+      titleHasScope ? "explicit bi scope" : "description-level bi scope",
       cleanText(opportunity.type || opportunity.baseType, 80) || "federal opportunity",
     ],
     pitch:
-      "I found your SAM.gov Power BI / analytics opportunity and would like to review the scope and required deliverables. I work hands-on with Power BI, DAX, Power Query, data modeling and Microsoft Fabric, and can provide a concise requirements-mapped proposal where the procurement is a fit.",
+      "I found your SAM.gov BI/reporting opportunity and would like to review the scope and required deliverables. I work hands-on with Power BI, DAX, Power Query, data modeling, Microsoft Fabric, and reporting migrations, and can provide a concise requirements-mapped proposal where the procurement is a fit.",
     contactName: cleanText(contact?.fullname, 180) || undefined,
     contactEmail: cleanText(contact?.email, 220).toLowerCase() || undefined,
     contactPhone: cleanText(contact?.phone, 80) || undefined,
@@ -179,6 +221,9 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
       responseDeadline: deadline || null,
       naicsCode: cleanText(opportunity.naicsCode, 40) || null,
       setAside: cleanText(opportunity.setAside || opportunity.setAsideCode, 120) || null,
+      scopeEvidence: titleHasScope ? "title" : "description-or-resource-metadata",
+      descriptionPreview: descriptionText ? cleanText(descriptionText, 900) : null,
+      resourceLinks: opportunity.resourceLinks ?? [],
     },
   };
 }
@@ -210,6 +255,7 @@ export async function GET(request: NextRequest) {
           lastQuery: title,
           rateLimited: true,
           rateLimitedAt: new Date().toISOString(),
+          includesSpecialNotices: true,
         });
         return privateJson({
           ok: true,
@@ -227,8 +273,19 @@ export async function GET(request: NextRequest) {
 
     const opportunities = search.payload.opportunitiesData ?? [];
     const gigs = new Map<string, NonNullable<ReturnType<typeof qualify>>>();
+    let descriptionsFetched = 0;
     for (const opportunity of opportunities) {
-      const gig = qualify(opportunity, title);
+      const titleText = cleanText(opportunity.title, 360);
+      const resources = (opportunity.resourceLinks ?? []).join(" ");
+      let descriptionText = "";
+      if (
+        !relevantPattern.test(`${titleText} ${resources}`) &&
+        descriptionsFetched < MAX_DESCRIPTION_FETCHES
+      ) {
+        descriptionsFetched += 1;
+        descriptionText = await fetchSamDescription(apiKey, opportunity);
+      }
+      const gig = qualify(opportunity, title, descriptionText);
       if (!gig) continue;
       const current = gigs.get(gig.sourceKey);
       if (!current || gig.score > current.score) gigs.set(gig.sourceKey, gig);
@@ -242,6 +299,8 @@ export async function GET(request: NextRequest) {
       lastQuery: title,
       lastTotalRecords: search.payload.totalRecords ?? opportunities.length,
       rateLimited: false,
+      descriptionsFetched,
+      includesSpecialNotices: true,
       lastSuccessfulQueryAt: new Date().toISOString(),
     });
 
@@ -251,6 +310,8 @@ export async function GET(request: NextRequest) {
       seen: opportunities.length,
       qualified: rows.length,
       stored,
+      descriptionsFetched,
+      includesSpecialNotices: true,
       query: title,
       nextQuery: SEARCH_TITLES[nextSearchIndex],
     });
