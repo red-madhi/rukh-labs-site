@@ -4,6 +4,10 @@
     {
       "path": "/api/leads/crawl",
       "schedule": "25 23 * * *"
+    },
+    {
+      "path": "/api/leads/outreach/cycle",
+      "schedule": "15 16 * * *"
     }
   ]
 }
