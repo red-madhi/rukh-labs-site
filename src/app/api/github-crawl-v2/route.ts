@@ -11,6 +11,7 @@ const ALLOWED_WORKFLOWS = [
   "rukh-leads-contact-enrichment.yml",
   "rukh-leads-domain-catchup.yml",
   "rukh-leads-motion-signals.yml",
+  "rukh-leads-signal-expiry.yml",
 ];
 const routes: Record<string, string> = {
   bluesky: "/api/leads/collect/bluesky",
@@ -22,11 +23,10 @@ const routes: Record<string, string> = {
   sam: "/api/leads/collect/sam-opportunities",
   directories: "/api/leads/collect/pipeline-v3?mode=directories",
   motion: "/api/leads/collect/aurora-motion",
-  // The legacy discover-v2/v3 routes use an obsolete candidate schema. Send all
-  // scheduled domain work through the current queue processor instead.
   discover: "/api/leads/process/domains?limit=12",
   audit: "/api/leads/collect/audit-sites-v2?limit=12",
   email: "/api/leads/process/contact-emails",
+  expire: "/api/leads/process/expire-signals",
   powerbi: "/api/leads/collect/power-bi",
   "powerbi-live": "/api/leads/collect/power-bi-live",
   "powerbi-web": "/api/leads/collect/power-bi-web",
