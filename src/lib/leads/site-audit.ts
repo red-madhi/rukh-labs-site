@@ -56,6 +56,7 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
       audit: {
         reachable: false,
         inconclusive: true,
+        usableWebsite: false,
         error: error instanceof Error ? error.message : "Website request failed",
         checkedAt: new Date().toISOString(),
       },
@@ -70,8 +71,7 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
       : clearlyBroken
         ? clamp(78 + Math.min(10, candidate.prioritySeed / 10))
         : 50;
-    const qualified =
-      clearlyBroken && Boolean(candidate.phone || candidate.email);
+    const qualified = clearlyBroken && Boolean(candidate.phone || candidate.email);
 
     return {
       finalUrl: page.finalUrl,
@@ -103,6 +103,7 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
       audit: {
         reachable: false,
         inconclusive: accessBlocked,
+        usableWebsite: false,
         status: page.status,
         responseMs: page.responseMs,
         checkedAt: new Date().toISOString(),
@@ -111,6 +112,75 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
   }
 
   const home = inspectHtml(page.text, page.finalUrl);
+
+  if (home.parked) {
+    const contactable = Boolean(candidate.phone || candidate.email || candidate.sourceUrl);
+    const score = clamp(
+      88 +
+        Math.min(6, candidate.prioritySeed / 20) +
+        (candidate.phone ? 3 : 0) +
+        (candidate.email ? 3 : 0),
+    );
+    return {
+      finalUrl: page.finalUrl,
+      score,
+      qualified: contactable,
+      summary: `${candidate.organizationName} has a matching domain that is parked, under construction, or listed for sale instead of serving a usable business website.`,
+      pitch: `I came across ${candidate.organizationName} while reviewing ${candidate.category || "local businesses"} in ${candidate.city || candidate.state || "your area"}. I noticed the matching domain is parked or for sale instead of serving a business website. If a proper web presence is still on your list, I can send a concise fixed-price launch plan.`,
+      signals: [
+        "Homepage appears parked, unfinished, under construction, or listed for sale",
+        ...(candidate.phone || candidate.email || candidate.sourceUrl
+          ? ["A usable public contact path was found"]
+          : []),
+      ],
+      risks: [
+        "The organization may use another official domain; verify that before outreach",
+      ],
+      contactEmail: candidate.email,
+      contactPhone: candidate.phone,
+      contactUrl: candidate.sourceUrl,
+      audit: {
+        reachable: true,
+        parked: true,
+        usableWebsite: false,
+        status: page.status,
+        responseMs: page.responseMs,
+        htmlBytes: page.bytes,
+        checkedAt: new Date().toISOString(),
+      },
+    };
+  }
+
+  if (page.bytes < 600 || home.visibleText.length < 80) {
+    return {
+      finalUrl: page.finalUrl,
+      score: 45,
+      qualified: false,
+      summary: `${candidate.organizationName}'s listed URL returned only a minimal redirect or placeholder response, so the website audit is inconclusive.`,
+      pitch: "Manual verification required before outreach.",
+      signals: [
+        "Website returned too little real page content to verify it as a usable business website",
+      ],
+      risks: [
+        "The URL may be a redirect, placeholder, parked domain, or temporary response",
+        "Verify the destination in a normal browser before contacting the organization",
+      ],
+      contactEmail: candidate.email,
+      contactPhone: candidate.phone,
+      contactUrl: candidate.sourceUrl,
+      audit: {
+        reachable: true,
+        inconclusive: true,
+        minimalResponse: true,
+        usableWebsite: false,
+        status: page.status,
+        responseMs: page.responseMs,
+        htmlBytes: page.bytes,
+        checkedAt: new Date().toISOString(),
+      },
+    };
+  }
+
   let contactPage: PublicFetchResult | undefined;
   let contactSignals: PageSignals | undefined;
   if (home.contactUrl) {
@@ -205,10 +275,6 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
     score += 7;
     signals.push(`Visible copyright appears dated ${home.copyrightYear}`);
   }
-  if (home.parked) {
-    score += 35;
-    signals.push("Homepage appears parked, unfinished, or under construction");
-  }
   if (home.technology && /Wix|Weebly|GoDaddy/i.test(home.technology)) {
     score += 3;
     signals.push(`Site appears to use ${home.technology}`);
@@ -264,6 +330,8 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
     contactUrl,
     audit: {
       reachable: true,
+      parked: false,
+      usableWebsite: true,
       status: page.status,
       responseMs: page.responseMs,
       htmlBytes: page.bytes,
