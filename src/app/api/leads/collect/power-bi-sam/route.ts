@@ -59,6 +59,10 @@ function formatSamDate(date: Date) {
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")}/${date.getFullYear()}`;
 }
 
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function searchSam(apiKey: string, title: string) {
   const now = new Date();
   const from = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
@@ -170,9 +174,13 @@ export async function GET(request: NextRequest) {
 
   const runId = await beginCollectorRun(SOURCE_ID);
   try {
-    const batches = await Promise.all(
-      SEARCH_TITLES.map(async (title) => ({ title, payload: await searchSam(apiKey, title) })),
-    );
+    const batches: Array<{ title: string; payload: SamPayload }> = [];
+    for (const title of SEARCH_TITLES) {
+      const payload = await searchSam(apiKey, title);
+      batches.push({ title, payload });
+      await wait(850);
+    }
+
     const seen = batches.reduce((total, batch) => total + (batch.payload.opportunitiesData?.length ?? 0), 0);
     const gigs = new Map<string, NonNullable<ReturnType<typeof qualify>>>();
     for (const batch of batches) {
