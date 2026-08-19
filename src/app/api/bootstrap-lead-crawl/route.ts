@@ -55,11 +55,18 @@ export async function GET(request: NextRequest) {
     `DELETE FROM public.lead_source_state WHERE source_id = 'bootstrap-crawl'`,
   );
 
-  const target = new URL("/api/leads/crawl", request.nextUrl.origin);
-  if (request.nextUrl.searchParams.get("mode") === "process") {
-    target.searchParams.set("mode", "process");
+  const stage = request.nextUrl.searchParams.get("stage") || "all";
+  const allowedTargets: Record<string, string> = {
+    all: "/api/leads/crawl",
+    process: "/api/leads/crawl?mode=process",
+    sam: "/api/leads/collect/sam-opportunities",
+  };
+  const selected = allowedTargets[stage];
+  if (!selected) {
+    return privateJson({ error: "Requested bootstrap stage is not allowed." }, { status: 400 });
   }
 
+  const target = new URL(selected, request.nextUrl.origin);
   const response = await fetch(target, {
     headers: { Authorization: `Bearer ${cronSecret}` },
     cache: "no-store",
