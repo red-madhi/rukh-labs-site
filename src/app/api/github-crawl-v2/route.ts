@@ -9,6 +9,7 @@ const ALLOWED_WORKFLOWS = [
   "rukh-leads-oidc-scheduler-v2.yml",
   "rukh-leads-powerbi-fresh-jobs.yml",
   "rukh-leads-contact-enrichment.yml",
+  "rukh-leads-domain-catchup.yml",
 ];
 const routes: Record<string, string> = {
   bluesky: "/api/leads/collect/bluesky",
