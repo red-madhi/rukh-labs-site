@@ -1,0 +1,31 @@
+name: Retire Rukh Leads OIDC scheduler v1
+
+on:
+  push:
+    paths:
+      - ".github/workflows/cleanup-rukh-leads-oidc-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Remove superseded workflow
+        run: |
+          git rm --ignore-unmatch \
+            .github/workflows/rukh-leads-oidc-scheduler.yml \
+            .github/workflows/cleanup-rukh-leads-oidc-v1.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Retire Rukh Leads OIDC scheduler v1"
+          git push origin HEAD:main
