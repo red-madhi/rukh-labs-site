@@ -1,0 +1,35 @@
+name: Finalize Rukh Leads workflow set
+
+on:
+  push:
+    paths:
+      - ".github/workflows/finalize-rukh-leads-workflows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Remove one-time bootstrap and verification files
+        run: |
+          git rm --ignore-unmatch \
+            .github/oidc-scheduler-trigger.txt \
+            .github/workflows/verify-rukh-leads-oidc.yml \
+            .github/workflows/cleanup-rukh-leads-bootstrap.yml \
+            .github/workflows/cleanup-obsolete-rukh-leads-scheduler.yml \
+            .github/workflows/finalize-rukh-leads-workflows.yml
+          if git diff --cached --quiet; then
+            echo "Nothing to finalize."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Finalize Rukh Leads workflow set"
+          git push origin HEAD:main
