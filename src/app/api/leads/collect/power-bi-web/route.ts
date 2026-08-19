@@ -42,6 +42,12 @@ type JobCheck = {
   dateResolved: boolean;
   pageChecked: boolean;
   fresh: boolean;
+  organizationResolved: boolean;
+};
+
+type JobPageFacts = {
+  publishedAt: string | null;
+  hiringOrganization: string | null;
 };
 
 const BROAD_SEARCH: SearchConfig = {
@@ -162,7 +168,21 @@ function parsePostingDateFromHtml(html: string) {
   return null;
 }
 
-async function fetchPostingPublishedAt(url: string) {
+function parseHiringOrganizationFromHtml(html: string) {
+  const patterns = [
+    /["']hiringOrganization["']\s*:\s*\{[\s\S]{0,1400}?["']name["']\s*:\s*["']([^"']{2,240})["']/i,
+    /itemprop=["']hiringOrganization["'][\s\S]{0,1000}?itemprop=["']name["'][^>]*content=["']([^"']{2,240})["']/i,
+    /itemprop=["']hiringOrganization["'][\s\S]{0,1000}?itemprop=["']name["'][^>]*>([^<]{2,240})</i,
+  ];
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    const organization = cleanText(match?.[1], 240);
+    if (organization && !/^(confidential|company|employer|client)$/i.test(organization)) return organization;
+  }
+  return null;
+}
+
+async function fetchPostingFacts(url: string): Promise<JobPageFacts> {
   try {
     const response = await fetch(url, {
       headers: {
@@ -173,13 +193,18 @@ async function fetchPostingPublishedAt(url: string) {
       redirect: "follow",
       signal: AbortSignal.timeout(6_000),
     });
-    if (!response.ok) return null;
+    if (!response.ok) return { publishedAt: null, hiringOrganization: null };
     const contentType = response.headers.get("content-type") || "";
-    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) return null;
+    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) {
+      return { publishedAt: null, hiringOrganization: null };
+    }
     const html = (await response.text()).slice(0, 900_000);
-    return parsePostingDateFromHtml(html);
+    return {
+      publishedAt: parsePostingDateFromHtml(html),
+      hiringOrganization: parseHiringOrganizationFromHtml(html),
+    };
   } catch {
-    return null;
+    return { publishedAt: null, hiringOrganization: null };
   }
 }
 
@@ -204,25 +229,26 @@ async function braveSearch(apiKey: string, search: SearchConfig) {
 
 async function qualifyJob(result: BraveResult, search: SearchConfig): Promise<JobCheck> {
   const sourceUrl = result.url?.trim();
-  if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) return { gig: null, dateResolved: false, pageChecked: false, fresh: false };
+  if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) {
+    return { gig: null, dateResolved: false, pageChecked: false, fresh: false, organizationResolved: false };
+  }
   const title = cleanText(result.title, 260);
   const description = cleanText(result.description, 900);
   const combined = `${title} ${description}`;
   if (!powerBiPattern.test(combined) || providerPattern.test(combined) || editorialPattern.test(combined)) {
-    return { gig: null, dateResolved: false, pageChecked: false, fresh: false };
+    return { gig: null, dateResolved: false, pageChecked: false, fresh: false, organizationResolved: false };
   }
 
-  let sourcePublishedAt = parsePublishedAt(result);
-  let pageChecked = false;
+  const pageFacts = await fetchPostingFacts(sourceUrl);
+  const sourcePublishedAt = parsePublishedAt(result) || pageFacts.publishedAt;
+  const hiringOrganization = pageFacts.hiringOrganization;
   if (!sourcePublishedAt) {
-    pageChecked = true;
-    sourcePublishedAt = await fetchPostingPublishedAt(sourceUrl);
+    return { gig: null, dateResolved: false, pageChecked: true, fresh: false, organizationResolved: Boolean(hiringOrganization) };
   }
-  if (!sourcePublishedAt) return { gig: null, dateResolved: false, pageChecked, fresh: false };
 
   const ageMs = Date.now() - Date.parse(sourcePublishedAt);
   if (ageMs < -300_000 || ageMs > JOB_MAX_AGE_MS) {
-    return { gig: null, dateResolved: true, pageChecked, fresh: false };
+    return { gig: null, dateResolved: true, pageChecked: true, fresh: false, organizationResolved: Boolean(hiringOrganization) };
   }
 
   const platform = search.platform || platformTag(sourceUrl);
@@ -234,6 +260,8 @@ async function qualifyJob(result: BraveResult, search: SearchConfig): Promise<Jo
     `Discovered from ${platform}`,
   ];
   const risks = ["Job-board competition can increase quickly, so early outreach/application matters"];
+  if (hiringOrganization) signals.push(`Hiring organization resolved from job-page metadata: ${hiringOrganization}`);
+  else risks.push("The posting did not expose a reliable hiring organization, so it will not inflate company-level signal convergence");
   if (contractish) signals.push("Contract, freelance, consulting, temporary, or project-based language was detected");
   else risks.push("This may be a traditional employment role rather than freelance/contract work");
   if (/\b(?:urgent|asap|immediately|this week|deadline|stuck|blocked)\b/i.test(combined)) score += 4;
@@ -241,14 +269,16 @@ async function qualifyJob(result: BraveResult, search: SearchConfig): Promise<Jo
 
   return {
     dateResolved: true,
-    pageChecked,
+    pageChecked: true,
     fresh: true,
+    organizationResolved: Boolean(hiringOrganization),
     gig: {
       sourceKey: `power-bi-job:${sourceUrl}`,
       sourceUrl,
       sourcePublishedAt,
       discoveredAt: new Date().toISOString(),
-      companyName: title || `${platform} Power BI opportunity`,
+      companyName: hiringOrganization || title || `${platform} Power BI opportunity`,
+      accountKey: hiringOrganization || undefined,
       summary: description || title,
       score: clamp(score, 0, 97),
       signals,
@@ -258,7 +288,15 @@ async function qualifyJob(result: BraveResult, search: SearchConfig): Promise<Jo
         ? "I saw your newly posted Power BI/Fabric contract opportunity. I work hands-on with DAX, Power Query, data modeling, Fabric migrations and production dashboards. I can move quickly on a focused project and can work fixed-scope or hourly depending on the need."
         : "I saw your newly posted Power BI/Fabric role. My background is hands-on Power BI, DAX, Power Query, data modeling and Fabric migration work. The posting is still very fresh, so I wanted to reach out while the need is active.",
       contactUrl: sourceUrl,
-      rawPayload: { matchedQuery: search.query, resultAge: result.age ?? result.page_age ?? null, platform, opportunityType: "job-board", autoExpireHours: 12 },
+      rawPayload: {
+        matchedQuery: search.query,
+        resultAge: result.age ?? result.page_age ?? null,
+        platform,
+        opportunityType: "job-board",
+        autoExpireHours: 12,
+        hiringOrganization: hiringOrganization || null,
+        accountKey: hiringOrganization || null,
+      },
     },
   };
 }
@@ -358,6 +396,7 @@ export async function GET(request: NextRequest) {
     const searchCounts = batches.map((batch) => ({ label: batch.search.label, count: batch.results.length }));
     const pageChecks = jobChecks.filter((check) => check.pageChecked).length;
     const datesResolved = jobChecks.filter((check) => check.dateResolved).length;
+    const organizationsResolved = jobChecks.filter((check) => check.organizationResolved).length;
     const freshJobs = jobChecks.filter((check) => check.fresh).length;
 
     await completeCollectorRun(runId, SOURCE_ID, seen, stored, {
@@ -374,6 +413,7 @@ export async function GET(request: NextRequest) {
       jobCandidatesChecked: jobChecks.length,
       jobPagesChecked: pageChecks,
       jobDatesResolved: datesResolved,
+      jobOrganizationsResolved: organizationsResolved,
       freshJobBoardLeads: freshJobs,
       searchCounts,
       searchErrors,
@@ -391,6 +431,7 @@ export async function GET(request: NextRequest) {
       jobCandidatesChecked: jobChecks.length,
       jobPagesChecked: pageChecks,
       jobDatesResolved: datesResolved,
+      jobOrganizationsResolved: organizationsResolved,
       freshJobBoardLeads: freshJobs,
       searchCounts,
       searchErrors,
