@@ -42,8 +42,24 @@ const websitePattern =
   /\b(?:website|web site|web design|website design|website redesign|web development|website development|digital experience|content management system|cms implementation)\b/i;
 const procurementPattern =
   /\b(?:rfp|rfq|request for proposals?|request for qualifications?|solicitation|invitation to bid|call for proposals?|procurement notice|bid opportunity)\b/i;
+const procurementActionPattern =
+  /\b(?:proposals? (?:are )?due|responses? (?:are )?due|submission deadline|deadline|closing date|must be received|submit proposals?|solicitation (?:number|no\.?|id)|bid (?:number|no\.?|id)|rfp (?:number|no\.?|id)|rfq (?:number|no\.?|id)|issue date|issued by|scope of work|vendor questions|pre[- ]bid|pre[- ]proposal|bid opening|proposal submission)\b/i;
 const excludePattern =
-  /\b(?:template|sample rfp|example rfp|how to write|guide to|blog|article|top agencies|best web design|resume|career|job opening|apply now|award announcement|contract awarded)\b/i;
+  /\b(?:template|sample rfp|example rfp|how to write|guide to|blog|article|top agencies|best web design|resume|career|job opening|apply now|award announcement|contract awarded|rfp database|rfps database|explained|understanding the process|secrets to writing|signs it.?s time|submit an rfp|submit an rfq|government contracts? database)\b/i;
+const blockedHosts = new Set([
+  "rfpmart.com",
+  "eseospace.com",
+  "thebiddaily.com",
+  "clickhelp.com",
+  "sirion.ai",
+  "elevationweb.org",
+  "findrfp.com",
+  "rfpdb.com",
+  "bidnet.com",
+  "govwin.com",
+  "highergov.com",
+  "instantmarkets.com",
+]);
 
 function hostOf(value: string) {
   try {
@@ -99,7 +115,12 @@ function qualify(result: BraveResult, query: string) {
   if (excludePattern.test(combined)) return null;
 
   const host = hostOf(sourceUrl);
-  if (!host) return null;
+  if (!host || blockedHosts.has(host)) return null;
+
+  const institutionalHost =
+    /\.(?:gov|edu)$/i.test(host) ||
+    /(?:^|\.)(?:gov|county|city|state|school|schools|district|university|college)\./i.test(host);
+  if (!institutionalHost && !procurementActionPattern.test(combined)) return null;
 
   let score = 89;
   const signals = [
@@ -111,13 +132,13 @@ function qualify(result: BraveResult, query: string) {
     "Formal procurement opportunities may have a longer sales cycle than ordinary small-business outreach",
   ];
 
-  if (/\.(?:gov|edu)$/i.test(host) || /(?:gov|county|city|state|school|university)/i.test(host)) {
+  if (institutionalHost) {
     score += 4;
     signals.push("The source appears to be a government or education organization");
   }
-  if (/\b(?:deadline|due date|proposals? due|responses? due|closing date)\b/i.test(combined)) {
+  if (procurementActionPattern.test(combined)) {
     score += 3;
-    signals.push("A submission deadline was referenced");
+    signals.push("The result contains an actionable procurement or submission signal");
   }
   const email = extractEmail(combined);
   if (email) {
@@ -130,7 +151,9 @@ function qualify(result: BraveResult, query: string) {
     sourceKey: `procurement:${sourceUrl}`,
     sourceUrl,
     companyName: title || `Website procurement opportunity on ${host}`,
-    summary: description || "Public website procurement opportunity. Open the source for the complete scope and submission instructions.",
+    summary:
+      description ||
+      "Public website procurement opportunity. Open the source for the complete scope and submission instructions.",
     score,
     signals,
     risks,
