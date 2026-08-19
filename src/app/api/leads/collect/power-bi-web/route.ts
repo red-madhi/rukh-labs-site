@@ -22,14 +22,14 @@ const SOURCE_ID = "power-bi-web";
 
 const searches = [
   {
-    label: "fresh public ask",
+    label: "fresh direct or proactive signal",
     query:
-      '("Power BI" OR "Microsoft Fabric") ("need help" OR "looking for a consultant" OR "looking for a freelancer" OR "need a consultant" OR "seeking a consultant" OR "recommend a consultant") -jobs -careers',
+      '("Power BI" OR "Microsoft Fabric") ("need help" OR "looking for a consultant" OR "looking for a freelancer" OR "need a consultant" OR "seeking a consultant" OR "recommend a consultant" OR migration OR implementation OR rollout OR modernization OR "moving from Tableau" OR "Fabric adoption" OR "dashboard overhaul" OR "reporting overhaul") -jobs -careers',
   },
   {
     label: "fresh social post",
     query:
-      '(site:linkedin.com/posts OR site:x.com) ("Power BI" OR "Microsoft Fabric") ("looking for" OR "need help" OR consultant OR freelancer OR contractor)',
+      '(site:linkedin.com/posts OR site:x.com) ("Power BI" OR "Microsoft Fabric") ("looking for" OR "need help" OR consultant OR freelancer OR contractor OR migration OR implementation OR rollout)',
   },
 ] as const;
 
@@ -64,6 +64,8 @@ const jobBoardPattern =
   /\b(?:apply now|job opening|job posting|full[- ]time|part[- ]time|salary|benefits|recruiter|resume|candidate|careers?|vacancy|position available|w2|c2c|corp to corp|staffing agency|recruitment agency)\b/i;
 const providerPattern =
   /\b(?:we provide power bi|our power bi services|hire our consultants|power bi consulting company|our consultants|book a consultation with us)\b/i;
+const editorialPattern =
+  /\b(?:how to|guide|tutorial|template|best practices|tips for|webinar|course|certification|training program|learn power bi|power bi tutorial)\b/i;
 const directAskPattern =
   /\b(?:need|looking for|seeking|recommend|recommendation|anyone know|who can|could use|want to hire|need to hire)\b.{0,130}\b(?:power bi|microsoft fabric|business intelligence|dashboard|dax|power query)\b|\b(?:power bi|microsoft fabric|business intelligence|dashboard|dax|power query)\b.{0,130}\b(?:help|consultant|freelancer|contractor|expert|specialist)\b/i;
 const proactivePattern =
@@ -92,7 +94,8 @@ function isBlocked(value: string, combined: string) {
     blockedHosts.some((blocked) => host === blocked || host.endsWith(`.${blocked}`)) ||
     /\/(?:jobs?|careers?|vacancies?|apply)(?:\/|$)/i.test(new URL(value).pathname) ||
     jobBoardPattern.test(combined) ||
-    providerPattern.test(combined)
+    providerPattern.test(combined) ||
+    editorialPattern.test(combined)
   );
 }
 
