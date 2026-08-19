@@ -1,0 +1,36 @@
+name: Verify completed Rukh Leads crawler build
+
+on:
+  push:
+    paths:
+      - ".github/workflows/verify-rukh-leads-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Record successful crawler build
+        run: |
+          printf 'Rukh Leads crawler build verified at %s\n' "$(date -u +%FT%TZ)" > .github/rukh-leads-build-verified.txt
+          git add .github/rukh-leads-build-verified.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Verify completed Rukh Leads crawler build"
+          git push origin HEAD:main
