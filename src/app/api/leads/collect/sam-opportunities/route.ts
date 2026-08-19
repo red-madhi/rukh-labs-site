@@ -16,7 +16,8 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const SOURCE_ID = "sam-opportunities";
-const SEARCH_TITLES = ["website", "web development", "website redesign"] as const;
+const LOOKBACK_DAYS = 30;
+const SEARCH_TITLES = ["website", "web", "digital", "content management"] as const;
 const API_ENDPOINTS = [
   "https://api.sam.gov/opportunities/v2/search",
   "https://api.sam.gov/prod/opportunities/v2/search",
@@ -83,7 +84,9 @@ function placeLabel(opportunity: SamOpportunity) {
   const place = opportunity.placeOfPerformance || opportunity.data?.placeOfPerformance;
   const office = opportunity.officeAddress || opportunity.data?.officeAddress;
   const city =
-    typeof place?.city === "string" ? place.city : firstText(place?.city?.name) || firstText(office?.city);
+    typeof place?.city === "string"
+      ? place.city
+      : firstText(place?.city?.name) || firstText(office?.city);
   const state =
     typeof place?.state === "string"
       ? place.state
@@ -98,7 +101,7 @@ function contactFor(opportunity: SamOpportunity) {
 
 async function searchSam(apiKey: string, title: string) {
   const now = new Date();
-  const from = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+  const from = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
   let lastError = "SAM.gov opportunity search failed.";
 
   for (const endpoint of API_ENDPOINTS) {
@@ -107,8 +110,7 @@ async function searchSam(apiKey: string, title: string) {
     url.searchParams.set("postedFrom", formatSamDate(from));
     url.searchParams.set("postedTo", formatSamDate(now));
     url.searchParams.set("title", title);
-    url.searchParams.set("status", "active");
-    url.searchParams.set("limit", "100");
+    url.searchParams.set("limit", "250");
     url.searchParams.set("offset", "0");
     for (const type of ["o", "k", "r", "p"]) url.searchParams.append("ptype", type);
 
@@ -136,7 +138,11 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
   const noticeId = cleanText(opportunity.noticeId, 100);
   const title = cleanText(opportunity.title, 300);
   if (!noticeId || !title) return null;
-  if (!/\b(?:website|web site|web design|website design|website redesign|web development|website development|digital experience|content management system|cms)\b/i.test(title)) {
+  if (
+    !/\b(?:website|web site|web design|website design|website redesign|web development|website development|digital experience|digital services|web services|content management system|cms|web portal|internet site)\b/i.test(
+      title,
+    )
+  ) {
     return null;
   }
 
@@ -156,7 +162,7 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
   let score = 93;
   const signals = [
     "Active federal procurement notice references website or web-development work",
-    "The opportunity was posted within the last fourteen days",
+    `The opportunity was posted within the last ${LOOKBACK_DAYS} days`,
   ];
   const risks = [
     "Read the full solicitation and attachments before deciding whether Rukh Labs is eligible and competitive",
@@ -169,7 +175,9 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
   }
   if (opportunity.setAside || opportunity.setAsideCode) {
     score += 2;
-    signals.push(`Set-aside information is present${opportunity.setAside ? `: ${cleanText(opportunity.setAside, 120)}` : ""}`);
+    signals.push(
+      `Set-aside information is present${opportunity.setAside ? `: ${cleanText(opportunity.setAside, 120)}` : ""}`,
+    );
   }
   if (deadline) signals.push(`Response deadline listed: ${deadline}`);
   score = clamp(score, 0, 99);
@@ -251,7 +259,11 @@ export async function GET(request: NextRequest) {
     const stored = await upsertIntentOpportunities(rows);
     await completeCollectorRun(runId, SOURCE_ID, seen, stored, {
       searches: SEARCH_TITLES,
-      lookbackDays: 14,
+      lookbackDays: LOOKBACK_DAYS,
+      totalRecords: batches.map((batch) => ({
+        title: batch.title,
+        totalRecords: batch.payload.totalRecords ?? 0,
+      })),
     });
 
     return privateJson({
@@ -260,6 +272,10 @@ export async function GET(request: NextRequest) {
       seen,
       qualified: rows.length,
       stored,
+      totalRecords: batches.map((batch) => ({
+        title: batch.title,
+        totalRecords: batch.payload.totalRecords ?? 0,
+      })),
     });
   } catch (error) {
     const message = await failCollectorRun(runId, SOURCE_ID, error);
