@@ -54,6 +54,12 @@ function parseAudit(value: string | null) {
   }
 }
 
+function normalizeLeadUrl(value: string | null) {
+  if (!value) return undefined;
+  if (!value.startsWith("https://bsky.app/profile/")) return value;
+  return value.replace(/%3A/gi, ":");
+}
+
 function toLead(row: Record<string, string | null>): LeadOpportunity {
   const source = allowedSources.includes(row.source as LeadSource) ? (row.source as LeadSource) : "site-audit";
   const status = allowedStatuses.includes(row.status as LeadStatus) ? (row.status as LeadStatus) : "new";
@@ -70,13 +76,13 @@ function toLead(row: Record<string, string | null>): LeadOpportunity {
     id: row.id ?? "",
     source,
     sourceLabel: sourceLabels[source],
-    sourceUrl: row.source_url || undefined,
+    sourceUrl: normalizeLeadUrl(row.source_url),
     discoveredAt: row.discovered_at ?? new Date(0).toISOString(),
     company: row.company_name || "Unnamed prospect",
     contactName: row.contact_name || undefined,
     contactEmail: row.contact_email || undefined,
     contactPhone: row.contact_phone || undefined,
-    contactUrl: row.contact_url || undefined,
+    contactUrl: normalizeLeadUrl(row.contact_url),
     website: row.website_url || undefined,
     location: row.location || "Location not confirmed",
     industry: row.industry || "Unclassified",
