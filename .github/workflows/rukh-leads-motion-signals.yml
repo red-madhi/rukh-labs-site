@@ -23,7 +23,7 @@ env:
 jobs:
   motion-signals:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 6
     steps:
       - name: Collect Aurora license and occupancy signals
         run: |
@@ -35,6 +35,11 @@ jobs:
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=denver-motion"
+      - name: Stack Los Angeles commercial permit signals onto existing LA accounts
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=la-motion"
       - name: Add recent USAspending award context to uniquely matched accounts
         run: |
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
