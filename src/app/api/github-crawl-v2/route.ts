@@ -20,6 +20,7 @@ const routes: Record<string, string> = {
   directories: "/api/leads/collect/pipeline-v3?mode=directories",
   discover: "/api/leads/collect/discover-v3",
   audit: "/api/leads/collect/audit-sites-v2",
+  email: "/api/leads/process/contact-emails",
   powerbi: "/api/leads/collect/power-bi",
   "powerbi-live": "/api/leads/collect/power-bi-live",
   "powerbi-web": "/api/leads/collect/power-bi-web",
