@@ -15,7 +15,7 @@ const routes: Record<string, string> = {
   web: "/api/leads/collect/web-intent",
   directories: "/api/leads/collect/pipeline-v3?mode=directories",
   enrich: "/api/leads/collect/pipeline-v3?mode=enrich",
-  all: "/api/leads/collect/mega",
+  all: "/api/leads/crawl",
 };
 
 type JwtHeader = { alg?: string; kid?: string; typ?: string };
@@ -29,9 +29,10 @@ type JwtPayload = {
   event_name?: string;
   workflow_ref?: string;
 };
-type JwksPayload = { keys?: JsonWebKey[] };
+type GitHubJwk = JsonWebKey & { kid?: string };
+type JwksPayload = { keys?: GitHubJwk[] };
 
-let cachedKeys: JsonWebKey[] = [];
+let cachedKeys: GitHubJwk[] = [];
 let cachedAt = 0;
 
 function decodePart<T>(part: string): T {
