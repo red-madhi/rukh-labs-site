@@ -12,6 +12,10 @@ import {
 import type { CandidateRow } from "@/lib/leads/crawl";
 import { leadNeonQuery } from "@/lib/leads/neon";
 import {
+  BRAVE_MONTHLY_REQUEST_LIMIT,
+  reserveMonthlyApiUsage,
+} from "@/lib/leads/api-budget";
+import {
   candidateDomainGuesses,
   searchOfficialWebsite,
   verifyOfficialWebsite,
@@ -243,6 +247,7 @@ export async function GET(request: NextRequest) {
     const candidates = await claimDomainCandidates(limit);
     const braveKey = process.env.BRAVE_SEARCH_API_KEY?.trim();
     let braveLookups = 0;
+    let braveBudgetBlocked = false;
     let found = 0;
     let promoted = 0;
     let noWebsite = 0;
@@ -265,14 +270,23 @@ export async function GET(request: NextRequest) {
         }
 
         let searched = false;
-        if (braveKey && braveLookups < BRAVE_LOOKUPS_PER_RUN) {
-          braveLookups += 1;
-          searched = true;
-          const result = await searchOfficialWebsite(candidate, braveKey);
-          if (result) {
-            await markFound(candidate, result, "brave-search");
-            found += 1;
-            continue;
+        if (braveKey && braveLookups < BRAVE_LOOKUPS_PER_RUN && !braveBudgetBlocked) {
+          const budget = await reserveMonthlyApiUsage(
+            "brave-search",
+            1,
+            BRAVE_MONTHLY_REQUEST_LIMIT,
+          );
+          if (budget.allowed) {
+            braveLookups += 1;
+            searched = true;
+            const result = await searchOfficialWebsite(candidate, braveKey);
+            if (result) {
+              await markFound(candidate, result, "brave-search");
+              found += 1;
+              continue;
+            }
+          } else {
+            braveBudgetBlocked = true;
           }
         }
 
@@ -292,6 +306,7 @@ export async function GET(request: NextRequest) {
       found + promoted,
       {
         lastBraveLookups: braveLookups,
+        braveBudgetBlocked,
         lastProcessed: candidates.length,
       },
     );
@@ -307,6 +322,7 @@ export async function GET(request: NextRequest) {
       errors,
       stored: promoted,
       braveLookups,
+      braveBudgetBlocked,
     });
   } catch (error) {
     const message = await failCollectorRun(runId, SOURCE_ID, error);
