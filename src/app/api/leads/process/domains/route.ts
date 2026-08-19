@@ -3,14 +3,13 @@ import { hasValidBasicAuth, hasValidCronAuth } from "@/lib/leads/auth";
 import {
   beginCollectorRun,
   clamp,
-  claimDomainCandidates,
   completeCollectorRun,
   failCollectorRun,
   locationLabel,
   privateJson,
 } from "@/lib/leads/crawl";
 import type { CandidateRow } from "@/lib/leads/crawl";
-import { leadNeonQuery } from "@/lib/leads/neon";
+import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 import {
   BRAVE_MONTHLY_REQUEST_LIMIT,
   reserveMonthlyApiUsage,
@@ -28,6 +27,106 @@ export const maxDuration = 60;
 const SOURCE_ID = "domain-research";
 const DEFAULT_LIMIT = 5;
 const BRAVE_LOOKUPS_PER_RUN = 2;
+
+function parseObject(value: string | null) {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {};
+  } catch {
+    return {};
+  }
+}
+
+function candidateFromRow(row: Record<string, string | null>): CandidateRow {
+  return {
+    id: row.id ?? "",
+    source: row.source ?? "",
+    sourceKey: row.source_key ?? "",
+    organizationName: row.organization_name ?? "Unnamed organization",
+    alternateName: row.alternate_name || undefined,
+    category: row.category || undefined,
+    addressLine1: row.address_line1 || undefined,
+    city: row.city || undefined,
+    state: row.state || undefined,
+    postalCode: row.postal_code || undefined,
+    countryCode: row.country_code || "US",
+    contactName: row.contact_name || undefined,
+    phone: row.phone || undefined,
+    email: row.email || undefined,
+    websiteUrl: row.website_url || undefined,
+    sourceUrl: row.source_url || undefined,
+    formedAt: row.formed_at || undefined,
+    discoveredAt: row.discovered_at ?? new Date(0).toISOString(),
+    status: row.status ?? "domain-pending",
+    prioritySeed: Number(row.priority_seed ?? 0),
+    domainConfidence: Number(row.domain_confidence ?? 0),
+    attempts: Number(row.attempts ?? 0),
+    audit: parseObject(row.audit),
+    metadata: parseObject(row.metadata),
+  };
+}
+
+async function claimPrioritizedDomainCandidates(limit: number) {
+  const result = await leadNeonQuery(
+    `WITH picked AS (
+       SELECT id
+       FROM public.lead_candidates
+       WHERE archived_at IS NULL
+         AND status IN ('domain-pending', 'no-website', 'error')
+         AND website_url IS NULL
+         AND next_action_at <= now()
+         AND attempts < 6
+       ORDER BY
+         CASE
+           WHEN metadata ? 'motionSignal' THEN 0
+           WHEN email IS NOT NULL THEN 1
+           WHEN phone IS NOT NULL THEN 2
+           ELSE 3
+         END,
+         priority_seed DESC,
+         discovered_at DESC
+       LIMIT $1::int
+       FOR UPDATE SKIP LOCKED
+     )
+     UPDATE public.lead_candidates AS candidate
+     SET status = 'domain-working',
+         attempts = attempts + 1,
+         last_checked_at = now(),
+         updated_at = now()
+     FROM picked
+     WHERE candidate.id = picked.id
+     RETURNING
+       candidate.id::text AS id,
+       candidate.source AS source,
+       candidate.source_key AS source_key,
+       candidate.organization_name AS organization_name,
+       candidate.alternate_name AS alternate_name,
+       candidate.category AS category,
+       candidate.address_line1 AS address_line1,
+       candidate.city AS city,
+       candidate.state AS state,
+       candidate.postal_code AS postal_code,
+       candidate.country_code AS country_code,
+       candidate.contact_name AS contact_name,
+       candidate.phone AS phone,
+       candidate.email AS email,
+       candidate.website_url AS website_url,
+       candidate.source_url AS source_url,
+       candidate.formed_at::text AS formed_at,
+       candidate.discovered_at::text AS discovered_at,
+       candidate.status AS status,
+       candidate.priority_seed::text AS priority_seed,
+       candidate.domain_confidence::text AS domain_confidence,
+       candidate.attempts::text AS attempts,
+       candidate.audit::text AS audit,
+       candidate.metadata::text AS metadata`,
+    [String(Math.max(1, Math.min(30, limit)))],
+  );
+  return neonRowsToObjects(result).map(candidateFromRow);
+}
 
 async function markFound(
   candidate: CandidateRow,
@@ -73,8 +172,28 @@ async function promoteNoWebsite(candidate: CandidateRow, verifiedSearch: boolean
   );
   const priority = score >= 85 ? "hot" : score >= 70 ? "strong" : "watch";
   const location = locationLabel(candidate);
+  const motionSignal = typeof candidate.metadata.motionSignal === "string"
+    ? candidate.metadata.motionSignal
+    : "";
+  const motionFreshness = Number(candidate.metadata.motionFreshnessDays ?? NaN);
   const summary = `${candidate.organizationName} appears to be an active ${candidate.category || "organization"} in ${location}, but no official website was found after domain and public-web checks.`;
   const pitch = `I found ${candidate.organizationName} while reviewing ${candidate.category || "businesses"} in ${location}. I could not find a clear official website, even though the organization appears active. I build straightforward small-business sites and can send a fixed-price launch plan if a proper web presence is still on the list.`;
+  const signals = [
+    "No official website found after repeated direct-domain checks",
+    verifiedSearch
+      ? "Public web search did not identify a verified official domain"
+      : "Multiple likely domains were checked without a match",
+    candidate.phone || candidate.email
+      ? "A direct public contact method is available"
+      : "Contact details require additional research",
+  ];
+  if (motionSignal) {
+    signals.unshift(
+      Number.isFinite(motionFreshness)
+        ? `Official business activity signal is ${Math.max(0, Math.round(motionFreshness))} days old`
+        : "A recent official business activity signal is present",
+    );
+  }
 
   await leadNeonQuery(
     `INSERT INTO public.lead_opportunities AS existing (
@@ -156,15 +275,7 @@ async function promoteNoWebsite(candidate: CandidateRow, verifiedSearch: boolean
       summary,
       String(score),
       priority,
-      JSON.stringify([
-        "No official website found after repeated direct-domain checks",
-        verifiedSearch
-          ? "Public web search did not identify a verified official domain"
-          : "Multiple likely domains were checked without a match",
-        candidate.phone || candidate.email
-          ? "A direct public contact method is available"
-          : "Contact details require additional research",
-      ]),
+      JSON.stringify(signals),
       JSON.stringify([
         "The organization may use a social profile or an unindexed website",
         "Confirm the absence of an official site manually before outreach",
@@ -172,6 +283,7 @@ async function promoteNoWebsite(candidate: CandidateRow, verifiedSearch: boolean
       JSON.stringify([
         "no website",
         candidate.source,
+        ...(motionSignal ? ["business-in-motion"] : []),
         candidate.category || "unclassified",
       ]),
       pitch,
@@ -180,6 +292,8 @@ async function promoteNoWebsite(candidate: CandidateRow, verifiedSearch: boolean
         candidateSource: candidate.source,
         domainAttempts: candidate.attempts,
         verifiedSearch,
+        motionSignal: motionSignal || null,
+        motionFreshnessDays: Number.isFinite(motionFreshness) ? motionFreshness : null,
       }),
     ],
   );
@@ -244,7 +358,7 @@ export async function GET(request: NextRequest) {
   const runId = await beginCollectorRun(SOURCE_ID);
 
   try {
-    const candidates = await claimDomainCandidates(limit);
+    const candidates = await claimPrioritizedDomainCandidates(limit);
     const braveKey = process.env.BRAVE_SEARCH_API_KEY?.trim();
     let braveLookups = 0;
     let braveBudgetBlocked = false;
@@ -308,6 +422,7 @@ export async function GET(request: NextRequest) {
         lastBraveLookups: braveLookups,
         braveBudgetBlocked,
         lastProcessed: candidates.length,
+        lastPriorityOrder: "motion > email > phone > blind",
       },
     );
 
@@ -323,6 +438,7 @@ export async function GET(request: NextRequest) {
       stored: promoted,
       braveLookups,
       braveBudgetBlocked,
+      priorityOrder: "motion > email > phone > blind",
     });
   } catch (error) {
     const message = await failCollectorRun(runId, SOURCE_ID, error);
