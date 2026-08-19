@@ -1,0 +1,31 @@
+name: Remove superseded Rukh Leads crawler documentation
+
+on:
+  push:
+    paths:
+      - ".github/workflows/cleanup-rukh-leads-old-doc.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Remove superseded documentation
+        run: |
+          git rm --ignore-unmatch \
+            docs/rukh-leads-internet-crawler.md \
+            .github/workflows/cleanup-rukh-leads-old-doc.yml
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Remove superseded Rukh Leads crawler documentation"
+          git push origin HEAD:main
