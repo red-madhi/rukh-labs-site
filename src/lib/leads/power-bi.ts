@@ -1,5 +1,5 @@
 import { clamp, cleanText } from "@/lib/leads/crawl";
-import { leadNeonQuery } from "@/lib/leads/neon";
+import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 
 export type PowerBiGigInput = {
   sourceKey: string;
@@ -22,6 +22,41 @@ export type PowerBiGigInput = {
   rawPayload?: Record<string, unknown>;
 };
 
+function accountKey(value: string) {
+  return cleanText(value, 260).toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+async function recentAccountSignals(inputs: PowerBiGigInput[]) {
+  const keys = Array.from(new Set(inputs.map((input) => accountKey(input.companyName)).filter(Boolean)));
+  const result = keys.length
+    ? await leadNeonQuery(
+        `WITH requested AS (
+           SELECT value AS account_key
+           FROM jsonb_array_elements_text($1::jsonb)
+         )
+         SELECT lower(regexp_replace(trim(company_name), '\\s+', ' ', 'g')) AS account_key,
+                source_key
+         FROM public.lead_opportunities
+         JOIN requested
+           ON requested.account_key = lower(regexp_replace(trim(company_name), '\\s+', ' ', 'g'))
+         WHERE source = 'power-bi'
+           AND archived_at IS NULL
+           AND COALESCE(source_published_at, discovered_at) >= now() - interval '45 days'`,
+        [JSON.stringify(keys)],
+      )
+    : { rows: [] };
+
+  const signals = new Map<string, Set<string>>();
+  for (const row of neonRowsToObjects(result)) {
+    const key = row.account_key ?? "";
+    const sourceKey = row.source_key ?? "";
+    if (!key || !sourceKey) continue;
+    if (!signals.has(key)) signals.set(key, new Set());
+    signals.get(key)?.add(sourceKey);
+  }
+  return signals;
+}
+
 export async function expirePowerBiJobBoardGigs() {
   const result = await leadNeonQuery(
     `UPDATE public.lead_opportunities
@@ -36,9 +71,26 @@ export async function expirePowerBiJobBoardGigs() {
 }
 
 export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
+  const accountSignals = await recentAccountSignals(inputs);
   const rows = inputs
     .map((input) => {
-      const score = clamp(input.score);
+      const key = accountKey(input.companyName);
+      const recentKeys = new Set(accountSignals.get(key) ?? []);
+      recentKeys.add(cleanText(input.sourceKey, 500));
+      const accountSignalCount = recentKeys.size;
+      const convergenceBonus = accountSignalCount >= 2
+        ? Math.min(12, (accountSignalCount - 1) * 4)
+        : 0;
+      const score = clamp(input.score + convergenceBonus);
+      const signals = input.signals.map((signal) => cleanText(signal, 320)).filter(Boolean);
+      const tags = input.tags.map((tag) => cleanText(tag, 120)).filter(Boolean);
+      if (convergenceBonus) {
+        signals.push(
+          `This company has ${accountSignalCount} distinct Power BI/Fabric signals in the feed within the last 45 days`,
+        );
+        tags.push("signal-convergence");
+      }
+
       return {
         source_key: cleanText(input.sourceKey, 500),
         source_url: cleanText(input.sourceUrl, 1000),
@@ -47,9 +99,9 @@ export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
         summary: cleanText(input.summary, 1200),
         score,
         priority: score >= 85 ? "hot" : score >= 70 ? "strong" : "watch",
-        signals: input.signals.map((signal) => cleanText(signal, 320)).filter(Boolean),
+        signals: Array.from(new Set(signals)),
         risks: (input.risks ?? []).map((risk) => cleanText(risk, 320)).filter(Boolean),
-        tags: input.tags.map((tag) => cleanText(tag, 120)).filter(Boolean),
+        tags: Array.from(new Set(tags)),
         pitch: cleanText(input.pitch, 1200),
         contact_name: cleanText(input.contactName, 180) || null,
         contact_email: cleanText(input.contactEmail, 220).toLowerCase() || null,
@@ -58,7 +110,12 @@ export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
         website_url: cleanText(input.website, 1000) || null,
         location: cleanText(input.location, 180) || "Remote / location not confirmed",
         discovered_at: input.discoveredAt || null,
-        raw_payload: input.rawPayload ?? {},
+        raw_payload: {
+          ...(input.rawPayload ?? {}),
+          accountSignalCount,
+          convergenceBonus,
+          convergenceWindowDays: 45,
+        },
       };
     })
     .filter((row) => row.source_key && row.source_url && row.company_name && row.summary);
