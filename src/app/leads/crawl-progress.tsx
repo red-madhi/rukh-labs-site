@@ -46,27 +46,35 @@ export function CrawlProgress() {
   ] as const;
 
   return (
-    <div className="pointer-events-none fixed bottom-3 left-1/2 z-[80] w-[min(940px,calc(100%-1.5rem))] -translate-x-1/2">
-      <div className="pointer-events-auto border border-[#d7a45f]/25 bg-[#090807]/95 px-3 py-2 shadow-[0_20px_80px_rgba(0,0,0,.55)] backdrop-blur-xl">
-        <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
-          <span className="shrink-0 text-[8px] font-black uppercase tracking-[.2em] text-[#d7a45f]">
-            Crawl universe
-          </span>
-          {items.map(([label, value, Icon]) => (
-            <span key={label} className="inline-flex shrink-0 items-center gap-1.5 border-l border-white/8 pl-2 text-[10px] text-white/45">
-              <Icon className={`size-3 ${loading ? "animate-pulse" : ""}`} aria-hidden />
-              <strong className="text-white/85">{value.toLocaleString()}</strong>
-              {label}
+    <div className="relative z-[80] mx-auto w-full max-w-[940px] px-3 pb-3 sm:pointer-events-none sm:fixed sm:bottom-3 sm:left-1/2 sm:w-[min(940px,calc(100%-1.5rem))] sm:-translate-x-1/2 sm:px-0 sm:pb-0">
+      <div className="pointer-events-auto border border-[#d7a45f]/25 bg-[#090807]/95 px-3 py-3 shadow-[0_20px_80px_rgba(0,0,0,.55)] backdrop-blur-xl sm:py-2">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-2 sm:overflow-x-auto">
+          <div className="flex min-w-0 items-center justify-between gap-3 sm:contents">
+            <span className="text-[8px] font-black uppercase tracking-[.2em] text-[#d7a45f] sm:shrink-0">
+              Crawl universe
             </span>
-          ))}
-          <button
-            type="button"
-            onClick={() => void load()}
-            className="ml-auto inline-flex shrink-0 items-center gap-1 text-[9px] font-bold uppercase tracking-[.12em] text-[#e2b36b]"
-          >
-            <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} aria-hidden />
-            Refresh
-          </button>
+            <button
+              type="button"
+              onClick={() => void load()}
+              className="inline-flex shrink-0 items-center gap-1 text-[9px] font-bold uppercase tracking-[.12em] text-[#e2b36b] sm:order-last sm:ml-auto"
+            >
+              <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} aria-hidden />
+              Refresh
+            </button>
+          </div>
+
+          <div className="grid min-w-0 grid-cols-2 gap-x-3 gap-y-2 sm:contents">
+            {items.map(([label, value, Icon]) => (
+              <span
+                key={label}
+                className="flex min-w-0 items-center gap-1.5 border-l border-white/8 pl-2 text-[10px] leading-4 text-white/45 sm:inline-flex sm:shrink-0"
+              >
+                <Icon className={`size-3 shrink-0 ${loading ? "animate-pulse" : ""}`} aria-hidden />
+                <strong className="shrink-0 text-white/85">{value.toLocaleString()}</strong>
+                <span className="min-w-0 break-words">{label}</span>
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </div>
