@@ -60,6 +60,7 @@ export async function GET(request: NextRequest) {
     all: "/api/leads/crawl",
     process: "/api/leads/crawl?mode=process",
     sam: "/api/leads/collect/sam-opportunities",
+    powerbi: "/api/leads/collect/power-bi",
   };
   const selected = allowedTargets[stage];
   if (!selected) {
