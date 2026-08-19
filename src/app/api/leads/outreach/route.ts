@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getOutreachConfiguration,
   listOutreachStates,
   runOutreachCycle,
   saveOutreachDraft,
   sendInitialOutreach,
   syncLeadReply,
 } from "@/lib/leads/email-outreach";
+import {
+  normalizeGmailEnvironment,
+  sanitizeGmailError,
+  verifyGmailConnection,
+} from "@/lib/leads/gmail-connection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,19 +27,37 @@ function validId(value: unknown) {
   return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
+async function requireVerifiedGmail() {
+  const configuration = await verifyGmailConnection();
+  if (configuration.configured) return { configuration, response: null };
+  return {
+    configuration,
+    response: privateJson(
+      {
+        error: configuration.missing[0] || "Gmail authorization could not be verified.",
+        configuration,
+      },
+      { status: 428 },
+    ),
+  };
+}
+
 export async function GET() {
+  normalizeGmailEnvironment();
   try {
-    return privateJson({
-      configuration: getOutreachConfiguration(),
-      states: await listOutreachStates(),
-    });
+    const [configuration, states] = await Promise.all([
+      verifyGmailConnection(),
+      listOutreachStates(),
+    ]);
+    return privateJson({ configuration, states });
   } catch (error) {
-    console.error("Lead outreach GET failed", error);
+    console.error("Lead outreach GET failed", sanitizeGmailError(error));
     return privateJson({ error: "Outreach state could not be loaded." }, { status: 503 });
   }
 }
 
 export async function PATCH(request: NextRequest) {
+  normalizeGmailEnvironment();
   try {
     const body = (await request.json()) as Record<string, unknown>;
     if (!validId(body.leadId)) return privateJson({ error: "Lead ID is invalid." }, { status: 400 });
@@ -49,15 +71,29 @@ export async function PATCH(request: NextRequest) {
     });
     return privateJson({ ok: true, state });
   } catch (error) {
-    console.error("Lead outreach PATCH failed", error);
-    return privateJson({ error: error instanceof Error ? error.message : "Draft could not be saved." }, { status: 400 });
+    console.error("Lead outreach PATCH failed", sanitizeGmailError(error));
+    return privateJson({ error: sanitizeGmailError(error) || "Draft could not be saved." }, { status: 400 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  normalizeGmailEnvironment();
   try {
     const body = (await request.json()) as Record<string, unknown>;
     const action = typeof body.action === "string" ? body.action : "send";
+
+    if (action === "verify") {
+      const configuration = await verifyGmailConnection();
+      return privateJson(
+        { ok: configuration.configured, configuration, error: configuration.configured ? undefined : configuration.missing[0] },
+        { status: configuration.configured ? 200 : 428 },
+      );
+    }
+
+    if (["cycle", "sync", "send-bulk", "send"].includes(action)) {
+      const verification = await requireVerifiedGmail();
+      if (verification.response) return verification.response;
+    }
 
     if (action === "cycle") {
       return privateJson(await runOutreachCycle(Number(body.limit) || 40));
@@ -85,10 +121,15 @@ export async function POST(request: NextRequest) {
           });
           results.push({ leadId: item.leadId as string, ok: true });
         } catch (error) {
-          results.push({ leadId: item.leadId as string, ok: false, error: error instanceof Error ? error.message : "Send failed." });
+          results.push({ leadId: item.leadId as string, ok: false, error: sanitizeGmailError(error) });
         }
       }
-      return privateJson({ ok: results.some((item) => item.ok), results });
+      const sent = results.filter((item) => item.ok).length;
+      const firstFailure = results.find((item) => !item.ok)?.error;
+      return privateJson(
+        { ok: sent > 0, results, error: sent === 0 ? firstFailure || "No emails were sent." : undefined },
+        { status: results.length > 0 && sent === 0 ? 400 : 200 },
+      );
     }
 
     if (!validId(body.leadId)) return privateJson({ error: "Lead ID is invalid." }, { status: 400 });
@@ -102,7 +143,8 @@ export async function POST(request: NextRequest) {
     });
     return privateJson({ ok: true, state });
   } catch (error) {
-    console.error("Lead outreach POST failed", error);
-    return privateJson({ error: error instanceof Error ? error.message : "Email could not be sent." }, { status: 400 });
+    const message = sanitizeGmailError(error);
+    console.error("Lead outreach POST failed", message);
+    return privateJson({ error: message || "Email could not be sent." }, { status: 400 });
   }
 }
