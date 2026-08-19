@@ -6,7 +6,7 @@ on:
     - cron: "4,14,24,34,44,54 * * * *"
     - cron: "6,36 * * * *"
     - cron: "8,38 * * * *"
-    - cron: "47 * * * *"
+    - cron: "1,16,31,46 * * * *"
     - cron: "11 */12 * * *"
     - cron: "17 */12 * * *"
     - cron: "19 */12 * * *"
@@ -107,7 +107,7 @@ jobs:
 
   audit:
     if: >-
-      github.event_name == 'schedule' && github.event.schedule == '47 * * * *' ||
+      github.event_name == 'schedule' && github.event.schedule == '1,16,31,46 * * * *' ||
       github.event_name == 'workflow_dispatch' && inputs.source == 'audit'
     runs-on: ubuntu-latest
     timeout-minutes: 4
