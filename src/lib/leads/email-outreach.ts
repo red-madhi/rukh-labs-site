@@ -2,7 +2,7 @@ import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 
 export type OutreachMessage = {
   direction: "outbound" | "inbound";
-  kind: "initial" | "follow-up" | "reply";
+  kind: "initial" | "follow-up" | "reply" | "bounce";
   at: string;
   subject?: string;
   body?: string;
@@ -15,7 +15,7 @@ export type LeadOutreachState = {
   subject?: string;
   body?: string;
   followUpBody?: string;
-  state?: "draft" | "ready" | "sent" | "replied" | "paused" | "completed" | "error";
+  state?: "draft" | "ready" | "sent" | "replied" | "bounced" | "paused" | "completed" | "error";
   autoFollowUp?: boolean;
   followUpDays?: number;
   gmailThreadId?: string;
@@ -26,6 +26,8 @@ export type LeadOutreachState = {
   followUpCount?: number;
   lastReplyAt?: string;
   lastReplySnippet?: string;
+  lastBounceAt?: string;
+  lastBounceReason?: string;
   lastError?: string;
   messages?: OutreachMessage[];
 };
@@ -128,6 +130,25 @@ function base64Url(value: string) {
 
 function header(message: GmailMessage, name: string) {
   return message.payload?.headers?.find((item) => item.name?.toLowerCase() === name.toLowerCase())?.value || "";
+}
+
+function isBounceMessage(message: GmailMessage) {
+  const from = header(message, "From").toLowerCase();
+  const subject = header(message, "Subject").toLowerCase();
+  const snippet = (message.snippet || "").toLowerCase();
+  return (
+    from.includes("mailer-daemon") ||
+    from.includes("postmaster") ||
+    subject.includes("delivery status notification") ||
+    subject.includes("undeliverable") ||
+    snippet.includes("message not delivered") ||
+    snippet.includes("delivery failed")
+  );
+}
+
+function bounceReason(message: GmailMessage) {
+  const snippet = clean(message.snippet, 1000);
+  return snippet || header(message, "Subject") || "Message delivery failed.";
 }
 
 function mimeMessage({
@@ -327,6 +348,8 @@ export async function sendInitialOutreach(input: {
     sentAt,
     nextFollowUpAt,
     followUpCount: 0,
+    lastBounceAt: undefined,
+    lastBounceReason: undefined,
     lastError: undefined,
     messages,
   });
@@ -334,7 +357,7 @@ export async function sendInitialOutreach(input: {
   return state;
 }
 
-async function threadReply(state: LeadOutreachState) {
+async function threadOutcome(state: LeadOutreachState) {
   if (!state.gmailThreadId || !state.sentAt) return null;
   const params = new URLSearchParams({ format: "metadata" });
   ["From", "To", "Subject", "Message-ID", "Date"].forEach((name) => params.append("metadataHeaders", name));
@@ -346,7 +369,8 @@ async function threadReply(state: LeadOutreachState) {
     return when > sentMs && !from.includes(REQUIRED_FROM) && !from.includes("rukh.labs@gmail.com");
   });
   if (!candidates.length) return null;
-  return candidates.sort((a, b) => Number(b.internalDate || 0) - Number(a.internalDate || 0))[0];
+  const latest = candidates.sort((a, b) => Number(b.internalDate || 0) - Number(a.internalDate || 0))[0];
+  return { type: isBounceMessage(latest) ? ("bounce" as const) : ("reply" as const), message: latest };
 }
 
 export async function syncLeadReply(leadId: string) {
@@ -358,39 +382,65 @@ export async function syncLeadReply(leadId: string) {
   const row = neonRowsToObjects(result)[0];
   if (!row) throw new Error("Lead was not found.");
   const previous = parseOutreach(row.outreach);
-  const reply = await threadReply(previous);
-  if (!reply) return { replied: false, state: previous };
-  if (reply.id && previous.messages?.some((message) => message.gmailMessageId === reply.id)) {
-    return { replied: true, state: previous };
+  const outcome = await threadOutcome(previous);
+  if (!outcome) return { replied: false, bounced: false, state: previous };
+
+  const item = outcome.message;
+  if (item.id && previous.messages?.some((message) => message.gmailMessageId === item.id)) {
+    return {
+      replied: previous.state === "replied",
+      bounced: previous.state === "bounced",
+      state: previous,
+    };
   }
-  const at = new Date(Number(reply.internalDate || Date.now())).toISOString();
+
+  const at = new Date(Number(item.internalDate || Date.now())).toISOString();
+  if (outcome.type === "bounce") {
+    const reason = bounceReason(item);
+    const messages = [
+      ...(previous.messages ?? []),
+      { direction: "inbound" as const, kind: "bounce" as const, at, subject: header(item, "Subject"), snippet: reason, gmailMessageId: item.id },
+    ];
+    const state = nextState(previous, {
+      state: "bounced",
+      autoFollowUp: false,
+      nextFollowUpAt: undefined,
+      lastBounceAt: at,
+      lastBounceReason: reason,
+      lastError: reason,
+      messages,
+    });
+    await persist(leadId, state, "email_bounce_detected", "new");
+    return { replied: false, bounced: true, state };
+  }
+
   const messages = [
     ...(previous.messages ?? []),
-    { direction: "inbound" as const, kind: "reply" as const, at, subject: header(reply, "Subject"), snippet: reply.snippet || "Reply received", gmailMessageId: reply.id },
+    { direction: "inbound" as const, kind: "reply" as const, at, subject: header(item, "Subject"), snippet: item.snippet || "Reply received", gmailMessageId: item.id },
   ];
   const state = nextState(previous, {
     state: "replied",
     autoFollowUp: false,
     nextFollowUpAt: undefined,
     lastReplyAt: at,
-    lastReplySnippet: reply.snippet || "Reply received",
+    lastReplySnippet: item.snippet || "Reply received",
     lastError: undefined,
     messages,
   });
   await persist(leadId, state, "email_reply_detected", "replied");
-  return { replied: true, state };
+  return { replied: true, bounced: false, state };
 }
 
 export async function runOutreachCycle(limit = 40) {
   const configured = getOutreachConfiguration();
-  if (!configured.configured) return { configured: false, checked: 0, replies: 0, followUps: 0, errors: configured.missing };
+  if (!configured.configured) return { configured: false, checked: 0, replies: 0, bounces: 0, followUps: 0, errors: configured.missing };
 
   const result = await leadNeonQuery(
     `SELECT id::text, contact_email, COALESCE(raw_payload->'outreach', '{}'::jsonb)::text AS outreach
      FROM public.lead_opportunities
      WHERE archived_at IS NULL
        AND raw_payload->'outreach'->>'sentAt' IS NOT NULL
-       AND COALESCE(raw_payload->'outreach'->>'state', '') IN ('sent','replied')
+       AND COALESCE(raw_payload->'outreach'->>'state', '') = 'sent'
      ORDER BY updated_at ASC
      LIMIT $1::int`,
     [String(Math.min(100, Math.max(1, limit)))],
@@ -398,6 +448,7 @@ export async function runOutreachCycle(limit = 40) {
 
   let checked = 0;
   let replies = 0;
+  let bounces = 0;
   let followUps = 0;
   const errors: string[] = [];
   for (const row of neonRowsToObjects(result)) {
@@ -405,6 +456,10 @@ export async function runOutreachCycle(limit = 40) {
     try {
       checked += 1;
       const synced = await syncLeadReply(row.id);
+      if (synced.bounced) {
+        bounces += 1;
+        continue;
+      }
       if (synced.replied) {
         replies += 1;
         continue;
@@ -451,5 +506,5 @@ export async function runOutreachCycle(limit = 40) {
       errors.push(`${row.id}: ${error instanceof Error ? error.message : "Outreach cycle failed."}`);
     }
   }
-  return { configured: true, checked, replies, followUps, errors: errors.slice(0, 10) };
+  return { configured: true, checked, replies, bounces, followUps, errors: errors.slice(0, 10) };
 }
