@@ -1,0 +1,28 @@
+name: Rukh Leads Signal Expiry
+
+on:
+  schedule:
+    - cron: "55 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: rukh-leads-signal-expiry
+  cancel-in-progress: false
+
+env:
+  GATEWAY_URL: https://rukhlabs.com/api/github-crawl-v2
+
+jobs:
+  expire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Expire stale signals and requeue stale audits
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=expire"
