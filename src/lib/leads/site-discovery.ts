@@ -43,18 +43,30 @@ export async function verifyOfficialWebsite(candidate: CandidateRow, url: string
   try {
     const result = await fetchPublicPage(url, 7_000, 500_000);
     if (result.status >= 400 || !result.text) return null;
+    if (isBlockedProspectUrl(result.finalUrl)) return null;
+
     const signals = inspectHtml(result.text, result.finalUrl);
     if (signals.parked) return null;
+
+    // A matching hostname alone is not proof that this is the organization's live site.
+    // Tiny redirect/parking stubs frequently use the business-looking domain itself.
+    if (result.bytes < 600 || signals.visibleText.length < 80) return null;
+
+    const contentText = `${signals.title} ${signals.description} ${signals.visibleText.slice(0, 4000)}`;
+    const contentSimilarity = tokenSimilarity(candidate.organizationName, contentText);
+    if (contentSimilarity < 0.35) return null;
+
     const host = canonicalHost(result.finalUrl);
     const compactOrg = organizationTokens(candidate.organizationName).join("");
     const hostCompact = host.replace(/[^a-z0-9]/g, "");
-    const similarity = Math.max(
-      tokenSimilarity(candidate.organizationName, `${signals.title} ${signals.visibleText.slice(0, 2500)}`),
-      compactOrg.length >= 5 && hostCompact.includes(compactOrg.slice(0, Math.min(compactOrg.length, 18)))
+    const hostMatch =
+      compactOrg.length >= 5 &&
+      hostCompact.includes(compactOrg.slice(0, Math.min(compactOrg.length, 18)))
         ? 0.72
-        : 0,
-    );
+        : 0;
+    const similarity = Math.max(contentSimilarity, hostMatch);
     if (similarity < 0.45) return null;
+
     return {
       url: result.finalUrl,
       confidence: clamp(55 + similarity * 45),
