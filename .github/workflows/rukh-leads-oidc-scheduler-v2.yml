@@ -3,14 +3,18 @@ name: Rukh Leads OIDC Scheduler v2
 on:
   schedule:
     - cron: "3,13,23,33,43,53 * * * *"
+    - cron: "4,14,24,34,44,54 * * * *"
     - cron: "6,36 * * * *"
     - cron: "8,38 * * * *"
     - cron: "47 * * * *"
     - cron: "11 */12 * * *"
     - cron: "17 */12 * * *"
+    - cron: "19 */12 * * *"
     - cron: "27 5 * * *"
     - cron: "33 6 * * *"
+    - cron: "43 6 * * *"
     - cron: "51 7 * * *"
+    - cron: "13 8 * * *"
     - cron: "41 */6 * * *"
   workflow_dispatch:
     inputs:
@@ -31,6 +35,11 @@ on:
           - directories
           - discover
           - audit
+          - powerbi
+          - powerbi-live
+          - powerbi-web
+          - powerbi-rfp
+          - powerbi-sam
 
 permissions:
   contents: read
@@ -56,6 +65,19 @@ jobs:
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=bluesky"
+
+  powerbi-live:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '4,14,24,34,44,54 * * * *' ||
+      github.event_name == 'workflow_dispatch' && inputs.source == 'powerbi-live'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Scan extreme-fresh Power BI social signals
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=powerbi-live"
 
   mastodon:
     if: >-
@@ -122,6 +144,19 @@ jobs:
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=discover"
 
+  powerbi-web:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '19 */12 * * *' ||
+      github.event_name == 'workflow_dispatch' && inputs.source == 'powerbi-web'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Search fresh public Power BI and indexed LinkedIn/X signals
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=powerbi-web"
+
   public-web:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '27 5 * * *' ||
@@ -148,6 +183,19 @@ jobs:
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=procurement"
 
+  powerbi-rfp:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '43 6 * * *' ||
+      github.event_name == 'workflow_dispatch' && inputs.source == 'powerbi-rfp'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Discover public Power BI RFPs and procurement notices
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=powerbi-rfp"
+
   sam:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '51 7 * * *' ||
@@ -160,6 +208,19 @@ jobs:
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=sam"
+
+  powerbi-sam:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '13 8 * * *' ||
+      github.event_name == 'workflow_dispatch' && inputs.source == 'powerbi-sam'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Scan SAM.gov federal Power BI and analytics opportunities
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=powerbi-sam"
 
   directories:
     if: >-
@@ -174,12 +235,23 @@ jobs:
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=directories"
 
+  powerbi-manual:
+    if: github.event_name == 'workflow_dispatch' && inputs.source == 'powerbi'
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Run all Power BI opportunity sources
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=powerbi"
+
   manual-full-pass:
     if: github.event_name == 'workflow_dispatch' && inputs.source == 'all'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Run all sources manually
+      - name: Run all website lead sources manually
         run: |
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
