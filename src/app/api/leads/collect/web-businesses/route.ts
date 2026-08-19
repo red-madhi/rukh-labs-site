@@ -13,6 +13,10 @@ import {
   privateJson,
   upsertCandidates,
 } from "@/lib/leads/crawl";
+import {
+  BRAVE_MONTHLY_REQUEST_LIMIT,
+  reserveMonthlyApiUsage,
+} from "@/lib/leads/api-budget";
 import { isBlockedProspectUrl } from "@/lib/leads/site";
 
 export const runtime = "nodejs";
@@ -107,6 +111,27 @@ export async function GET(request: NextRequest) {
     const [city, state] = metros[metroIndex];
     const vertical = verticals[verticalIndex];
 
+    const budget = await reserveMonthlyApiUsage(
+      "brave-search",
+      1,
+      BRAVE_MONTHLY_REQUEST_LIMIT,
+    );
+    if (!budget.allowed) {
+      await completeCollectorRun(runId, SOURCE_ID, 0, 0, {
+        ...config,
+        braveBudgetUsed: budget.used,
+        braveBudgetLimit: budget.limit,
+      });
+      return privateJson(
+        {
+          error: `Monthly Brave Search budget reached (${budget.limit} requests).`,
+          source: SOURCE_ID,
+          budget,
+        },
+        { status: 429 },
+      );
+    }
+
     const query = `${vertical} "${city} ${state}" official website -site:yelp.com -site:angi.com -site:homeadvisor.com -site:thumbtack.com -site:facebook.com -site:yellowpages.com`;
     const url = new URL("https://api.search.brave.com/res/v1/web/search");
     url.searchParams.set("q", query);
@@ -173,7 +198,11 @@ export async function GET(request: NextRequest) {
 
     const upserted = await upsertCandidates(candidates);
     const cursor = nextCursor(metroIndex, verticalIndex);
-    await completeCollectorRun(runId, SOURCE_ID, rows.length, upserted, cursor);
+    await completeCollectorRun(runId, SOURCE_ID, rows.length, upserted, {
+      ...cursor,
+      braveBudgetUsed: budget.used,
+      braveBudgetLimit: budget.limit,
+    });
 
     return privateJson({
       ok: true,
@@ -185,6 +214,7 @@ export async function GET(request: NextRequest) {
       qualified: candidates.length,
       candidates: upserted,
       stored: 0,
+      budget,
       next: cursor,
     });
   } catch (error) {
