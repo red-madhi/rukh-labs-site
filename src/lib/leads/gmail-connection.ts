@@ -43,17 +43,20 @@ function oauthCredentials() {
 
 function oauthFailure(error?: string, description?: string) {
   const detail = (description || "").toLowerCase();
-  if (error === "invalid_client" || detail === "unauthorized") {
+  if (error === "unauthorized_client") {
+    return "Google accepted the OAuth client credentials, but this refresh token is not authorized for that client. Generate a new refresh token in OAuth Playground with Use your own OAuth credentials enabled and the exact same Client ID and Client Secret configured in Vercel.";
+  }
+  if (error === "invalid_client") {
     return "Google rejected the OAuth client. GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET must be the matching pair from the same Google OAuth client.";
   }
   if (error === "invalid_grant") {
     return "Google rejected the refresh token. Generate a new refresh token in OAuth Playground using the exact OAuth client configured in Vercel.";
   }
-  if (error === "unauthorized_client") {
-    return "Google says this OAuth client is not authorized for the requested Gmail access. Re-authorize the app in OAuth Playground.";
-  }
   if (error === "invalid_scope") {
     return "Google rejected the Gmail scopes. Re-authorize with gmail.send and gmail.readonly together.";
+  }
+  if (detail === "unauthorized") {
+    return "Google rejected this OAuth authorization. Re-authorize in OAuth Playground with Use your own OAuth credentials enabled and the exact Client ID and Client Secret configured in Vercel.";
   }
   return description ? `Google OAuth verification failed: ${description}.` : "Google OAuth verification failed.";
 }
@@ -61,7 +64,7 @@ function oauthFailure(error?: string, description?: string) {
 export function sanitizeGmailError(error: unknown) {
   const message = error instanceof Error ? error.message : "Gmail request failed.";
   if (message.trim().toLowerCase() === "unauthorized") {
-    return oauthFailure("invalid_client", message);
+    return oauthFailure(undefined, message);
   }
   return message;
 }
@@ -94,7 +97,11 @@ export async function verifyGmailConnection() {
 
   if (!tokenResponse.ok || !token.access_token) {
     const reason = oauthFailure(token.error, token.error_description);
-    console.warn("Gmail OAuth verification failed", { error: token.error || "unknown", status: tokenResponse.status });
+    console.warn("Gmail OAuth verification failed", {
+      error: token.error || "unknown",
+      description: token.error_description || "",
+      status: tokenResponse.status,
+    });
     return { ...base, configured: false, missing: [reason] };
   }
 
