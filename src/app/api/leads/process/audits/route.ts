@@ -124,7 +124,7 @@ function isParkedAudit(audit: WebsiteAuditResult) {
   );
 }
 
-function parkedAuditPayload(audit: WebsiteAuditResult, parked: boolean) {
+function parkedAuditPayload(audit: WebsiteAuditResult, parked: boolean): Record<string, unknown> {
   return parked
     ? {
         ...audit.audit,
@@ -229,7 +229,7 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
   if (independentSources.length >= 2) tags.push("account-corroborated");
   if (activeMotion) tags.push("business-in-motion", "signal-convergence");
 
-  const auditPayload = parkedAuditPayload(audit, parked);
+  const auditPayload: Record<string, unknown> = parkedAuditPayload(audit, parked);
   const dimensions =
     auditPayload.dimensions && typeof auditPayload.dimensions === "object"
       ? (auditPayload.dimensions as Record<string, unknown>)
