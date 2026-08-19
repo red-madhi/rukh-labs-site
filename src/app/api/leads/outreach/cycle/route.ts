@@ -1,6 +1,11 @@
 import type { NextRequest } from "next/server";
 import { hasValidBasicAuth, hasValidCronAuth } from "@/lib/leads/auth";
 import { runOutreachCycle } from "@/lib/leads/email-outreach";
+import {
+  normalizeGmailEnvironment,
+  sanitizeGmailError,
+  verifyGmailConnection,
+} from "@/lib/leads/gmail-connection";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -18,10 +23,23 @@ export async function GET(request: NextRequest) {
   if (!hasValidCronAuth(request) && !hasValidBasicAuth(request)) {
     return privateJson({ error: "Outreach automation authentication failed." }, { status: 401 });
   }
+
+  normalizeGmailEnvironment();
   try {
+    const configuration = await verifyGmailConnection();
+    if (!configuration.configured) {
+      return privateJson(
+        {
+          error: configuration.missing[0] || "Gmail authorization could not be verified.",
+          configuration,
+        },
+        { status: 428 },
+      );
+    }
     return privateJson(await runOutreachCycle(60));
   } catch (error) {
-    console.error("Scheduled outreach cycle failed", error);
-    return privateJson({ error: error instanceof Error ? error.message : "Outreach cycle failed." }, { status: 503 });
+    const message = sanitizeGmailError(error);
+    console.error("Scheduled outreach cycle failed", message);
+    return privateJson({ error: message || "Outreach cycle failed." }, { status: 503 });
   }
 }
