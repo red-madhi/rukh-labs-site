@@ -25,7 +25,7 @@ export const maxDuration = 60;
 const SOURCE_ID = "power-bi-web";
 const JOB_BOARD_MAX_AGE_MS = 12 * 60 * 60 * 1000;
 
-type SearchConfig = { label: string; query: string; platform?: "LinkedIn" | "X" };
+type SearchConfig = { label: string; query: string; platform?: string };
 
 const BROAD_SEARCH: SearchConfig = {
   label: "fresh direct or proactive signal",
@@ -48,10 +48,28 @@ const SOCIAL_SEARCHES: SearchConfig[] = [
   },
 ];
 
-const JOB_BOARD_SEARCH: SearchConfig = {
-  label: "fresh Power BI job-board posting",
-  query: '"Power BI" (developer OR analyst OR consultant OR engineer) (contract OR freelance OR hiring OR job)',
-};
+const JOB_BOARD_SEARCHES: SearchConfig[] = [
+  {
+    label: "fresh Indeed Power BI posting",
+    query: 'site:indeed.com "Power BI" developer',
+    platform: "Indeed",
+  },
+  {
+    label: "fresh Upwork Power BI posting",
+    query: 'site:upwork.com/jobs "Power BI"',
+    platform: "Upwork",
+  },
+  {
+    label: "fresh ZipRecruiter Power BI posting",
+    query: 'site:ziprecruiter.com "Power BI" developer',
+    platform: "ZipRecruiter",
+  },
+  {
+    label: "fresh Dice Power BI posting",
+    query: 'site:dice.com "Power BI" developer',
+    platform: "Dice",
+  },
+];
 
 type BraveResult = {
   title?: string;
@@ -198,7 +216,7 @@ function qualifyJobBoardResult(result: BraveResult, search: SearchConfig, source
   const ageMs = Date.now() - new Date(sourcePublishedAt).getTime();
   if (ageMs < -5 * 60 * 1000 || ageMs > JOB_BOARD_MAX_AGE_MS) return null;
 
-  const platform = platformTag(sourceUrl);
+  const platform = search.platform || platformTag(sourceUrl);
   const contractish = contractPattern.test(combined);
   let score = contractish ? 84 : 74;
   const signals = [
@@ -255,7 +273,7 @@ function qualify(result: BraveResult, search: SearchConfig) {
   const description = cleanText(result.description, 900);
   const combined = `${title} ${description}`;
 
-  if (isJobLike(sourceUrl, combined)) {
+  if (isJobLike(sourceUrl, combined) || search.label.includes("job-board") || search.label.includes("Indeed") || search.label.includes("Upwork") || search.label.includes("ZipRecruiter") || search.label.includes("Dice")) {
     return qualifyJobBoardResult(result, search, sourceUrl, title, description, combined);
   }
 
@@ -264,7 +282,7 @@ function qualify(result: BraveResult, search: SearchConfig) {
   const proactive = proactivePattern.test(combined);
   if (!direct && !proactive) return null;
 
-  const platform = platformTag(sourceUrl);
+  const platform = search.platform || platformTag(sourceUrl);
   let score = direct ? 88 : 68;
   const signals = [
     direct
@@ -331,10 +349,15 @@ export async function GET(request: NextRequest) {
     return privateJson({ error: "BRAVE_SEARCH_API_KEY is not configured.", source: SOURCE_ID }, { status: 428 });
   }
 
-  const sourceConfig = await getSourceConfig(SOURCE_ID, { socialIndex: 0 });
+  const sourceConfig = await getSourceConfig(SOURCE_ID, { socialIndex: 0, jobBoardIndex: 0 });
   const socialIndex = Math.max(0, Number(sourceConfig.socialIndex ?? 0) || 0) % SOCIAL_SEARCHES.length;
+  const jobBoardIndex = Math.max(0, Number(sourceConfig.jobBoardIndex ?? 0) || 0) % JOB_BOARD_SEARCHES.length;
   const socialSearch = SOCIAL_SEARCHES[socialIndex];
-  const searches = [BROAD_SEARCH, socialSearch, JOB_BOARD_SEARCH];
+  const jobSearches = [
+    JOB_BOARD_SEARCHES[jobBoardIndex],
+    JOB_BOARD_SEARCHES[(jobBoardIndex + 1) % JOB_BOARD_SEARCHES.length],
+  ];
+  const searches = [BROAD_SEARCH, socialSearch, ...jobSearches];
 
   const budget = await reserveMonthlyApiUsage(
     "brave-search",
@@ -376,15 +399,24 @@ export async function GET(request: NextRequest) {
     const gigs = Array.from(deduped.values());
     const stored = await upsertPowerBiGigs(gigs);
     const nextSocialIndex = (socialIndex + 1) % SOCIAL_SEARCHES.length;
+    const nextJobBoardIndex = (jobBoardIndex + 2) % JOB_BOARD_SEARCHES.length;
     const searchErrors = batches.filter((batch) => batch.error).map((batch) => ({ label: batch.search.label, error: batch.error }));
+    const searchCounts = batches.map((batch) => ({ label: batch.search.label, count: batch.results.length }));
     await completeCollectorRun(runId, SOURCE_ID, seen, stored, {
       socialIndex: nextSocialIndex,
+      jobBoardIndex: nextJobBoardIndex,
       lastSocialPlatform: socialSearch.platform,
       nextSocialPlatform: SOCIAL_SEARCHES[nextSocialIndex].platform,
+      jobBoardSources: jobSearches.map((search) => search.platform),
+      nextJobBoardSources: [
+        JOB_BOARD_SEARCHES[nextJobBoardIndex].platform,
+        JOB_BOARD_SEARCHES[(nextJobBoardIndex + 1) % JOB_BOARD_SEARCHES.length].platform,
+      ],
       braveBudgetUsed: budget.used,
       braveBudgetLimit: budget.limit,
       expiredJobBoardLeads: expired,
       jobBoardMaxAgeHours: 12,
+      searchCounts,
       searchErrors,
     });
 
@@ -398,6 +430,8 @@ export async function GET(request: NextRequest) {
       expired,
       socialPlatform: socialSearch.platform,
       nextSocialPlatform: SOCIAL_SEARCHES[nextSocialIndex].platform,
+      jobBoardSources: jobSearches.map((search) => search.platform),
+      searchCounts,
       searchErrors,
       budget,
     });
