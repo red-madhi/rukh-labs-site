@@ -40,7 +40,29 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
+function isParkedAudit(audit: WebsiteAuditResult) {
+  return audit.signals.some((signal) =>
+    /\b(?:parked|for sale|under construction|coming soon)\b/i.test(signal),
+  );
+}
+
+function parkedAuditPayload(audit: WebsiteAuditResult, parked: boolean) {
+  return parked
+    ? {
+        ...audit.audit,
+        parked: true,
+        usableWebsite: false,
+        parkedDomain: audit.finalUrl,
+      }
+    : {
+        ...audit.audit,
+        parked: false,
+        usableWebsite: true,
+      };
+}
+
 async function saveAudit(candidate: CandidateRow, audit: WebsiteAuditResult) {
+  const parked = isParkedAudit(audit);
   await leadNeonQuery(
     `UPDATE public.lead_candidates
      SET website_url = $2,
@@ -48,25 +70,74 @@ async function saveAudit(candidate: CandidateRow, audit: WebsiteAuditResult) {
          phone = COALESCE($4, phone),
          audit = $5::jsonb,
          status = $6,
-         next_action_at = now() + interval '90 days',
+         next_action_at = CASE WHEN $7::boolean THEN now() ELSE now() + interval '90 days' END,
          last_error = NULL,
+         metadata = metadata || $8::jsonb,
          updated_at = now()
      WHERE id = $1::uuid`,
     [
       candidate.id,
-      audit.finalUrl,
+      parked ? null : audit.finalUrl,
       audit.contactEmail || null,
       audit.contactPhone || null,
-      JSON.stringify(audit.audit),
-      audit.qualified ? "qualified" : "audited",
+      JSON.stringify(parkedAuditPayload(audit, parked)),
+      parked ? "domain-pending" : audit.qualified ? "qualified" : "audited",
+      parked ? "true" : "false",
+      JSON.stringify(
+        parked
+          ? {
+              parkedDomain: audit.finalUrl,
+              parkedDomainDetectedAt: new Date().toISOString(),
+            }
+          : {},
+      ),
     ],
   );
 }
 
 async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) {
   if (!audit.qualified) return false;
+
+  const parked = isParkedAudit(audit);
+  const leadSource = parked ? "new-business" : "site-audit";
+  const sourceKey = `candidate:${candidate.id}`;
   const priority = audit.score >= 85 ? "hot" : audit.score >= 70 ? "strong" : "watch";
   const location = locationLabel(candidate);
+  const websiteUrl = parked ? null : audit.finalUrl;
+  const contactUrl = audit.contactUrl || candidate.sourceUrl || (parked ? null : audit.finalUrl);
+  const summary = parked
+    ? `${candidate.organizationName} has a matching domain that currently resolves to a parked or for-sale page rather than a usable business website. Domain research is continuing in case the organization uses another official domain.`
+    : audit.summary;
+  const pitch = parked
+    ? `I came across ${candidate.organizationName} while reviewing ${candidate.category || "local businesses"} in ${candidate.city || candidate.state || "your area"}. I noticed the matching domain is currently parked or for sale instead of serving a business website. If a proper web presence is still on your list, I can send a concise fixed-price launch plan.`
+    : audit.pitch;
+  const signals = parked
+    ? Array.from(
+        new Set([
+          "Matching domain is parked or listed for sale instead of serving a usable business website",
+          ...audit.signals.filter((signal) => !/missing|viewport|heading|meta description|canonical|open graph|call-to-action|form/i.test(signal)),
+        ]),
+      )
+    : audit.signals;
+  const risks = parked
+    ? Array.from(
+        new Set([
+          ...audit.risks,
+          "The organization may use another official domain; verify that before outreach",
+        ]),
+      )
+    : audit.risks;
+  const tags = parked
+    ? ["parked domain", "no usable website", candidate.source, candidate.category || "unclassified"]
+    : ["website audit", candidate.source, candidate.category || "unclassified"];
+  const auditPayload = parkedAuditPayload(audit, parked);
+
+  await leadNeonQuery(
+    `UPDATE public.lead_opportunities
+     SET archived_at = now(), updated_at = now()
+     WHERE source_key = $1 AND source <> $2 AND archived_at IS NULL`,
+    [sourceKey, leadSource],
+  );
 
   await leadNeonQuery(
     `INSERT INTO public.lead_opportunities AS existing (
@@ -94,11 +165,10 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
        last_checked_at
      )
      VALUES (
-       'site-audit',
        $1,
        $2,
-       now(),
        $3,
+       now(),
        $4,
        $5,
        $6,
@@ -107,14 +177,15 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
        $9,
        $10,
        $11,
-       $12::int,
-       $13,
-       $14::jsonb,
+       $12,
+       $13::int,
+       $14,
        $15::jsonb,
        $16::jsonb,
-       $17,
-       $18::jsonb,
+       $17::jsonb,
+       $18,
        $19::jsonb,
+       $20::jsonb,
        now()
      )
      ON CONFLICT (source, source_key) DO UPDATE SET
@@ -140,33 +211,31 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
        last_checked_at = now(),
        archived_at = NULL`,
     [
-      `candidate:${candidate.id}`,
+      leadSource,
+      sourceKey,
       candidate.sourceUrl || audit.finalUrl,
       candidate.organizationName,
       candidate.contactName || null,
       audit.contactEmail || candidate.email || null,
       audit.contactPhone || candidate.phone || null,
-      audit.contactUrl || candidate.sourceUrl || audit.finalUrl,
-      audit.finalUrl,
+      contactUrl,
+      websiteUrl,
       location,
       candidate.category || "Unclassified",
-      audit.summary,
+      summary,
       String(audit.score),
       priority,
-      JSON.stringify(audit.signals),
-      JSON.stringify(audit.risks),
-      JSON.stringify([
-        "website audit",
-        candidate.source,
-        candidate.category || "unclassified",
-      ]),
-      audit.pitch,
-      JSON.stringify(audit.audit),
+      JSON.stringify(signals),
+      JSON.stringify(risks),
+      JSON.stringify(tags),
+      pitch,
+      JSON.stringify(auditPayload),
       JSON.stringify({
         candidateId: candidate.id,
         candidateSource: candidate.source,
         domainConfidence: candidate.domainConfidence,
         prioritySeed: candidate.prioritySeed,
+        parkedDomain: parked ? audit.finalUrl : null,
       }),
     ],
   );
