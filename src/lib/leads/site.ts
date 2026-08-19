@@ -2,7 +2,14 @@ import type { CandidateRow } from "@/lib/leads/crawl";
 import { clamp } from "@/lib/leads/crawl";
 import { enrichPublicEmail } from "@/lib/leads/contact-enrichment";
 import { auditWebsite as baseAuditWebsite } from "@/lib/leads/site-audit";
-import type { WebsiteAuditResult } from "@/lib/leads/site-audit";
+import type { WebsiteAuditResult as BaseWebsiteAuditResult } from "@/lib/leads/site-audit";
+
+export type WebsiteAuditResult = Omit<BaseWebsiteAuditResult, "audit"> & {
+  audit: Record<string, unknown> & {
+    dimensions?: Record<string, unknown>;
+    accountSignals?: Record<string, unknown>;
+  };
+};
 
 export {
   canCrawlPath,
@@ -20,7 +27,7 @@ export {
 } from "@/lib/leads/site-discovery";
 
 export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAuditResult> {
-  const audit = await baseAuditWebsite(candidate);
+  const audit = (await baseAuditWebsite(candidate)) as WebsiteAuditResult;
   if (audit.contactEmail || !candidate.websiteUrl) return audit;
 
   // Free page-level enrichment is worthwhile for near-qualified opportunities too,
@@ -69,5 +76,3 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
     audit: enrichmentAudit,
   };
 }
-
-export type { WebsiteAuditResult } from "@/lib/leads/site-audit";
