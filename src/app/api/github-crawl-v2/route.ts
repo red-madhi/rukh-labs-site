@@ -5,7 +5,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const ALLOWED_WORKFLOWS = ["rukh-leads-oidc-scheduler-v2.yml"];
+const ALLOWED_WORKFLOWS = [
+  "rukh-leads-oidc-scheduler-v2.yml",
+  "rukh-leads-powerbi-fresh-jobs.yml",
+];
 const routes: Record<string, string> = {
   bluesky: "/api/leads/collect/bluesky",
   social: "/api/leads/collect/social-search",
