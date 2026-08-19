@@ -23,6 +23,15 @@ const API_ENDPOINTS = [
   "https://api.sam.gov/prod/opportunities/v2/search",
 ] as const;
 
+const websiteTitlePattern =
+  /\b(?:website|web site|web design|website design|website redesign|web development|website development|web portal|internet site|public website|content management system|cms)\b/i;
+const educationFalsePositivePattern =
+  /\b(?:course|courses|curriculum|instructional|training|classroom|student materials?|textbook|digital imaging|digital media|digital publishing|video communications?)\b/i;
+const technicalWebServicesPattern =
+  /\b(?:api|apis|application programming interface|web services?|soap service|rest services?)\b/i;
+const explicitWebsitePattern =
+  /\b(?:website|web site|website design|website redesign|website development|web portal|internet site|public website|content management system|cms)\b/i;
+
 type SamPointOfContact = {
   type?: string;
   title?: string;
@@ -138,13 +147,9 @@ function qualify(opportunity: SamOpportunity, matchedTitle: string) {
   const noticeId = cleanText(opportunity.noticeId, 100);
   const title = cleanText(opportunity.title, 300);
   if (!noticeId || !title) return null;
-  if (
-    !/\b(?:website|web site|web design|website design|website redesign|web development|website development|digital experience|digital services|web services|content management system|cms|web portal|internet site)\b/i.test(
-      title,
-    )
-  ) {
-    return null;
-  }
+  if (!websiteTitlePattern.test(title)) return null;
+  if (educationFalsePositivePattern.test(title)) return null;
+  if (technicalWebServicesPattern.test(title) && !explicitWebsitePattern.test(title)) return null;
 
   const organization = cleanText(opportunity.fullParentPathName, 260) || "Federal procurement office";
   const contact = contactFor(opportunity);
