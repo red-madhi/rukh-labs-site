@@ -1,0 +1,52 @@
+name: Verify Rukh Leads current main
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-rukh-leads-once.yml"
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verify-rukh-leads-current-main
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - id: build
+        continue-on-error: true
+        run: pnpm build
+      - name: Record verification result
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+        run: |
+          SOURCE_SHA=$(git rev-parse HEAD)
+          printf 'Rukh Leads build verification\nsource_commit=%s\nstatus=%s\nverified_at=%s\n' "$SOURCE_SHA" "$BUILD_OUTCOME" "$(date -u +%FT%TZ)" > .github/rukh-leads-build-result.txt
+          git add .github/rukh-leads-build-result.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Record Rukh Leads build result" || true
+          git push origin HEAD:main
+      - name: Fail workflow if build failed
+        if: steps.build.outcome != 'success'
+        run: exit 1
