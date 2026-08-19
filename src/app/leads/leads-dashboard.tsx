@@ -5,7 +5,6 @@ import {
   Activity,
   ArrowUpRight,
   Check,
-  Clipboard,
   Database,
   ExternalLink,
   Flame,
@@ -29,6 +28,7 @@ import type {
   LeadOpportunity,
   LeadStatus,
 } from "@/lib/leads/types";
+import { OutreachPlaybook } from "./outreach-playbook";
 import styles from "./leads.module.css";
 
 const statusOptions: LeadStatus[] = [
@@ -73,10 +73,10 @@ function statusTone(status: LeadStatus) {
     return "border-[#d7a45f]/35 bg-[#d7a45f]/10 text-[#efc37c]";
   }
   if (["lost", "ignored"].includes(status)) {
-    return "border-white/10 bg-white/[0.025] text-white/40";
+    return "border-white/10 bg-white/[.025] text-white/40";
   }
-  if (status === "contacted") return "border-sky-300/30 bg-sky-300/[0.08] text-sky-200";
-  return "border-[#ef2a26]/30 bg-[#ef2a26]/[0.08] text-[#ff9288]";
+  if (status === "contacted") return "border-sky-300/30 bg-sky-300/[.08] text-sky-200";
+  return "border-[#ef2a26]/30 bg-[#ef2a26]/[.08] text-[#ff9288]";
 }
 
 function collectorTone(status: LeadCollectorState["status"]) {
@@ -93,7 +93,17 @@ function SourceIcon({ source }: { source: LeadOpportunity["source"] }) {
   return <Activity className="size-4" aria-hidden />;
 }
 
-function Metric({ label, value, note, hot = false }: { label: string; value: string | number; note: string; hot?: boolean }) {
+function Metric({
+  label,
+  value,
+  note,
+  hot = false,
+}: {
+  label: string;
+  value: string | number;
+  note: string;
+  hot?: boolean;
+}) {
   return (
     <div className={`${styles.cut} border border-white/10 bg-[#090807]/90 p-4 shadow-[0_25px_70px_rgba(0,0,0,.28)]`}>
       <p className="text-[9px] font-bold uppercase tracking-[.2em] text-white/30">{label}</p>
@@ -119,14 +129,14 @@ function ActionLink({
       href={href}
       target={href.startsWith("http") ? "_blank" : undefined}
       rel={href.startsWith("http") ? "noreferrer" : undefined}
-      className={`inline-flex min-h-9 items-center gap-2 border px-3 py-2 text-[11px] font-semibold transition ${
+      className={`inline-flex min-h-9 max-w-full items-center gap-2 break-all border px-3 py-2 text-[11px] font-semibold leading-5 transition ${
         primary
           ? "border-[#d7a45f]/35 bg-[#d7a45f]/[.08] text-[#efc37c] hover:bg-[#d7a45f]/[.13]"
           : "border-white/10 bg-white/[.025] text-white/60 hover:bg-white/[.055] hover:text-white/85"
       }`}
     >
       <Icon className="size-3.5 shrink-0" aria-hidden />
-      <span className="break-all">{label}</span>
+      <span className="min-w-0 break-all">{label}</span>
     </a>
   );
 }
@@ -143,24 +153,24 @@ function ContactRow({
   href?: string;
 }) {
   return (
-    <div className="grid grid-cols-[20px_82px_minmax(0,1fr)] items-start gap-2 border-b border-white/7 py-2.5 last:border-b-0">
+    <div className="grid min-w-0 grid-cols-[20px_minmax(0,1fr)] gap-x-2 gap-y-1 border-b border-white/7 py-2.5 last:border-b-0 sm:grid-cols-[20px_82px_minmax(0,1fr)]">
       <Icon className="mt-0.5 size-4 text-[#d7a45f]/70" aria-hidden />
-      <span className="text-[9px] font-bold uppercase tracking-[.14em] text-white/26">{label}</span>
+      <span className="text-[9px] font-bold uppercase tracking-[.13em] text-white/28">{label}</span>
       {value ? (
         href ? (
           <a
             href={href}
             target={href.startsWith("http") ? "_blank" : undefined}
             rel={href.startsWith("http") ? "noreferrer" : undefined}
-            className="min-w-0 break-all text-xs leading-5 text-[#e8c487] underline decoration-[#d7a45f]/25 underline-offset-4 hover:text-[#f7d8a3]"
+            className="col-span-2 min-w-0 break-all text-xs leading-5 text-[#e8c487] underline decoration-[#d7a45f]/25 underline-offset-4 hover:text-[#f7d8a3] sm:col-span-1"
           >
             {value}
           </a>
         ) : (
-          <span className="min-w-0 break-words text-xs leading-5 text-white/65">{value}</span>
+          <span className="col-span-2 min-w-0 break-words text-xs leading-5 text-white/65 sm:col-span-1">{value}</span>
         )
       ) : (
-        <span className="text-xs leading-5 text-white/25">Not found yet</span>
+        <span className="col-span-2 text-xs text-white/25 sm:col-span-1">Not found yet</span>
       )}
     </div>
   );
@@ -176,7 +186,6 @@ export function LeadsDashboard() {
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
-  const [copied, setCopied] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -312,13 +321,6 @@ export function LeadsDashboard() {
     }
   }
 
-  async function copyPitch() {
-    if (!selected) return;
-    await navigator.clipboard.writeText(selected.pitch);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1500);
-  }
-
   return (
     <div className={`${styles.shell} min-h-screen text-[#f4efe3]`}>
       <div className={styles.stars} aria-hidden />
@@ -334,24 +336,27 @@ export function LeadsDashboard() {
                 <span className="inline-flex items-center gap-2 border border-emerald-300/20 bg-emerald-300/[.06] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.18em] text-emerald-200">
                   <span className="size-1.5 rounded-full bg-emerald-300 shadow-[0_0_12px_rgba(110,231,183,.8)]" /> Live database
                 </span>
+                <span className="inline-flex items-center gap-2 border border-[#d7a45f]/20 bg-[#d7a45f]/[.04] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[.18em] text-[#e9ba72]">
+                  <Mail className="size-3" aria-hidden /> Data-backed outreach
+                </span>
               </div>
               <h1 className="mt-3 text-[clamp(2.4rem,7vw,5rem)] font-black uppercase leading-[.88] tracking-[-.07em]">
                 <span className="text-[#f2eee2]">Rukh</span> <span className="text-[#d7a45f]">Leads</span>
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-white/48 sm:text-base">
-                Nationwide lead intelligence for website sales. Find buying signals across multiple sources, rank them, and get there before the pile-on.
+                Nationwide website lead intelligence with ranked opportunities, verified contact paths, and per-lead outreach sequences built from large-scale cold-email research.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button onClick={() => void load()} disabled={loading} className="inline-flex h-11 items-center gap-2 border border-white/12 bg-white/[.035] px-4 text-xs font-bold uppercase tracking-[.12em] text-white/65 hover:bg-white/[.06] disabled:opacity-50">
+              <button onClick={() => void load()} disabled={loading} className="inline-flex min-h-11 items-center gap-2 border border-white/12 bg-white/[.035] px-4 py-2 text-xs font-bold uppercase tracking-[.12em] text-white/65 hover:bg-white/[.06] disabled:opacity-50">
                 <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} aria-hidden /> Refresh
               </button>
-              <button onClick={() => void runScan()} disabled={scanning} className="inline-flex h-11 items-center gap-2 border border-[#ef2a26]/45 bg-[#ef2a26]/12 px-4 text-xs font-bold uppercase tracking-[.12em] text-[#ff9288] hover:bg-[#ef2a26]/18 disabled:opacity-50">
+              <button onClick={() => void runScan()} disabled={scanning} className="inline-flex min-h-11 items-center gap-2 border border-[#ef2a26]/45 bg-[#ef2a26]/12 px-4 py-2 text-xs font-bold uppercase tracking-[.12em] text-[#ff9288] hover:bg-[#ef2a26]/18 disabled:opacity-50">
                 <Zap className={`size-4 ${scanning ? "animate-pulse" : ""}`} aria-hidden /> {scanning ? "Scanning all" : "Scan all sources"}
               </button>
             </div>
           </div>
-          {scanMessage ? <p className="relative mt-4 border border-[#d7a45f]/20 bg-[#d7a45f]/[.05] px-4 py-3 text-xs leading-5 text-[#efd09b] md:ml-20">{scanMessage}</p> : null}
+          {scanMessage ? <p className="relative mt-4 break-words border border-[#d7a45f]/20 bg-[#d7a45f]/[.05] px-4 py-3 text-xs leading-5 text-[#efd09b] md:ml-20">{scanMessage}</p> : null}
         </header>
 
         <section className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -391,7 +396,7 @@ export function LeadsDashboard() {
           <main className="min-w-0">
             {view === "sources" ? (
               <section className={`${styles.cut} border border-white/10 bg-[#090807]/95 p-5 sm:p-6`}>
-                <div className="flex items-end justify-between gap-4 border-b border-white/8 pb-4">
+                <div className="flex flex-col gap-3 border-b border-white/8 pb-4 sm:flex-row sm:items-end sm:justify-between">
                   <div><p className="text-[9px] font-bold uppercase tracking-[.2em] text-[#d7a45f]">Collector network</p><h2 className="mt-2 text-2xl font-black tracking-[-.04em]">Sources & automation</h2></div>
                   <button onClick={() => void runScan()} disabled={scanning} className="border border-[#ef2a26]/40 bg-[#ef2a26]/10 px-3 py-2 text-xs font-bold text-[#ff9288]">Scan all sources</button>
                 </div>
@@ -409,11 +414,11 @@ export function LeadsDashboard() {
                 </div>
               </section>
             ) : (
-              <section className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_500px]">
+              <section className="grid min-w-0 gap-3 2xl:grid-cols-[minmax(0,1fr)_540px]">
                 <div className={`${styles.cut} min-w-0 border border-white/10 bg-[#090807]/95`}>
                   <div className="flex flex-col gap-3 border-b border-white/8 p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div><p className="text-[9px] font-bold uppercase tracking-[.2em] text-[#d7a45f]">Ranked queue</p><h2 className="mt-1 text-xl font-black tracking-[-.03em]">{view === "hot" ? "Highest-priority leads" : view === "intent" ? "Public intent leads" : "Best current opportunities"}</h2></div>
-                    <label className="flex h-10 min-w-0 items-center gap-2 border border-white/10 bg-black/30 px-3 sm:w-72"><Search className="size-4 shrink-0 text-white/25" aria-hidden /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search leads, contacts, websites" className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/22" /></label>
+                    <label className="flex min-h-10 min-w-0 items-center gap-2 border border-white/10 bg-black/30 px-3 sm:w-72"><Search className="size-4 shrink-0 text-white/25" aria-hidden /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search leads, contacts, websites" className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/22" /></label>
                   </div>
 
                   {error ? <div className="m-4 border border-[#ef2a26]/30 bg-[#ef2a26]/8 p-4 text-sm text-[#ff9a91]">{error}</div> : null}
@@ -427,7 +432,11 @@ export function LeadsDashboard() {
                         <button onClick={() => setSelectedId(lead.id)} className="grid w-full gap-3 text-left sm:grid-cols-[64px_minmax(0,1fr)_auto]">
                           <div className={`grid h-14 w-14 place-items-center border text-lg font-black ${scoreTone(lead.score)}`}>{lead.score}</div>
                           <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[.15em] text-[#e1b36d]"><SourceIcon source={lead.source}/>{lead.sourceLabel}</span><span className={`border px-2 py-0.5 text-[8px] font-bold uppercase tracking-[.13em] ${statusTone(lead.status)}`}>{lead.status}</span></div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="inline-flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[.15em] text-[#e1b36d]"><SourceIcon source={lead.source}/>{lead.sourceLabel}</span>
+                              <span className={`border px-2 py-0.5 text-[8px] font-bold uppercase tracking-[.13em] ${statusTone(lead.status)}`}>{lead.status}</span>
+                              <span className="inline-flex items-center gap-1 border border-[#d7a45f]/15 bg-[#d7a45f]/[.035] px-2 py-0.5 text-[8px] font-bold uppercase tracking-[.12em] text-[#dfb36f]"><Mail className="size-2.5" /> email playbook</span>
+                            </div>
                             <h3 className="mt-2 break-words text-base font-semibold leading-6 text-white/88">{lead.company}</h3>
                             <p className="mt-1 whitespace-normal break-words text-xs leading-5 text-white/45">{lead.summary}</p>
                             <p className="mt-2 flex flex-wrap items-center gap-1.5 text-[10px] text-white/28"><MapPin className="size-3" aria-hidden />{lead.location}<span>·</span>{lead.industry}<span>·</span>{relativeTime(lead.discoveredAt)}</p>
@@ -485,7 +494,7 @@ export function LeadsDashboard() {
                         </div>
                       ) : null}
 
-                      <div className="mt-5 border-t border-white/8 pt-4"><div className="flex items-center justify-between gap-3"><p className="text-[8px] font-bold uppercase tracking-[.18em] text-white/25">Suggested opener</p><button onClick={() => void copyPitch()} className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-[#e7b66f]">{copied ? <Check className="size-3"/> : <Clipboard className="size-3"/>}{copied ? "Copied" : "Copy"}</button></div><p className="mt-2 whitespace-normal break-words border border-white/8 bg-black/25 p-3 text-xs leading-6 text-white/52">{selected.pitch}</p></div>
+                      <OutreachPlaybook lead={selected} />
 
                       <div className="mt-5 grid gap-2 sm:grid-cols-2"><label className="border border-white/10 bg-black/25 px-3 py-2"><span className="block text-[8px] uppercase tracking-[.15em] text-white/24">Pipeline status</span><select value={selected.status} onChange={(event) => void updateStatus(event.target.value as LeadStatus)} className="mt-1 w-full bg-transparent text-xs text-white/70 outline-none">{statusOptions.map((status) => <option key={status} value={status} className="bg-[#090807]">{status}</option>)}</select></label>{selected.website ? <ActionLink href={selected.website} label="Open website" icon={Globe2} primary /> : selected.sourceUrl ? <ActionLink href={selected.sourceUrl} label="Open source" icon={ExternalLink} primary /> : null}</div>
                     </>
