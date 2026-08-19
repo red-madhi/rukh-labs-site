@@ -16,54 +16,32 @@ export async function GET(request: NextRequest) {
     leadNeonQuery(
       `UPDATE public.lead_opportunities
        SET archived_at = now(), updated_at = now()
-       WHERE archived_at IS NULL
-         AND status = 'new'
-         AND source = 'power-bi'
-         AND tags ? 'job-board'
+       WHERE archived_at IS NULL AND status = 'new' AND source = 'power-bi' AND tags ? 'job-board'
          AND COALESCE(source_published_at, discovered_at) <= now() - interval '12 hours'
        RETURNING id::text`,
     ),
     leadNeonQuery(
       `UPDATE public.lead_opportunities
        SET archived_at = now(), updated_at = now()
-       WHERE archived_at IS NULL
-         AND status = 'new'
-         AND source = 'intent'
-         AND EXISTS (
-           SELECT 1 FROM jsonb_array_elements_text(tags) tag
-           WHERE lower(tag) IN ('bluesky','mastodon','linkedin','x','public intent','extreme fresh')
-         )
+       WHERE archived_at IS NULL AND status = 'new' AND source = 'intent'
+         AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(tags) tag WHERE lower(tag) IN ('bluesky','mastodon','linkedin','x','public intent','extreme fresh'))
          AND COALESCE(source_published_at, discovered_at) <= now() - interval '72 hours'
        RETURNING id::text`,
     ),
     leadNeonQuery(
       `UPDATE public.lead_opportunities
        SET archived_at = now(), updated_at = now()
-       WHERE archived_at IS NULL
-         AND status = 'new'
-         AND source = 'power-bi'
-         AND NOT (tags ? 'job-board')
-         AND EXISTS (
-           SELECT 1 FROM jsonb_array_elements_text(tags) tag
-           WHERE lower(tag) IN ('direct ask','extreme fresh','bluesky','mastodon')
-         )
+       WHERE archived_at IS NULL AND status = 'new' AND source = 'power-bi' AND NOT (tags ? 'job-board')
+         AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(tags) tag WHERE lower(tag) IN ('direct ask','extreme fresh','bluesky','mastodon'))
          AND COALESCE(source_published_at, discovered_at) <= now() - interval '72 hours'
        RETURNING id::text`,
     ),
     leadNeonQuery(
       `UPDATE public.lead_opportunities
        SET archived_at = now(), updated_at = now()
-       WHERE archived_at IS NULL
-         AND status = 'new'
-         AND source = 'power-bi'
-         AND EXISTS (
-           SELECT 1 FROM jsonb_array_elements_text(tags) tag
-           WHERE lower(tag) = 'proactive signal'
-         )
-         AND NOT EXISTS (
-           SELECT 1 FROM jsonb_array_elements_text(tags) tag
-           WHERE lower(tag) IN ('procurement','sam.gov','rfp')
-         )
+       WHERE archived_at IS NULL AND status = 'new' AND source = 'power-bi'
+         AND EXISTS (SELECT 1 FROM jsonb_array_elements_text(tags) tag WHERE lower(tag) = 'proactive signal')
+         AND NOT EXISTS (SELECT 1 FROM jsonb_array_elements_text(tags) tag WHERE lower(tag) IN ('procurement','sam.gov','rfp'))
          AND COALESCE(source_published_at, discovered_at) <= now() - interval '30 days'
        RETURNING id::text`,
     ),
@@ -73,23 +51,18 @@ export async function GET(request: NextRequest) {
     `WITH stale AS (
        SELECT id, raw_payload->>'candidateId' AS candidate_id
        FROM public.lead_opportunities
-       WHERE archived_at IS NULL
-         AND status = 'new'
-         AND source = 'site-audit'
-         AND last_checked_at <= now() - interval '90 days'
-         AND raw_payload ? 'candidateId'
+       WHERE archived_at IS NULL AND status = 'new' AND source = 'site-audit'
+         AND last_checked_at <= now() - interval '90 days' AND raw_payload ? 'candidateId'
      ), requeued AS (
        UPDATE public.lead_candidates candidate
        SET status = 'audit-pending', next_action_at = now(), updated_at = now()
        FROM stale
-       WHERE candidate.id::text = stale.candidate_id
-         AND candidate.website_url IS NOT NULL
+       WHERE candidate.id::text = stale.candidate_id AND candidate.website_url IS NOT NULL
        RETURNING candidate.id
      )
      UPDATE public.lead_opportunities lead
      SET archived_at = now(), updated_at = now()
-     FROM stale
-     WHERE lead.id = stale.id
+     FROM stale WHERE lead.id = stale.id
      RETURNING lead.id::text`,
   );
 
@@ -97,24 +70,35 @@ export async function GET(request: NextRequest) {
     `WITH stale AS (
        SELECT id, raw_payload->>'candidateId' AS candidate_id
        FROM public.lead_opportunities
-       WHERE archived_at IS NULL
-         AND status = 'new'
-         AND source = 'new-business'
-         AND last_checked_at <= now() - interval '180 days'
-         AND raw_payload ? 'candidateId'
+       WHERE archived_at IS NULL AND status = 'new' AND source = 'new-business'
+         AND last_checked_at <= now() - interval '180 days' AND raw_payload ? 'candidateId'
      ), requeued AS (
        UPDATE public.lead_candidates candidate
        SET status = 'domain-pending', next_action_at = now(), attempts = 0, updated_at = now()
        FROM stale
-       WHERE candidate.id::text = stale.candidate_id
-         AND candidate.website_url IS NULL
+       WHERE candidate.id::text = stale.candidate_id AND candidate.website_url IS NULL
        RETURNING candidate.id
      )
      UPDATE public.lead_opportunities lead
      SET archived_at = now(), updated_at = now()
-     FROM stale
-     WHERE lead.id = stale.id
+     FROM stale WHERE lead.id = stale.id
      RETURNING lead.id::text`,
+  );
+
+  // Motion evidence must decay too. This prevents a permit/license flag from permanently
+  // keeping an account at the front of the queue months or years after the event.
+  const staleMotion = await leadNeonQuery(
+    `UPDATE public.lead_candidates
+     SET metadata = metadata - 'motionSignal' - 'motionSignalDate' - 'motionFreshnessDays',
+         updated_at = now()
+     WHERE archived_at IS NULL
+       AND metadata ? 'motionSignal'
+       AND COALESCE(
+         NULLIF(metadata->>'motionSignalDate','')::timestamptz,
+         NULLIF(metadata->>'signalDate','')::timestamptz,
+         formed_at::timestamptz
+       ) < now() - interval '365 days'
+     RETURNING id::text`,
   );
 
   const counts = {
@@ -124,6 +108,7 @@ export async function GET(request: NextRequest) {
     powerBiProactive30d: results[3].rows?.length ?? results[3].rowCount ?? 0,
     websiteAuditRecheck90d: staleAuditCandidates.rows?.length ?? staleAuditCandidates.rowCount ?? 0,
     noWebsiteRecheck180d: staleNoWebsite.rows?.length ?? staleNoWebsite.rowCount ?? 0,
+    staleMotion365d: staleMotion.rows?.length ?? staleMotion.rowCount ?? 0,
   };
 
   return privateJson({ ok: true, source: "signal-expiry", counts, expired: Object.values(counts).reduce((a, b) => a + b, 0) });
