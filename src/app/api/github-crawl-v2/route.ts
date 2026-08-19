@@ -12,6 +12,7 @@ const ALLOWED_WORKFLOWS = [
   "rukh-leads-domain-catchup.yml",
   "rukh-leads-motion-signals.yml",
   "rukh-leads-signal-expiry.yml",
+  "rukh-leads-powerbi-adoption.yml",
 ];
 const routes: Record<string, string> = {
   bluesky: "/api/leads/collect/bluesky",
@@ -32,6 +33,7 @@ const routes: Record<string, string> = {
   powerbi: "/api/leads/collect/power-bi",
   "powerbi-live": "/api/leads/collect/power-bi-live",
   "powerbi-web": "/api/leads/collect/power-bi-web",
+  "powerbi-adoption": "/api/leads/collect/power-bi-adoption",
   "powerbi-rfp": "/api/leads/collect/power-bi-rfp",
   "powerbi-sam": "/api/leads/collect/power-bi-sam",
   all: "/api/leads/crawl",
