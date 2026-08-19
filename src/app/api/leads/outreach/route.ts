@@ -27,6 +27,10 @@ function validId(value: unknown) {
   return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
+function hasActiveOutreach(state: { sentAt?: string; state?: string } | undefined) {
+  return Boolean(state?.sentAt && ["sent", "replied", "completed"].includes(state.state || ""));
+}
+
 async function requireVerifiedGmail() {
   const configuration = await verifyGmailConnection();
   if (configuration.configured) return { configuration, response: null };
@@ -106,22 +110,28 @@ export async function POST(request: NextRequest) {
 
     if (action === "send-bulk") {
       const items = Array.isArray(body.items) ? body.items.slice(0, 25) : [];
+      const existingStates = await listOutreachStates();
       const results: Array<{ leadId: string; ok: boolean; error?: string }> = [];
       for (const raw of items) {
         const item = raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
         if (!validId(item.leadId)) continue;
+        const leadId = item.leadId as string;
+        if (hasActiveOutreach(existingStates[leadId])) {
+          results.push({ leadId, ok: true });
+          continue;
+        }
         try {
           await sendInitialOutreach({
-            leadId: item.leadId as string,
+            leadId,
             subject: typeof item.subject === "string" ? item.subject : "",
             body: typeof item.body === "string" ? item.body : "",
             followUpBody: typeof item.followUpBody === "string" ? item.followUpBody : "",
             autoFollowUp: item.autoFollowUp !== false,
             followUpDays: Number(item.followUpDays) || 7,
           });
-          results.push({ leadId: item.leadId as string, ok: true });
+          results.push({ leadId, ok: true });
         } catch (error) {
-          results.push({ leadId: item.leadId as string, ok: false, error: sanitizeGmailError(error) });
+          results.push({ leadId, ok: false, error: sanitizeGmailError(error) });
         }
       }
       const sent = results.filter((item) => item.ok).length;
@@ -133,8 +143,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!validId(body.leadId)) return privateJson({ error: "Lead ID is invalid." }, { status: 400 });
+    const leadId = body.leadId as string;
+    const existingState = (await listOutreachStates())[leadId];
+    if (hasActiveOutreach(existingState)) {
+      return privateJson({ ok: true, state: existingState, alreadyActive: true });
+    }
+
     const state = await sendInitialOutreach({
-      leadId: body.leadId as string,
+      leadId,
       subject: typeof body.subject === "string" ? body.subject : "",
       body: typeof body.body === "string" ? body.body : "",
       followUpBody: typeof body.followUpBody === "string" ? body.followUpBody : "",
