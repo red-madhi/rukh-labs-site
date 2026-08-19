@@ -12,6 +12,7 @@ import type { CandidateRow } from "@/lib/leads/crawl";
 import { leadNeonQuery } from "@/lib/leads/neon";
 import { auditWebsite } from "@/lib/leads/site";
 import type { WebsiteAuditResult } from "@/lib/leads/site";
+import { isThirdPartyBusinessUrl } from "@/lib/leads/site-fetch";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -242,12 +243,49 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
   return true;
 }
 
+async function requeueThirdPartyPage(candidate: CandidateRow) {
+  if (!candidate.websiteUrl || !isThirdPartyBusinessUrl(candidate.websiteUrl)) return false;
+  const page = candidate.websiteUrl;
+  await Promise.all([
+    leadNeonQuery(
+      `UPDATE public.lead_candidates
+       SET website_url = NULL,
+           domain_confidence = 0,
+           status = 'domain-pending',
+           next_action_at = now(),
+           last_error = NULL,
+           metadata = metadata || $2::jsonb,
+           updated_at = now()
+       WHERE id = $1::uuid`,
+      [
+        candidate.id,
+        JSON.stringify({
+          thirdPartyBusinessPage: page,
+          thirdPartyPageDetectedAt: new Date().toISOString(),
+          ownedWebsiteStillNeeded: true,
+        }),
+      ],
+    ),
+    leadNeonQuery(
+      `UPDATE public.lead_opportunities
+       SET archived_at = now(), updated_at = now()
+       WHERE source_key = $1 AND source = 'site-audit' AND archived_at IS NULL`,
+      [`candidate:${candidate.id}`],
+    ),
+  ]);
+  return true;
+}
+
 async function handleCandidate(candidate: CandidateRow) {
   try {
+    if (await requeueThirdPartyPage(candidate)) {
+      return { promoted: false, qualified: false, error: false, requeuedThirdParty: true };
+    }
+
     const audit = await auditWebsite(candidate);
     await saveAudit(candidate, audit);
     const promoted = await promoteAudit(candidate, audit);
-    return { promoted, qualified: audit.qualified, error: false };
+    return { promoted, qualified: audit.qualified, error: false, requeuedThirdParty: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Website audit failed.";
     const terminal = /robots policy|blocked directory|not safe/i.test(message);
@@ -260,7 +298,7 @@ async function handleCandidate(candidate: CandidateRow) {
        WHERE id = $1::uuid`,
       [candidate.id, terminal ? "rejected" : "error", message.slice(0, 700)],
     );
-    return { promoted: false, qualified: false, error: true };
+    return { promoted: false, qualified: false, error: true, requeuedThirdParty: false };
   }
 }
 
@@ -282,6 +320,7 @@ export async function GET(request: NextRequest) {
     const promoted = outcomes.filter((outcome) => outcome.promoted).length;
     const qualified = outcomes.filter((outcome) => outcome.qualified).length;
     const errors = outcomes.filter((outcome) => outcome.error).length;
+    const requeuedThirdParty = outcomes.filter((outcome) => outcome.requeuedThirdParty).length;
 
     await completeCollectorRun(
       runId,
@@ -292,6 +331,7 @@ export async function GET(request: NextRequest) {
         lastProcessed: candidates.length,
         lastQualified: qualified,
         lastErrors: errors,
+        lastThirdPartyPagesRequeued: requeuedThirdParty,
       },
     );
 
@@ -300,9 +340,10 @@ export async function GET(request: NextRequest) {
       partial: errors > 0,
       source: SOURCE_ID,
       seen: candidates.length,
-      audited: candidates.length - errors,
+      audited: candidates.length - errors - requeuedThirdParty,
       qualified,
       stored: promoted,
+      requeuedThirdParty,
       errors,
     });
   } catch (error) {
