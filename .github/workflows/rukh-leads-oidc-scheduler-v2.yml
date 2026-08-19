@@ -3,10 +3,13 @@ name: Rukh Leads OIDC Scheduler v2
 on:
   schedule:
     - cron: "3,13,23,33,43,53 * * * *"
+    - cron: "6,36 * * * *"
     - cron: "8,38 * * * *"
     - cron: "47 * * * *"
+    - cron: "11 */12 * * *"
     - cron: "17 */12 * * *"
     - cron: "27 5 * * *"
+    - cron: "33 6 * * *"
     - cron: "41 */6 * * *"
   workflow_dispatch:
     inputs:
@@ -18,7 +21,11 @@ on:
         options:
           - all
           - bluesky
+          - mastodon
+          - social
           - web
+          - procurement
+          - sam
           - inbound
           - directories
           - discover
@@ -39,7 +46,7 @@ jobs:
   bluesky:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '3,13,23,33,43,53 * * * *' ||
-      github.event_name == 'workflow_dispatch' && (inputs.source == 'bluesky' || inputs.source == 'all')
+      github.event_name == 'workflow_dispatch' && inputs.source == 'bluesky'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -49,10 +56,23 @@ jobs:
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=bluesky"
 
+  mastodon:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '6,36 * * * *' ||
+      github.event_name == 'workflow_dispatch' && inputs.source == 'mastodon'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Scan public Mastodon timelines
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=mastodon"
+
   inbound:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '8,38 * * * *' ||
-      github.event_name == 'workflow_dispatch' && (inputs.source == 'inbound' || inputs.source == 'all')
+      github.event_name == 'workflow_dispatch' && inputs.source == 'inbound'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -65,7 +85,7 @@ jobs:
   audit:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '47 * * * *' ||
-      github.event_name == 'workflow_dispatch' && (inputs.source == 'audit' || inputs.source == 'all')
+      github.event_name == 'workflow_dispatch' && inputs.source == 'audit'
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
@@ -75,10 +95,23 @@ jobs:
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=audit"
 
+  social-search:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '11 */12 * * *' ||
+      github.event_name == 'workflow_dispatch' && inputs.source == 'social'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Discover public LinkedIn and X post URLs
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=social"
+
   discover:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '17 */12 * * *' ||
-      github.event_name == 'workflow_dispatch' && (inputs.source == 'discover' || inputs.source == 'all')
+      github.event_name == 'workflow_dispatch' && inputs.source == 'discover'
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
@@ -91,7 +124,7 @@ jobs:
   public-web:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '27 5 * * *' ||
-      github.event_name == 'workflow_dispatch' && (inputs.source == 'web' || inputs.source == 'all')
+      github.event_name == 'workflow_dispatch' && inputs.source == 'web'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -101,10 +134,23 @@ jobs:
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=web"
 
+  procurement:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '33 6 * * *' ||
+      github.event_name == 'workflow_dispatch' && inputs.source == 'procurement'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Discover public website RFPs and solicitations
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=procurement"
+
   directories:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '41 */6 * * *' ||
-      github.event_name == 'workflow_dispatch' && (inputs.source == 'directories' || inputs.source == 'all')
+      github.event_name == 'workflow_dispatch' && inputs.source == 'directories'
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
@@ -113,6 +159,17 @@ jobs:
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=directories"
+
+  sam:
+    if: github.event_name == 'workflow_dispatch' && inputs.source == 'sam'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Scan SAM.gov after its free API key is configured
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=sam"
 
   manual-full-pass:
     if: github.event_name == 'workflow_dispatch' && inputs.source == 'all'
