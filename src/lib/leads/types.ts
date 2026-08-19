@@ -3,7 +3,8 @@ export type LeadSource =
   | "new-business"
   | "site-audit"
   | "inbound"
-  | "referral";
+  | "referral"
+  | "power-bi";
 
 export type LeadStatus =
   | "new"
