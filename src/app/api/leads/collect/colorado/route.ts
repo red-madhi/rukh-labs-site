@@ -12,6 +12,11 @@ import {
   privateJson,
   upsertCandidates,
 } from "@/lib/leads/crawl";
+import {
+  backpressureLabel,
+  blindCandidateAllowance,
+  getLeadQueuePressure,
+} from "@/lib/leads/backpressure";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -154,7 +159,12 @@ export async function GET(request: NextRequest) {
       ];
     });
 
-    const upserted = await upsertCandidates(candidates);
+    const pressure = await getLeadQueuePressure();
+    const allowance = blindCandidateAllowance(candidates.length, pressure);
+    const selectedCandidates = candidates
+      .sort((left, right) => right.prioritySeed - left.prioritySeed)
+      .slice(0, allowance);
+    const upserted = await upsertCandidates(selectedCandidates);
     const nextOffset =
       rows.length < PAGE_SIZE || offset + PAGE_SIZE >= MAX_ROTATING_OFFSET
         ? 0
@@ -162,16 +172,24 @@ export async function GET(request: NextRequest) {
     await completeCollectorRun(runId, SOURCE_ID, rows.length, upserted, {
       offset: nextOffset,
       windowMonths: 24,
+      backpressure: backpressureLabel(pressure),
+      domainQueue: pressure.domainQueue,
+      generatedCandidates: candidates.length,
+      admittedCandidates: selectedCandidates.length,
     });
 
     return privateJson({
       ok: true,
       source: SOURCE_ID,
       seen: rows.length,
-      qualified: candidates.length,
+      qualified: selectedCandidates.length,
       candidates: upserted,
       stored: 0,
       nextOffset,
+      backpressure: backpressureLabel(pressure),
+      domainQueue: pressure.domainQueue,
+      generatedCandidates: candidates.length,
+      admittedCandidates: selectedCandidates.length,
     });
   } catch (error) {
     const message = await failCollectorRun(runId, SOURCE_ID, error);
