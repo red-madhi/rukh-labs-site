@@ -48,7 +48,20 @@ function parseAudit(value: string | null) {
   if (!value) return undefined;
   try {
     const parsed = JSON.parse(value) as LeadOpportunity["audit"];
-    return parsed && typeof parsed === "object" ? parsed : undefined;
+    if (!parsed || typeof parsed !== "object") return undefined;
+
+    // Older audits called crawler response time "performance" and a detected form
+    // "working". Preserve the underlying evidence while removing those overclaims
+    // before it reaches the UI.
+    if (typeof parsed.performance === "number" && typeof parsed.serverResponseScore !== "number") {
+      parsed.serverResponseScore = parsed.performance;
+    }
+    if (typeof parsed.responseMs === "number" && typeof parsed.serverResponseMs !== "number") {
+      parsed.serverResponseMs = parsed.responseMs;
+    }
+    delete parsed.performance;
+    if (parsed.contactForm === "working") parsed.contactForm = "detected";
+    return parsed;
   } catch {
     return undefined;
   }
@@ -231,14 +244,34 @@ export async function PATCH(request: NextRequest) {
 
     const result = await leadNeonQuery(
       `WITH previous AS (
-         SELECT id, status
+         SELECT id, status, source, score, signals, tags, pitch
          FROM public.lead_opportunities
          WHERE id = $1::uuid
        ), updated AS (
          UPDATE public.lead_opportunities AS lead
-         SET status = $2, updated_at = now()
+         SET status = $2,
+             raw_payload = jsonb_set(
+               COALESCE(lead.raw_payload, '{}'::jsonb),
+               '{outcomeHistory}',
+               COALESCE(lead.raw_payload->'outcomeHistory', '[]'::jsonb) ||
+               jsonb_build_array(
+                 jsonb_build_object(
+                   'at', now(),
+                   'fromStatus', previous.status,
+                   'toStatus', $2,
+                   'source', previous.source,
+                   'score', previous.score,
+                   'signals', previous.signals,
+                   'tags', previous.tags,
+                   'pitch', previous.pitch
+                 )
+               ),
+               true
+             ),
+             updated_at = now()
          FROM previous
          WHERE lead.id = previous.id
+           AND lead.status IS DISTINCT FROM $2
          RETURNING lead.id, previous.status AS old_status
        ), activity AS (
          INSERT INTO public.lead_activity (lead_id, action, from_status, to_status)
@@ -251,7 +284,14 @@ export async function PATCH(request: NextRequest) {
     );
 
     if (!(result.rows?.length ?? 0)) {
-      return privateJson({ error: "Lead was not found." }, { status: 404 });
+      const existing = await leadNeonQuery(
+        `SELECT id::text, status FROM public.lead_opportunities WHERE id = $1::uuid`,
+        [id],
+      );
+      if (!(existing.rows?.length ?? 0)) {
+        return privateJson({ error: "Lead was not found." }, { status: 404 });
+      }
+      return privateJson({ ok: true, id, status, unchanged: true });
     }
     return privateJson({ ok: true, id, status });
   } catch (error) {
