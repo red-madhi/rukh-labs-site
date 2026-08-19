@@ -18,8 +18,20 @@ export type LeadStatus =
 
 export type LeadPriority = "hot" | "strong" | "watch";
 
+export type LeadSignalDimensions = {
+  pain?: number;
+  fit?: number;
+  timing?: number;
+  reachability?: number;
+  convergence?: number;
+};
+
 export type LeadAudit = {
+  // Legacy field retained for older stored audits. The UI presents this as
+  // server/crawl response, not browser performance or Core Web Vitals.
   performance?: number;
+  serverResponseScore?: number;
+  serverResponseMs?: number;
   accessibility?: number;
   seo?: number;
   mobile?: number;
@@ -29,10 +41,12 @@ export type LeadAudit = {
   responseMs?: number;
   htmlBytes?: number;
   hasCta?: boolean;
-  contactForm?: "working" | "broken" | "missing" | "unknown";
+  contactForm?: "detected" | "working" | "broken" | "missing" | "unknown";
   title?: string | null;
   description?: string | null;
   technology?: string | null;
+  commercialStack?: string[];
+  dimensions?: LeadSignalDimensions;
   copyrightYear?: number | null;
   checkedAt?: string;
   error?: string;
