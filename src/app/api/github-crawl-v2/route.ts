@@ -10,7 +10,6 @@ const ALLOWED_WORKFLOWS = [
   "rukh-leads-powerbi-fresh-jobs.yml",
   "rukh-leads-contact-enrichment.yml",
   "rukh-leads-domain-catchup.yml",
-  "rukh-leads-domain-paid.yml",
   "rukh-leads-motion-signals.yml",
   "rukh-leads-signal-expiry.yml",
   "rukh-leads-powerbi-adoption.yml",
