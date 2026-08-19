@@ -14,9 +14,10 @@ type JwtPayload = {
   event_name?: string;
   workflow_ref?: string;
 };
-type JwksPayload = { keys?: JsonWebKey[] };
+type GitHubJwk = JsonWebKey & { kid?: string };
+type JwksPayload = { keys?: GitHubJwk[] };
 
-let cachedKeys: JsonWebKey[] = [];
+let cachedKeys: GitHubJwk[] = [];
 let cachedAt = 0;
 
 function decodePart<T>(part: string): T {
