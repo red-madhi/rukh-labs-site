@@ -10,6 +10,7 @@ on:
     - cron: "17 */12 * * *"
     - cron: "27 5 * * *"
     - cron: "33 6 * * *"
+    - cron: "51 7 * * *"
     - cron: "41 */6 * * *"
   workflow_dispatch:
     inputs:
@@ -147,6 +148,19 @@ jobs:
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=procurement"
 
+  sam:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '51 7 * * *' ||
+      github.event_name == 'workflow_dispatch' && inputs.source == 'sam'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Scan SAM.gov federal website opportunities
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=sam"
+
   directories:
     if: >-
       github.event_name == 'schedule' && github.event.schedule == '41 */6 * * *' ||
@@ -159,17 +173,6 @@ jobs:
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=directories"
-
-  sam:
-    if: github.event_name == 'workflow_dispatch' && inputs.source == 'sam'
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
-    steps:
-      - name: Scan SAM.gov after its free API key is configured
-        run: |
-          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
-          test -n "$TOKEN" -a "$TOKEN" != "null"
-          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=sam"
 
   manual-full-pass:
     if: github.event_name == 'workflow_dispatch' && inputs.source == 'all'
