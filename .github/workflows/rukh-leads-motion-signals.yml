@@ -1,6 +1,10 @@
 name: Rukh Leads Motion Signals
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/rukh-leads-motion-signals.yml"
   schedule:
     - cron: "29 */6 * * *"
   workflow_dispatch:
