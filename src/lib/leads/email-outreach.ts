@@ -42,7 +42,8 @@ type GmailMessage = {
 
 type GmailThread = { id?: string; messages?: GmailMessage[] };
 
-const REQUIRED_FROM = "hello@rukhlabs.com";
+const PRIMARY_FROM = "rukh.labs@gmail.com";
+const REPLY_TO = "hello@rukhlabs.com";
 const MAX_MESSAGES = 30;
 
 function clean(value: unknown, max = 8000) {
@@ -58,22 +59,21 @@ function gmailConfig() {
   const clientId = process.env.GMAIL_CLIENT_ID || process.env.GOOGLE_CLIENT_ID || "";
   const clientSecret = process.env.GMAIL_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET || "";
   const refreshToken = process.env.GMAIL_REFRESH_TOKEN || "";
-  const fromEmail = (process.env.GMAIL_FROM_EMAIL || REQUIRED_FROM).trim().toLowerCase();
-  return { clientId, clientSecret, refreshToken, fromEmail };
+  return { clientId, clientSecret, refreshToken, fromEmail: PRIMARY_FROM, replyToEmail: REPLY_TO };
 }
 
 export function getOutreachConfiguration() {
   const config = gmailConfig();
-  const configured = Boolean(config.clientId && config.clientSecret && config.refreshToken && config.fromEmail === REQUIRED_FROM);
+  const configured = Boolean(config.clientId && config.clientSecret && config.refreshToken);
   return {
     configured,
     sender: config.fromEmail,
-    requiredSender: REQUIRED_FROM,
+    requiredSender: config.fromEmail,
+    replyTo: config.replyToEmail,
     missing: [
       !config.clientId ? "GMAIL_CLIENT_ID" : "",
       !config.clientSecret ? "GMAIL_CLIENT_SECRET" : "",
       !config.refreshToken ? "GMAIL_REFRESH_TOKEN" : "",
-      config.fromEmail !== REQUIRED_FROM ? "GMAIL_FROM_EMAIL=hello@rukhlabs.com" : "",
     ].filter(Boolean),
   };
 }
@@ -82,9 +82,6 @@ async function getAccessToken() {
   const config = gmailConfig();
   if (!config.clientId || !config.clientSecret || !config.refreshToken) {
     throw new Error("Gmail API credentials are not configured.");
-  }
-  if (config.fromEmail !== REQUIRED_FROM) {
-    throw new Error(`Outbound sender must be ${REQUIRED_FROM}.`);
   }
 
   const body = new URLSearchParams({
@@ -165,7 +162,8 @@ function mimeMessage({
   references?: string;
 }) {
   const lines = [
-    `From: Rukh Labs <${REQUIRED_FROM}>`,
+    `From: Rukh Labs <${PRIMARY_FROM}>`,
+    `Reply-To: Rukh Labs <${REPLY_TO}>`,
     `To: ${to}`,
     `Subject: ${subject.replace(/[\r\n]+/g, " ")}`,
     "MIME-Version: 1.0",
@@ -180,7 +178,7 @@ function mimeMessage({
 
 async function getMessageMetadata(messageId: string) {
   const params = new URLSearchParams({ format: "metadata" });
-  ["From", "To", "Subject", "Message-ID", "Date"].forEach((name) => params.append("metadataHeaders", name));
+  ["From", "To", "Reply-To", "Subject", "Message-ID", "Date"].forEach((name) => params.append("metadataHeaders", name));
   return gmailRequest<GmailMessage>(`/messages/${encodeURIComponent(messageId)}?${params}`);
 }
 
@@ -317,7 +315,7 @@ export async function sendInitialOutreach(input: {
   if (!recipientEmail) throw new Error("This lead does not have a valid email address.");
   const previous = parseOutreach(row.outreach);
   if (previous.sentAt && ["sent", "replied"].includes(previous.state || "")) {
-    throw new Error("This lead already has an active outreach thread.");
+    return previous;
   }
 
   const subject = clean(input.subject, 300);
@@ -366,7 +364,7 @@ async function threadOutcome(state: LeadOutreachState) {
   const candidates = (thread.messages ?? []).filter((message) => {
     const from = header(message, "From").toLowerCase();
     const when = Number(message.internalDate || 0);
-    return when > sentMs && !from.includes(REQUIRED_FROM) && !from.includes("rukh.labs@gmail.com");
+    return when > sentMs && !from.includes(PRIMARY_FROM) && !from.includes(REPLY_TO);
   });
   if (!candidates.length) return null;
   const latest = candidates.sort((a, b) => Number(b.internalDate || 0) - Number(a.internalDate || 0))[0];
