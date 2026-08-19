@@ -24,12 +24,12 @@ const searches = [
   {
     label: "fresh direct or proactive signal",
     query:
-      '("Power BI" OR "Microsoft Fabric") ("need help" OR "looking for a consultant" OR "looking for a freelancer" OR "need a consultant" OR "seeking a consultant" OR "recommend a consultant" OR migration OR implementation OR rollout OR modernization OR "moving from Tableau" OR "Fabric adoption" OR "dashboard overhaul" OR "reporting overhaul") -jobs -careers',
+      '("Power BI" OR "Microsoft Fabric") (consultant OR freelancer OR "need help" OR migration OR implementation OR rollout OR modernization OR Tableau) -jobs -careers',
   },
   {
     label: "fresh social post",
     query:
-      '(site:linkedin.com/posts OR site:x.com) ("Power BI" OR "Microsoft Fabric") ("looking for" OR "need help" OR consultant OR freelancer OR contractor OR migration OR implementation OR rollout)',
+      'site:linkedin.com/posts "Power BI" (consultant OR freelancer OR "need help" OR migration OR implementation)',
   },
 ] as const;
 
