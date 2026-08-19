@@ -4,12 +4,39 @@ import {
   normalizeWebsiteUrl,
 } from "@/lib/leads/crawl";
 
+const thirdPartyBusinessHosts = new Set([
+  "facebook.com",
+  "instagram.com",
+  "linkedin.com",
+  "x.com",
+  "twitter.com",
+  "tiktok.com",
+  "youtube.com",
+  "yelp.com",
+  "mapquest.com",
+  "yellowpages.com",
+  "bbb.org",
+  "manta.com",
+  "chamberofcommerce.com",
+  "singleplatform.com",
+  "places.singleplatform.com",
+]);
+
 const blockedHosts = new Set([
-  "facebook.com", "instagram.com", "linkedin.com", "x.com", "twitter.com",
-  "tiktok.com", "youtube.com", "yelp.com", "mapquest.com", "yellowpages.com",
-  "bbb.org", "manta.com", "chamberofcommerce.com", "indeed.com", "glassdoor.com",
-  "ziprecruiter.com", "clutch.co", "designrush.com", "goodfirms.co", "upcity.com",
-  "wix.com", "squarespace.com", "godaddy.com", "google.com", "bing.com", "brave.com",
+  ...thirdPartyBusinessHosts,
+  "indeed.com",
+  "glassdoor.com",
+  "ziprecruiter.com",
+  "clutch.co",
+  "designrush.com",
+  "goodfirms.co",
+  "upcity.com",
+  "wix.com",
+  "squarespace.com",
+  "godaddy.com",
+  "google.com",
+  "bing.com",
+  "brave.com",
 ]);
 
 const parkedPattern =
@@ -42,15 +69,22 @@ function safePublicUrl(value: string) {
   }
 }
 
+function hostMatchesSet(host: string, values: Set<string>) {
+  return values.has(host) || Array.from(values).some((value) => host.endsWith(`.${value}`));
+}
+
+export function isThirdPartyBusinessUrl(value: string) {
+  const parsed = safePublicUrl(value);
+  if (!parsed) return false;
+  const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+  return hostMatchesSet(host, thirdPartyBusinessHosts);
+}
+
 export function isBlockedProspectUrl(value: string) {
   const parsed = safePublicUrl(value);
   if (!parsed) return true;
   const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
-  if (
-    blockedHosts.has(host) ||
-    Array.from(blockedHosts).some((blocked) => host.endsWith(`.${blocked}`)) ||
-    parkingServicePattern.test(parsed.toString())
-  ) {
+  if (hostMatchesSet(host, blockedHosts) || parkingServicePattern.test(parsed.toString())) {
     return true;
   }
   return /\/(?:jobs?|careers?|blog|articles?|guides?|resources?|directory|agencies|companies|marketplace)(?:\/|$)/i.test(
@@ -285,6 +319,25 @@ function technology(html: string) {
   return checks.find(([pattern]) => pattern.test(html))?.[1];
 }
 
+function commercialStack(html: string) {
+  const checks: Array<[RegExp, string]> = [
+    [/AW-\d+|googleadservices\.com|googletagmanager\.com\/gtag|google_conversion/i, "Google Ads / conversion tracking"],
+    [/connect\.facebook\.net\/.*fbevents|\bfbq\s*\(/i, "Meta Pixel"],
+    [/bat\.bing\.com|\buetq\b/i, "Microsoft Ads UET"],
+    [/analytics\.tiktok\.com\/.*pixel|\bttq\b/i, "TikTok Pixel"],
+    [/wodify/i, "Wodify"],
+    [/mindbodyonline|mindbody/i, "Mindbody"],
+    [/zenplanner/i, "Zen Planner"],
+    [/toasttab|toast\.com/i, "Toast"],
+    [/squareup|square\.site|square\.com/i, "Square"],
+    [/cdn\.shopify|shopify/i, "Shopify"],
+    [/js\.stripe\.com|stripe/i, "Stripe"],
+    [/calendly/i, "Calendly"],
+    [/hubspot|hs-scripts\.com|hsforms/i, "HubSpot"],
+  ];
+  return Array.from(new Set(checks.filter(([pattern]) => pattern.test(html)).map(([, label]) => label)));
+}
+
 export type PageSignals = {
   title: string;
   description: string;
@@ -303,6 +356,7 @@ export type PageSignals = {
   altImageCount: number;
   copyrightYear?: number;
   technology?: string;
+  commercialStack: string[];
   parked: boolean;
 };
 
@@ -336,6 +390,7 @@ export function inspectHtml(html: string, baseUrl: string): PageSignals {
     altImageCount,
     copyrightYear: newestCopyrightYear(visibleText),
     technology: technology(html),
+    commercialStack: commercialStack(html),
     parked: parkedPattern.test(parkingEvidence) || parkingServicePattern.test(parkingEvidence),
   };
 }
