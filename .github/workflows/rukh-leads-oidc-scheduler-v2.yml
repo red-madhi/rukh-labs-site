@@ -1,0 +1,126 @@
+name: Rukh Leads OIDC Scheduler v2
+
+on:
+  schedule:
+    - cron: "3,13,23,33,43,53 * * * *"
+    - cron: "8,38 * * * *"
+    - cron: "47 * * * *"
+    - cron: "17 */12 * * *"
+    - cron: "27 5 * * *"
+    - cron: "41 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "Collector to run"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - bluesky
+          - web
+          - inbound
+          - directories
+          - discover
+          - audit
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: rukh-leads-oidc-v2-${{ github.event_name }}-${{ github.event.schedule || inputs.source || 'manual' }}
+  cancel-in-progress: false
+
+env:
+  GATEWAY_URL: https://rukhlabs.com/api/github-crawl-v2
+
+jobs:
+  bluesky:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '3,13,23,33,43,53 * * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'bluesky' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Scan Bluesky with a short-lived OIDC token
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=bluesky"
+
+  inbound:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '8,38 * * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'inbound' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Sync inbound leads with a short-lived OIDC token
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=inbound"
+
+  audit:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '47 * * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'audit' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Audit queued websites without search API usage
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=audit"
+
+  discover:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '17 */12 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'discover' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Discover official websites with a strict Brave budget
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=discover"
+
+  public-web:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '27 5 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'web' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Run one daily public-web intent search
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=web"
+
+  directories:
+    if: >-
+      github.event_name == 'schedule' && github.event.schedule == '41 */6 * * *' ||
+      github.event_name == 'workflow_dispatch' && (inputs.source == 'directories' || inputs.source == 'all')
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Crawl official directories
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=directories"
+
+  manual-full-pass:
+    if: github.event_name == 'workflow_dispatch' && inputs.source == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run all sources manually
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=all"
