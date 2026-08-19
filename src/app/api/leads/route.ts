@@ -77,7 +77,7 @@ function toLead(row: Record<string, string | null>): LeadOpportunity {
     source,
     sourceLabel: sourceLabels[source],
     sourceUrl: normalizeLeadUrl(row.source_url),
-    discoveredAt: row.discovered_at ?? new Date(0).toISOString(),
+    discoveredAt: row.source_published_at ?? row.discovered_at ?? new Date(0).toISOString(),
     company: row.company_name || "Unnamed prospect",
     contactName: row.contact_name || undefined,
     contactEmail: row.contact_email || undefined,
@@ -140,6 +140,7 @@ export async function GET(request: NextRequest) {
           id::text,
           source,
           source_url,
+          source_published_at::text,
           discovered_at::text,
           company_name,
           contact_name,
@@ -164,10 +165,16 @@ export async function GET(request: NextRequest) {
             ($5::text = 'power-bi' AND source = 'power-bi')
             OR ($5::text = 'website' AND source <> 'power-bi')
           )
+          AND NOT (
+            $5::text = 'power-bi'
+            AND source = 'power-bi'
+            AND tags ? 'job-board'
+            AND COALESCE(source_published_at, discovered_at) <= now() - interval '12 hours'
+          )
           AND ($1::text IS NULL OR source = $1)
           AND ($2::text IS NULL OR status = $2)
           AND score >= $3::int
-        ORDER BY score DESC, discovered_at DESC
+        ORDER BY score DESC, COALESCE(source_published_at, discovered_at) DESC
         LIMIT $4::int`,
         [source, status, String(minimumScore), String(limit), feed],
       ),
