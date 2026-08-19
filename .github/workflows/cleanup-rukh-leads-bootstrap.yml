@@ -1,0 +1,30 @@
+name: Cleanup temporary Rukh Leads bootstrap routes
+
+on:
+  push:
+    paths:
+      - ".github/workflows/cleanup-rukh-leads-bootstrap.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Remove temporary bootstrap routes
+        run: |
+          git rm -r --ignore-unmatch src/app/api/rlp-9d8f0eaa1b6c4ec0b4c9e28b3a6f0d21
+          if git diff --cached --quiet; then
+            echo "Temporary routes are already gone."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Remove temporary Rukh Leads bootstrap routes"
+          git push origin HEAD:main
