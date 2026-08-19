@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { CrawlProgress } from "@/app/leads/crawl-progress";
+import { LeadFeedNav } from "@/app/leads/lead-feed-nav";
 import { LeadsDashboard } from "@/app/leads/leads-dashboard";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
 export default function LeadsPage() {
   return (
     <>
+      <LeadFeedNav active="websites" />
       <LeadsDashboard />
       <CrawlProgress />
     </>
