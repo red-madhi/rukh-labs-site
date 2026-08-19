@@ -8,7 +8,10 @@ import {
   failCollectorRun,
   privateJson,
 } from "@/lib/leads/crawl";
-import { upsertPowerBiGigs } from "@/lib/leads/power-bi";
+import {
+  expirePowerBiJobBoardGigs,
+  upsertPowerBiGigs,
+} from "@/lib/leads/power-bi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,9 +31,9 @@ const MASTODON_HOSTS = [
 
 const powerBiPattern = /\b(?:power\s*bi|microsoft fabric|power query|\bdax\b|semantic model|business intelligence dashboard)\b/i;
 const directAskPattern =
-  /\b(?:need|looking for|seeking|recommend|recommendation|anyone know|who can|could use|want to hire|need to hire|help with)\b.{0,150}\b(?:power\s*bi|microsoft fabric|power query|\bdax\b|dashboard|business intelligence)\b|\b(?:power\s*bi|microsoft fabric|power query|\bdax\b|dashboard|business intelligence)\b.{0,150}\b(?:help|consultant|freelancer|contractor|expert|specialist)\b/i;
+  /\b(?:need|looking for|seeking|recommend|recommendation|anyone know|who can|could use|want to hire|need to hire|hire|hiring|contracting|need someone|looking for someone|help with|help us with|support with|assistance with)\b.{0,180}\b(?:power\s*bi|microsoft fabric|power query|\bdax\b|dashboard|business intelligence|semantic model)\b|\b(?:power\s*bi|microsoft fabric|power query|\bdax\b|dashboard|business intelligence|semantic model)\b.{0,180}\b(?:help|consultant|freelancer|contractor|expert|specialist|support)\b/i;
 const proactivePattern =
-  /\b(?:migrat(?:e|ing|ion)|replace|rebuild|moderniz(?:e|ing|ation)|rolling out|implement(?:ing|ation)|moving from tableau|moving to power bi|fabric adoption|dashboard overhaul|reporting overhaul)\b.{0,180}\b(?:power\s*bi|microsoft fabric|dashboard|reporting|analytics)\b|\b(?:power\s*bi|microsoft fabric)\b.{0,180}\b(?:migration|implementation|rollout|modernization|overhaul|rebuild)\b/i;
+  /\b(?:migrat(?:e|ing|ion)|replace|rebuild|moderniz(?:e|ing|ation)|rolling out|implement(?:ing|ation)|moving from tableau|moving to power bi|fabric adoption|semantic model|dashboard overhaul|reporting overhaul|automat(?:e|ing|ion)|consolidat(?:e|ing|ion)|replace excel|manual reports?|stuck with|struggling with|performance issue|cleanup|clean up)\b.{0,210}\b(?:power\s*bi|microsoft fabric|dashboard|reporting|analytics|power query|\bdax\b)\b|\b(?:power\s*bi|microsoft fabric)\b.{0,210}\b(?:migration|implementation|rollout|modernization|overhaul|rebuild|automation|cleanup|performance|optimization)\b/i;
 const selfPromoPattern =
   /\b(?:i am|i'm|we are|our company|our agency)\b.{0,80}\b(?:power\s*bi|business intelligence)\b.{0,80}\b(?:consultant|consulting|services|freelancer|expert)\b|\bavailable for (?:power\s*bi|bi) work\b|\bhire me\b/i;
 const jobPattern =
@@ -155,11 +158,11 @@ function classifyText(text: string) {
   const proactive = proactivePattern.test(text);
   if (!direct && !proactive) return null;
 
-  let score = direct ? 90 : 70;
+  let score = direct ? 90 : 68;
   const signals = [
     direct
       ? "Very fresh public post appears to request Power BI / Fabric help"
-      : "Very fresh public post signals a Power BI / Fabric migration or implementation that may need outside help",
+      : "Very fresh public post signals active Power BI / Fabric work that may benefit from outside help",
   ];
   if (paidPattern.test(text)) {
     score += 5;
@@ -192,12 +195,14 @@ function blueskyGig(event: JetstreamEvent, handles: Map<string, string>) {
   const ageMs = Date.now() - new Date(createdAt).getTime();
   if (ageMs > LOOKBACK_MINUTES * 60_000 + 120_000) return null;
   const handle = handles.get(did);
-  const sourceUrl = `https://bsky.app/profile/${encodeURIComponent(handle || did)}/post/${encodeURIComponent(commit.rkey)}`;
+  const profile = handle ? encodeURIComponent(handle) : did;
+  const sourceUrl = `https://bsky.app/profile/${profile}/post/${encodeURIComponent(commit.rkey)}`;
   const identity = handle ? `@${handle}` : "Bluesky user";
 
   return {
     sourceKey: `power-bi:bsky:${did}:${commit.rkey}`,
     sourceUrl,
+    sourcePublishedAt: createdAt,
     companyName: identity,
     contactName: handle ? identity : undefined,
     contactUrl: sourceUrl,
@@ -208,7 +213,7 @@ function blueskyGig(event: JetstreamEvent, handles: Map<string, string>) {
     tags: ["power-bi", "bluesky", classified.direct ? "direct ask" : "proactive signal", "extreme fresh"],
     pitch: classified.direct
       ? "Saw your Bluesky post about Power BI/Fabric. I work hands-on with DAX, Power Query, data modeling, Fabric migrations and dashboard builds. If the problem is still open, I can scope it quickly and give you a practical fixed-scope or hourly option."
-      : "I saw your post about the Power BI/Fabric migration or reporting work. I handle focused Power BI/Fabric builds and migrations and can jump in on a specific model, DAX, Power Query, or dashboard problem without a long consulting engagement.",
+      : "I saw your post about the Power BI/Fabric migration or reporting work. I handle focused Power BI/Fabric builds and migrations and can jump in on a specific model, DAX, Power Query, automation, or dashboard problem without a long consulting engagement.",
     discoveredAt: createdAt,
     rawPayload: { platform: "Bluesky", did, handle: handle ?? null, rkey: commit.rkey },
   };
@@ -229,6 +234,7 @@ function mastodonGig(status: MastodonStatus, host: string) {
   return {
     sourceKey: `power-bi:mastodon:${sourceUrl}`,
     sourceUrl,
+    sourcePublishedAt: status.created_at,
     companyName: name,
     contactName: name,
     contactUrl: status.account?.url || sourceUrl,
@@ -249,6 +255,7 @@ export async function GET(request: NextRequest) {
   }
   const runId = await beginCollectorRun(SOURCE_ID);
   try {
+    const expired = await expirePowerBiJobBoardGigs();
     const [jetstream, mastodonBatches] = await Promise.all([
       collectJetstream(),
       Promise.all(MASTODON_HOSTS.map(async (host) => ({ host, statuses: await readMastodon(host) }))),
@@ -270,8 +277,9 @@ export async function GET(request: NextRequest) {
     await completeCollectorRun(runId, SOURCE_ID, seen, stored, {
       blueskyEvents: jetstream.events.length,
       mastodonStatuses: mastodonBatches.reduce((total, batch) => total + batch.statuses.length, 0),
+      expiredJobBoardLeads: expired,
     });
-    return privateJson({ ok: true, source: SOURCE_ID, seen, qualified: rows.length, stored });
+    return privateJson({ ok: true, source: SOURCE_ID, seen, qualified: rows.length, stored, expired });
   } catch (error) {
     const message = await failCollectorRun(runId, SOURCE_ID, error);
     return privateJson({ error: message, source: SOURCE_ID }, { status: 503 });
