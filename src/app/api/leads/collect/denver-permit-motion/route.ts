@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { hasValidBasicAuth, hasValidCronAuth } from "@/lib/leads/auth";
 import { cleanText, privateJson } from "@/lib/leads/crawl";
-import { leadNeonQuery } from "@/lib/leads/neon";
+import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,6 +9,7 @@ export const maxDuration = 60;
 
 const SOURCE_ID = "denver-commercial-permit-motion";
 const QUERY_URL = "https://services1.arcgis.com/zdB7qR0BtYrg0Xpl/arcgis/rest/services/ODC_DEV_COMMERCIALCONSTPERMIT_P/FeatureServer/317/query";
+const SOURCE_URL = "https://www.denvergov.org/opendata/dataset/city-and-county-of-denver-commercial-construction-permits";
 const LOOKBACK_DAYS = 180;
 
 type ArcFeature = { attributes?: Record<string, unknown> };
@@ -68,7 +69,7 @@ export async function GET(request: NextRequest) {
         newestByAddress.set(key, {
           addressKey: key,
           issuedAt,
-          permitNumber: text(row.PERMIT_NUM, 100) || null,
+          permitNumber: text(row.PERMIT_NUM, 100) || text(row.OBJECTID, 80) || null,
           permitClass: text(row.CLASS, 120) || null,
           valuation: typeof row.VALUATION === "number" ? row.VALUATION : Number(row.VALUATION) || null,
           contractor: text(row.CONTRACTOR_NAME, 220) || null,
@@ -100,18 +101,72 @@ export async function GET(request: NextRequest) {
        ), matched AS (
          SELECT DISTINCT ON (candidate.id)
            candidate.id,
+           candidate.organization_name,
+           candidate.alternate_name,
+           candidate.category,
+           candidate.address_line1,
+           candidate.city,
+           candidate.state,
+           candidate.postal_code,
+           candidate.country_code,
+           candidate.contact_name,
+           candidate.phone,
+           candidate.email,
+           candidate.website_url,
+           candidate.priority_seed,
            p.*
          FROM public.lead_candidates candidate
          JOIN permits p
            ON regexp_replace(upper(split_part(COALESCE(candidate.address_line1,''), '#', 1)), '[^A-Z0-9]', '', 'g') = p."addressKey"
          WHERE candidate.archived_at IS NULL
+           AND candidate.source <> '${SOURCE_ID}'
            AND lower(COALESCE(candidate.city,'')) = 'denver'
            AND upper(COALESCE(candidate.state,'')) = 'CO'
          ORDER BY candidate.id, p."issuedAt" DESC
-       )
-       UPDATE public.lead_candidates candidate
-       SET priority_seed = LEAST(100, GREATEST(candidate.priority_seed, 76)),
-           metadata = candidate.metadata || jsonb_build_object(
+       ), updated AS (
+         UPDATE public.lead_candidates candidate
+         SET priority_seed = LEAST(100, GREATEST(candidate.priority_seed, 76)),
+             metadata = candidate.metadata || jsonb_build_object(
+               'commercialPermitSignal', jsonb_build_object(
+                 'issuedAt', matched."issuedAt",
+                 'permitNumber', matched."permitNumber",
+                 'permitClass', matched."permitClass",
+                 'valuation', matched.valuation,
+                 'contractor', matched.contractor,
+                 'coRequired', matched."coRequired",
+                 'coIssuedAt', matched."coIssuedAt",
+                 'evidenceLevel', 'address-level',
+                 'source', matched.source
+               ),
+               'motionSignal', 'recent-commercial-permit-at-address',
+               'motionSignalDate', matched."issuedAt"
+             ),
+             next_action_at = LEAST(candidate.next_action_at, now()),
+             updated_at = now()
+         FROM matched
+         WHERE candidate.id = matched.id
+         RETURNING candidate.id
+       ), signal_events AS (
+         INSERT INTO public.lead_candidates AS existing (
+           source, source_key, organization_name, alternate_name, category,
+           address_line1, city, state, postal_code, country_code,
+           contact_name, phone, email, website_url, source_url, formed_at,
+           status, priority_seed, domain_confidence, attempts, next_action_at,
+           metadata, updated_at
+         )
+         SELECT
+           '${SOURCE_ID}',
+           COALESCE(matched."permitNumber", matched."issuedAt"::text) || ':' || matched.id::text,
+           matched.organization_name, matched.alternate_name, matched.category,
+           matched.address_line1, matched.city, matched.state, matched.postal_code, matched.country_code,
+           matched.contact_name, matched.phone, matched.email, matched.website_url, $2,
+           matched."issuedAt"::date,
+           'rejected', GREATEST(matched.priority_seed, 76), 0, 0, now() + interval '365 days',
+           jsonb_build_object(
+             'signalOnly', true,
+             'motionSignal', 'recent-commercial-permit-at-address',
+             'motionSignalDate', matched."issuedAt",
+             'parentCandidateId', matched.id,
              'commercialPermitSignal', jsonb_build_object(
                'issuedAt', matched."issuedAt",
                'permitNumber', matched."permitNumber",
@@ -122,25 +177,37 @@ export async function GET(request: NextRequest) {
                'coIssuedAt', matched."coIssuedAt",
                'evidenceLevel', 'address-level',
                'source', matched.source
-             ),
-             'motionSignal', 'recent-commercial-permit-at-address',
-             'motionSignalDate', matched."issuedAt"
+             )
            ),
-           next_action_at = LEAST(candidate.next_action_at, now()),
+           now()
+         FROM matched
+         ON CONFLICT (source, source_key) DO UPDATE SET
+           organization_name = EXCLUDED.organization_name,
+           phone = COALESCE(EXCLUDED.phone, existing.phone),
+           email = COALESCE(EXCLUDED.email, existing.email),
+           website_url = COALESCE(EXCLUDED.website_url, existing.website_url),
+           formed_at = EXCLUDED.formed_at,
+           priority_seed = GREATEST(existing.priority_seed, EXCLUDED.priority_seed),
+           metadata = existing.metadata || EXCLUDED.metadata,
+           archived_at = NULL,
            updated_at = now()
-       FROM matched
-       WHERE candidate.id = matched.id
-       RETURNING candidate.id::text`,
-      [JSON.stringify(permitRows)],
+         RETURNING id
+       )
+       SELECT
+         (SELECT count(*)::text FROM updated) AS matched,
+         (SELECT count(*)::text FROM signal_events) AS signal_events`,
+      [JSON.stringify(permitRows), SOURCE_URL],
     );
+    const stats = neonRowsToObjects(result)[0] ?? {};
 
     return privateJson({
       ok: true,
       source: SOURCE_ID,
       seen: payload.features?.length ?? 0,
       recentPermits: permitRows.length,
-      matched: result.rows?.length ?? result.rowCount ?? 0,
-      evidence: "Address-level permit timing only; not proof the permit belongs to the tenant.",
+      matched: Number(stats.matched ?? 0),
+      signalEvents: Number(stats.signal_events ?? 0),
+      evidence: "Address-level permit timing only; not proof the permit belongs to the tenant. Original formation dates are preserved.",
     });
   } catch (error) {
     return privateJson({ error: error instanceof Error ? error.message : "Denver permit motion collector failed.", source: SOURCE_ID }, { status: 503 });
