@@ -9,6 +9,10 @@
     #050505;
 }
 
+.shell * {
+  min-width: 0;
+}
+
 .stars {
   position: fixed;
   inset: 0;
@@ -55,6 +59,47 @@
 
 @keyframes sweep {
   to { transform: rotate(360deg); }
+}
+
+@media (max-width: 639px) {
+  .shell {
+    overflow-wrap: anywhere;
+  }
+
+  .cut {
+    clip-path: none;
+  }
+
+  .shell h1,
+  .shell h2,
+  .shell h3,
+  .shell p,
+  .shell li,
+  .shell a,
+  .shell button,
+  .shell label,
+  .shell span {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+  }
+
+  .shell a,
+  .shell button {
+    min-width: 0;
+  }
+
+  .shell button {
+    height: auto;
+    min-height: 44px;
+  }
+
+  .shell input,
+  .shell select {
+    min-width: 0;
+    max-width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
