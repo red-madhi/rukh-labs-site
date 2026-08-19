@@ -13,7 +13,14 @@ import type {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const allowedSources: LeadSource[] = ["intent", "new-business", "site-audit", "inbound", "referral"];
+const allowedSources: LeadSource[] = [
+  "intent",
+  "new-business",
+  "site-audit",
+  "inbound",
+  "referral",
+  "power-bi",
+];
 const allowedStatuses: LeadStatus[] = ["new", "contacted", "replied", "meeting", "proposal", "won", "lost", "ignored"];
 const allowedPriorities: LeadPriority[] = ["hot", "strong", "watch"];
 const allowedCollectorStatuses: LeadCollectorStatus[] = ["ready", "needs-setup", "planned", "error"];
@@ -24,6 +31,7 @@ const sourceLabels: Record<LeadSource, string> = {
   "site-audit": "Website audit",
   inbound: "Rukh Labs inquiry",
   referral: "Referral partner",
+  "power-bi": "Power BI opportunity",
 };
 
 function parseJsonArray(value: string | null) {
@@ -114,6 +122,7 @@ export async function GET(request: NextRequest) {
   try {
     const sourceValue = request.nextUrl.searchParams.get("source");
     const statusValue = request.nextUrl.searchParams.get("status");
+    const feed = request.nextUrl.searchParams.get("feed") === "power-bi" ? "power-bi" : "website";
     const source = allowedSources.includes(sourceValue as LeadSource) ? sourceValue : null;
     const status = allowedStatuses.includes(statusValue as LeadStatus) ? statusValue : null;
     const minimumScore = Math.min(100, Math.max(0, Number(request.nextUrl.searchParams.get("minScore") ?? 0) || 0));
@@ -145,12 +154,16 @@ export async function GET(request: NextRequest) {
           audit::text
         FROM public.lead_opportunities
         WHERE archived_at IS NULL
+          AND (
+            ($5::text = 'power-bi' AND source = 'power-bi')
+            OR ($5::text = 'website' AND source <> 'power-bi')
+          )
           AND ($1::text IS NULL OR source = $1)
           AND ($2::text IS NULL OR status = $2)
           AND score >= $3::int
         ORDER BY score DESC, discovered_at DESC
         LIMIT $4::int`,
-        [source, status, String(minimumScore), String(limit)],
+        [source, status, String(minimumScore), String(limit), feed],
       ),
       leadNeonQuery(
         `SELECT
@@ -164,21 +177,26 @@ export async function GET(request: NextRequest) {
           last_items::text,
           last_error
         FROM public.lead_source_state
+        WHERE
+          ($1::text = 'power-bi' AND source_id LIKE 'power-bi-%')
+          OR ($1::text = 'website' AND source_id NOT LIKE 'power-bi-%')
         ORDER BY sort_order, source_id`,
+        [feed],
       ),
-      crawlStats(),
+      feed === "website" ? crawlStats() : Promise.resolve(undefined),
     ]);
 
     return privateJson({
       leads: neonRowsToObjects(leadResult).map(toLead),
       collectors: neonRowsToObjects(collectorResult).map(toCollector),
       stats,
+      feed,
     });
   } catch (error) {
     console.error("Rukh Leads GET failed", error);
     return privateJson(
       {
-        error: "The live lead database is not ready. The dashboard will use clearly marked preview records until setup is complete.",
+        error: "The live lead database is not ready.",
       },
       { status: 503 },
     );
