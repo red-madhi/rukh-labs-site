@@ -1,1 +1,0 @@
-Rukh Leads OIDC scheduler and gateway deployed.
