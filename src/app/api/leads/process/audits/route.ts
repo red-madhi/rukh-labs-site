@@ -21,11 +21,12 @@ export const maxDuration = 60;
 
 const SOURCE_ID = "website-auditor";
 const DEFAULT_LIMIT = 6;
+const MOTION_SIGNAL_MAX_AGE_DAYS = 365;
 
 type AccountContext = {
   matchedCandidates: number;
   sources: string[];
-  motionSignal: boolean;
+  activeMotionSignal: boolean;
 };
 
 async function mapWithConcurrency<T, R>(
@@ -64,13 +65,25 @@ function parseStringArray(value: string | null) {
   }
 }
 
+function candidateHasActiveMotion(candidate: CandidateRow) {
+  if (typeof candidate.metadata.motionSignal !== "string" || !candidate.formedAt) return false;
+  const formed = new Date(`${candidate.formedAt}T00:00:00Z`).getTime();
+  if (!Number.isFinite(formed)) return false;
+  const ageDays = Math.max(0, (Date.now() - formed) / 86_400_000);
+  return ageDays <= MOTION_SIGNAL_MAX_AGE_DAYS;
+}
+
 async function strictAccountContext(candidate: CandidateRow): Promise<AccountContext> {
   const phone = phoneDigits(candidate.phone);
   const result = await leadNeonQuery(
     `SELECT
        count(*)::text AS matched_candidates,
        COALESCE(to_jsonb(array_agg(DISTINCT source))::text, '[]') AS sources,
-       bool_or(metadata ? 'motionSignal')::text AS motion_signal
+       bool_or(
+         (metadata ? 'motionSignal')
+         AND formed_at IS NOT NULL
+         AND formed_at >= current_date - interval '365 days'
+       )::text AS active_motion_signal
      FROM public.lead_candidates
      WHERE archived_at IS NULL
        AND id <> $1::uuid
@@ -101,7 +114,7 @@ async function strictAccountContext(candidate: CandidateRow): Promise<AccountCon
   return {
     matchedCandidates: Number(row.matched_candidates ?? 0),
     sources: parseStringArray(row.sources ?? null),
-    motionSignal: row.motion_signal === "true",
+    activeMotionSignal: row.active_motion_signal === "true",
   };
 }
 
@@ -165,9 +178,10 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
 
   const account = await strictAccountContext(candidate);
   const independentSources = Array.from(new Set([candidate.source, ...account.sources].filter(Boolean)));
-  const convergenceBonus = independentSources.length >= 2
-    ? Math.min(8, (independentSources.length - 1) * 3)
-    : 0;
+  const activeMotion = candidateHasActiveMotion(candidate) || account.activeMotionSignal;
+  // Duplicate registry/source records corroborate identity, but they are not separate
+  // buying-intent signals. Only a still-active temporal motion event gets a modest boost.
+  const convergenceBonus = activeMotion ? 5 : 0;
   const adjustedScore = clamp(audit.score + convergenceBonus);
   const parked = isParkedAudit(audit);
   const leadSource = parked ? "new-business" : "site-audit";
@@ -192,12 +206,11 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
     : [...audit.signals];
   if (independentSources.length >= 2) {
     signals.push(
-      `Strict account match appears across ${independentSources.length} independent lead sources: ${independentSources.slice(0, 5).join(", ")}`,
+      `Account identity is corroborated across ${independentSources.length} independent sources: ${independentSources.slice(0, 5).join(", ")}`,
     );
   }
-  const candidateMotion = typeof candidate.metadata.motionSignal === "string";
-  if (candidateMotion || account.motionSignal) {
-    signals.push("A recent official business-activity signal is attached to this account");
+  if (activeMotion) {
+    signals.push(`A still-active official business-activity signal overlaps the current website evidence (≤${MOTION_SIGNAL_MAX_AGE_DAYS} days old)`);
   }
   const risks = parked
     ? Array.from(
@@ -208,31 +221,31 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
       )
     : [...audit.risks];
   if (independentSources.length >= 2) {
-    risks.push("Cross-source account matching is intentionally strict; name/location, email, or phone must agree before signals are stacked");
+    risks.push("Cross-source matching is intentionally strict; name/location, email, or phone must agree. Source count corroborates identity and does not increase rank by itself.");
   }
   const tags = parked
     ? ["parked domain", "no usable website", candidate.source, candidate.category || "unclassified"]
     : ["website audit", candidate.source, candidate.category || "unclassified"];
-  if (independentSources.length >= 2) tags.push("signal-convergence");
-  if (candidateMotion || account.motionSignal) tags.push("business-in-motion");
+  if (independentSources.length >= 2) tags.push("account-corroborated");
+  if (activeMotion) tags.push("business-in-motion", "signal-convergence");
 
   const auditPayload = parkedAuditPayload(audit, parked);
   const dimensions =
     auditPayload.dimensions && typeof auditPayload.dimensions === "object"
       ? (auditPayload.dimensions as Record<string, unknown>)
       : {};
-  const crossSourceConvergence = Math.min(
-    100,
-    independentSources.length * 25 + (candidateMotion || account.motionSignal ? 20 : 0),
-  );
   auditPayload.dimensions = {
     ...dimensions,
-    convergence: Math.max(Number(dimensions.convergence ?? 0), crossSourceConvergence),
+    convergence: activeMotion
+      ? Math.max(Number(dimensions.convergence ?? 0), 80)
+      : Number(dimensions.convergence ?? 0),
   };
   auditPayload.accountSignals = {
     strictMatchedCandidates: account.matchedCandidates,
     independentSources,
-    motionSignal: candidateMotion || account.motionSignal,
+    accountCorroborated: independentSources.length >= 2,
+    activeMotionSignal: activeMotion,
+    motionMaxAgeDays: MOTION_SIGNAL_MAX_AGE_DAYS,
     convergenceBonus,
   };
 
@@ -342,7 +355,9 @@ async function promoteAudit(candidate: CandidateRow, audit: WebsiteAuditResult) 
         parkedDomain: parked ? audit.finalUrl : null,
         accountSignalCount: independentSources.length,
         accountSources: independentSources,
-        accountMotionSignal: candidateMotion || account.motionSignal,
+        accountCorroborated: independentSources.length >= 2,
+        activeMotionSignal: activeMotion,
+        motionMaxAgeDays: MOTION_SIGNAL_MAX_AGE_DAYS,
         convergenceBonus,
       }),
     ],
@@ -440,6 +455,8 @@ export async function GET(request: NextRequest) {
         lastErrors: errors,
         lastThirdPartyPagesRequeued: requeuedThirdParty,
         accountMatching: "strict email/phone or exact normalized name+location",
+        sourceCountEffect: "identity corroboration only; no rank boost",
+        motionSignalMaxAgeDays: MOTION_SIGNAL_MAX_AGE_DAYS,
       },
     );
 
