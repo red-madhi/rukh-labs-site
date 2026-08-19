@@ -23,6 +23,78 @@ export type WebsiteAuditResult = {
   audit: Record<string, unknown>;
 };
 
+function fitDimension(candidate: CandidateRow) {
+  let fit = 45;
+  if (candidate.category && candidate.category !== "Unclassified") fit += 18;
+  if (
+    /\b(?:home services|health|dental|food|hospitality|personal services|childcare|education|veterinary|automotive|real estate|legal|financial|creative)\b/i.test(
+      candidate.category || "",
+    )
+  ) {
+    fit += 17;
+  }
+  return clamp(fit);
+}
+
+function reachabilityDimension(email?: string, phone?: string, contactUrl?: string) {
+  if (email && phone) return 100;
+  if (email) return 92;
+  if (phone && contactUrl) return 88;
+  if (phone) return 80;
+  if (contactUrl) return 62;
+  return 15;
+}
+
+function timingDimension(candidate: CandidateRow, commercialStack: string[] = []) {
+  let timing = 20;
+  if (candidate.formedAt) {
+    const ageDays = Math.max(
+      0,
+      (Date.now() - new Date(`${candidate.formedAt}T00:00:00Z`).getTime()) / 86_400_000,
+    );
+    if (ageDays <= 30) timing += 45;
+    else if (ageDays <= 120) timing += 32;
+    else if (ageDays <= 365) timing += 20;
+    else if (ageDays <= 730) timing += 8;
+  }
+  // This is context, not proof of active ad spend. It raises timing modestly only when
+  // the business has invested in customer-acquisition/booking/payment infrastructure.
+  if (commercialStack.length >= 3) timing += 22;
+  else if (commercialStack.length >= 1) timing += 12;
+  return clamp(timing);
+}
+
+function dimensionPayload(
+  candidate: CandidateRow,
+  pain: number,
+  email?: string,
+  phone?: string,
+  contactUrl?: string,
+  commercialStack: string[] = [],
+) {
+  const fit = fitDimension(candidate);
+  const timing = timingDimension(candidate, commercialStack);
+  const reachability = reachabilityDimension(email, phone, contactUrl);
+  const strongSignals = [pain, fit, timing, reachability].filter((value) => value >= 65).length;
+  return {
+    pain: clamp(pain),
+    fit,
+    timing,
+    reachability,
+    convergence: clamp(strongSignals * 25),
+  };
+}
+
+function serverResponseScore(responseMs: number) {
+  return responseMs < 1_000
+    ? 90
+    : responseMs < 2_000
+      ? 70
+      : responseMs < 3_000
+        ? 50
+        : 25;
+}
+
 export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAuditResult> {
   if (!candidate.websiteUrl) throw new Error("Candidate does not have a website.");
   if (isBlockedProspectUrl(candidate.websiteUrl)) {
@@ -57,6 +129,13 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
         reachable: false,
         inconclusive: true,
         usableWebsite: false,
+        dimensions: dimensionPayload(
+          candidate,
+          35,
+          candidate.email,
+          candidate.phone,
+          candidate.sourceUrl,
+        ),
         error: error instanceof Error ? error.message : "Website request failed",
         checkedAt: new Date().toISOString(),
       },
@@ -72,6 +151,7 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
         ? clamp(78 + Math.min(10, candidate.prioritySeed / 10))
         : 50;
     const qualified = clearlyBroken && Boolean(candidate.phone || candidate.email);
+    const pain = clearlyBroken ? 92 : accessBlocked ? 25 : 55;
 
     return {
       finalUrl: page.finalUrl,
@@ -106,6 +186,15 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
         usableWebsite: false,
         status: page.status,
         responseMs: page.responseMs,
+        serverResponseMs: page.responseMs,
+        serverResponseScore: serverResponseScore(page.responseMs),
+        dimensions: dimensionPayload(
+          candidate,
+          pain,
+          candidate.email,
+          candidate.phone,
+          candidate.sourceUrl,
+        ),
         checkedAt: new Date().toISOString(),
       },
     };
@@ -145,6 +234,15 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
         usableWebsite: false,
         status: page.status,
         responseMs: page.responseMs,
+        serverResponseMs: page.responseMs,
+        serverResponseScore: serverResponseScore(page.responseMs),
+        dimensions: dimensionPayload(
+          candidate,
+          98,
+          candidate.email,
+          candidate.phone,
+          candidate.sourceUrl,
+        ),
         htmlBytes: page.bytes,
         checkedAt: new Date().toISOString(),
       },
@@ -175,6 +273,15 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
         usableWebsite: false,
         status: page.status,
         responseMs: page.responseMs,
+        serverResponseMs: page.responseMs,
+        serverResponseScore: serverResponseScore(page.responseMs),
+        dimensions: dimensionPayload(
+          candidate,
+          45,
+          candidate.email,
+          candidate.phone,
+          candidate.sourceUrl,
+        ),
         htmlBytes: page.bytes,
         checkedAt: new Date().toISOString(),
       },
@@ -210,73 +317,91 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
   const currentYear = new Date().getFullYear();
 
   let score = 18 + Math.min(10, candidate.prioritySeed / 8);
+  let pain = 15;
   const signals: string[] = [];
   const risks: string[] = [];
 
   if (!page.finalUrl.startsWith("https://")) {
     score += 20;
+    pain += 25;
     signals.push("Website is not using HTTPS");
   }
   if (!home.hasViewport) {
     score += 13;
+    pain += 18;
     signals.push("No mobile viewport configuration detected");
   }
   if (page.responseMs >= 3_000) {
     score += 12;
-    signals.push(`Homepage took ${(page.responseMs / 1000).toFixed(1)} seconds to respond`);
+    pain += 14;
+    signals.push(`Homepage server response took ${(page.responseMs / 1000).toFixed(1)} seconds`);
   } else if (page.responseMs >= 1_800) {
     score += 6;
-    signals.push(`Homepage response was relatively slow at ${(page.responseMs / 1000).toFixed(1)} seconds`);
+    pain += 7;
+    signals.push(`Homepage server response was relatively slow at ${(page.responseMs / 1000).toFixed(1)} seconds`);
   }
   if (page.bytes >= 1_500_000) {
     score += 8;
+    pain += 8;
     signals.push("Homepage HTML payload is unusually large");
   }
   if (!home.title) {
     score += 7;
+    pain += 8;
     signals.push("Homepage is missing a useful page title");
   }
   if (!home.description) {
     score += 6;
+    pain += 7;
     signals.push("Homepage is missing a meta description");
   }
   if (!home.hasCanonical) {
     score += 3;
+    pain += 3;
     signals.push("No canonical page URL was detected");
   }
   if (!home.hasOpenGraph) {
     score += 3;
+    pain += 2;
     signals.push("Social sharing metadata appears incomplete");
   }
   if (!home.hasHtmlLang) {
     score += 3;
+    pain += 4;
     signals.push("Document language is not declared");
   }
   if (home.h1Count === 0) {
     score += 4;
+    pain += 5;
     signals.push("Homepage has no primary heading");
   } else if (home.h1Count > 2) {
     score += 2;
+    pain += 2;
     signals.push("Homepage uses multiple competing primary headings");
   }
   if (home.imageCount >= 4 && home.altImageCount / home.imageCount < 0.5) {
     score += 5;
+    pain += 6;
     signals.push("Most homepage images are missing useful alternative text");
   }
   if (!home.hasForm && !contactSignals?.hasForm) {
     score += 7;
+    pain += 10;
     signals.push("No inquiry or booking form was detected");
   }
   if (!home.hasCta && !contactSignals?.hasCta) {
     score += 6;
+    pain += 9;
     signals.push("No clear quote, booking, or contact call-to-action was detected");
   }
   if (home.copyrightYear && home.copyrightYear <= currentYear - 3) {
     score += 7;
+    pain += 7;
     signals.push(`Visible copyright appears dated ${home.copyrightYear}`);
   }
   if (home.technology && /Wix|Weebly|GoDaddy/i.test(home.technology)) {
     score += 3;
+    pain += 2;
     signals.push(`Site appears to use ${home.technology}`);
   }
   if (emails.length || phones.length || contactUrl) {
@@ -294,6 +419,19 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
     signals.push("Organization was formed recently");
   }
 
+  const commercialStack = Array.from(
+    new Set([...home.commercialStack, ...(contactSignals?.commercialStack ?? [])]),
+  );
+  if (commercialStack.length) {
+    signals.push(
+      `Commercial booking, payment, CRM, or marketing tooling detected: ${commercialStack.slice(0, 4).join(", ")}`,
+    );
+    risks.push(
+      "Detected commercial tooling is evidence of web/customer-acquisition infrastructure, not proof of current advertising spend",
+    );
+  }
+
+  pain = clamp(pain);
   score = clamp(score);
   const qualified = score >= 62 && Boolean(emails.length || phones.length || contactUrl);
   if (!signals.length) signals.push("Website responded normally with no major automated problems");
@@ -302,7 +440,7 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
   }
 
   const topIssues = signals
-    .filter((signal) => !/contact path|formed recently/i.test(signal))
+    .filter((signal) => !/contact path|formed recently|commercial booking/i.test(signal))
     .slice(0, 3);
   const summary = qualified
     ? `${candidate.organizationName} has a reachable website, but the audit found ${
@@ -317,6 +455,7 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
     "a few practical issues that may be costing inquiries";
   const pitch = `I came across ${candidate.organizationName} while reviewing ${candidate.category || "local businesses"} in ${candidate.city || candidate.state || "your area"}. I noticed ${pitchIssue}. I build straightforward, conversion-focused sites and can send a concise fixed-price plan if improving it is already on your radar.`;
 
+  const responseScore = serverResponseScore(page.responseMs);
   return {
     finalUrl: page.finalUrl,
     score,
@@ -334,17 +473,14 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
       usableWebsite: true,
       status: page.status,
       responseMs: page.responseMs,
+      serverResponseMs: page.responseMs,
+      serverResponseScore: responseScore,
       htmlBytes: page.bytes,
       https: page.finalUrl.startsWith("https://"),
       mobile: home.hasViewport ? 100 : 25,
-      performance:
-        page.responseMs < 1_000
-          ? 90
-          : page.responseMs < 2_000
-            ? 70
-            : page.responseMs < 3_000
-              ? 50
-              : 25,
+      // Retain the old field for existing consumers, but the UI labels this correctly as
+      // server/crawl response rather than browser-rendering performance.
+      performance: responseScore,
       seo: clamp(
         (home.title ? 25 : 0) +
           (home.description ? 25 : 0) +
@@ -360,11 +496,20 @@ export async function auditWebsite(candidate: CandidateRow): Promise<WebsiteAudi
             : Math.round((home.altImageCount / home.imageCount) * 50)) +
           (home.hasViewport ? 25 : 0),
       ),
-      contactForm: home.hasForm || contactSignals?.hasForm ? "working" : "missing",
+      contactForm: home.hasForm || contactSignals?.hasForm ? "detected" : "missing",
       hasCta: home.hasCta || contactSignals?.hasCta || false,
       title: home.title || null,
       description: home.description || null,
       technology: home.technology || null,
+      commercialStack,
+      dimensions: dimensionPayload(
+        candidate,
+        pain,
+        emails[0],
+        phones[0],
+        contactUrl,
+        commercialStack,
+      ),
       copyrightYear: home.copyrightYear || null,
       checkedAt: new Date().toISOString(),
     },
