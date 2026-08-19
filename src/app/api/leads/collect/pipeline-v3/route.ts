@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
   }
   if (mode === "all" || mode === "enrich") {
     const [discovery, audit] = await Promise.all([
-      callStage(request, "domain-discovery", "/api/leads/collect/discover-v2"),
-      callStage(request, "website-auditor", "/api/leads/collect/audit-sites-v2"),
+      callStage(request, "domain-research", "/api/leads/process/domains?limit=12"),
+      callStage(request, "website-auditor", "/api/leads/collect/audit-sites-v2?limit=12"),
     ]);
     stages.push(discovery, audit);
   }
