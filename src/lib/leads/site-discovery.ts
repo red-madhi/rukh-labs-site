@@ -17,6 +17,62 @@ function slugify(tokens: string[]) {
   return tokens.join("").replace(/[^a-z0-9]/g, "");
 }
 
+const genericEmailHosts = new Set([
+  "gmail.com",
+  "googlemail.com",
+  "yahoo.com",
+  "ymail.com",
+  "rocketmail.com",
+  "hotmail.com",
+  "outlook.com",
+  "live.com",
+  "msn.com",
+  "aol.com",
+  "icloud.com",
+  "me.com",
+  "mac.com",
+  "proton.me",
+  "protonmail.com",
+  "pm.me",
+  "gmx.com",
+  "gmx.us",
+  "mail.com",
+  "zoho.com",
+  "fastmail.com",
+  "hey.com",
+  "comcast.net",
+  "xfinity.com",
+  "verizon.net",
+  "att.net",
+  "sbcglobal.net",
+  "bellsouth.net",
+  "cox.net",
+  "charter.net",
+  "spectrum.net",
+  "centurylink.net",
+  "q.com",
+  "earthlink.net",
+  "frontier.com",
+  "frontiernet.net",
+  "optimum.net",
+  "optonline.net",
+]);
+
+function emailDomainGuesses(email?: string) {
+  const domain = cleanText(email, 220).toLowerCase().split("@")[1]?.replace(/^www\./, "");
+  if (!domain || genericEmailHosts.has(domain) || !/^[a-z0-9.-]+\.[a-z]{2,24}$/i.test(domain)) {
+    return [];
+  }
+
+  const guesses = [`https://${domain}/`];
+  const labels = domain.split(".").filter(Boolean);
+  const multipartSuffix = /\.(?:co|org|net|gov|ac)\.(?:uk|au|nz|za)$/i.test(domain);
+  if (labels.length >= 3 && !multipartSuffix) {
+    guesses.push(`https://${labels.slice(-2).join(".")}/`);
+  }
+  return Array.from(new Set(guesses));
+}
+
 export function candidateDomainGuesses(candidate: CandidateRow) {
   const tokens = organizationTokens(candidate.organizationName).slice(0, 5);
   const compact = slugify(tokens);
@@ -35,7 +91,12 @@ export function candidateDomainGuesses(candidate: CandidateRow) {
     ),
   );
   const tlds = candidate.source === "national-nonprofits" ? ["org", "com"] : ["com", "org", "net"];
-  return bases.flatMap((base) => tlds.map((tld) => `https://${base}.${tld}/`)).slice(0, 10);
+  const nameGuesses = bases.flatMap((base) => tlds.map((tld) => `https://${base}.${tld}/`));
+
+  // A public organization-specific email address is one of the strongest free domain hints
+  // available. Try it before name/city guesses or consuming a Brave request. The normal
+  // page-verification logic still has to prove that the site actually belongs to the business.
+  return Array.from(new Set([...emailDomainGuesses(candidate.email), ...nameGuesses])).slice(0, 12);
 }
 
 export async function verifyOfficialWebsite(candidate: CandidateRow, url: string) {
