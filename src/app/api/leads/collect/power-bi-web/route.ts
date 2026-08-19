@@ -6,6 +6,7 @@ import {
   cleanText,
   completeCollectorRun,
   failCollectorRun,
+  getSourceConfig,
   privateJson,
 } from "@/lib/leads/crawl";
 import {
@@ -20,18 +21,28 @@ export const maxDuration = 60;
 
 const SOURCE_ID = "power-bi-web";
 
-const searches = [
+type SearchConfig = { label: string; query: string; platform?: "LinkedIn" | "X" };
+
+const BROAD_SEARCH: SearchConfig = {
+  label: "fresh direct or proactive signal",
+  query:
+    '("Power BI" OR "Microsoft Fabric") (consultant OR freelancer OR "need help" OR migration OR implementation OR rollout OR modernization OR Tableau) -jobs -careers',
+};
+
+const SOCIAL_SEARCHES: SearchConfig[] = [
   {
-    label: "fresh direct or proactive signal",
-    query:
-      '("Power BI" OR "Microsoft Fabric") (consultant OR freelancer OR "need help" OR migration OR implementation OR rollout OR modernization OR Tableau) -jobs -careers',
-  },
-  {
-    label: "fresh social post",
+    label: "fresh LinkedIn post",
     query:
       'site:linkedin.com/posts "Power BI" (consultant OR freelancer OR "need help" OR migration OR implementation)',
+    platform: "LinkedIn",
   },
-] as const;
+  {
+    label: "fresh X post",
+    query:
+      'site:x.com "Power BI" (consultant OR freelancer OR "need help" OR migration OR implementation)',
+    platform: "X",
+  },
+];
 
 type BraveResult = {
   title?: string;
@@ -99,7 +110,7 @@ function isBlocked(value: string, combined: string) {
   );
 }
 
-async function braveSearch(apiKey: string, search: (typeof searches)[number]) {
+async function braveSearch(apiKey: string, search: SearchConfig) {
   const url = new URL("https://api.search.brave.com/res/v1/web/search");
   url.searchParams.set("q", search.query);
   url.searchParams.set("count", "20");
@@ -124,7 +135,7 @@ async function braveSearch(apiKey: string, search: (typeof searches)[number]) {
   return payload.web?.results ?? [];
 }
 
-function qualify(result: BraveResult, search: (typeof searches)[number]) {
+function qualify(result: BraveResult, search: SearchConfig) {
   const sourceUrl = result.url?.trim();
   if (!sourceUrl || !/^https?:\/\//i.test(sourceUrl)) return null;
   const title = cleanText(result.title, 260);
@@ -197,10 +208,16 @@ export async function GET(request: NextRequest) {
   if (!hasValidCronAuth(request) && !hasValidBasicAuth(request)) {
     return privateJson({ error: "Collector authentication failed." }, { status: 401 });
   }
+
   const apiKey = process.env.BRAVE_SEARCH_API_KEY?.trim();
   if (!apiKey) {
     return privateJson({ error: "BRAVE_SEARCH_API_KEY is not configured.", source: SOURCE_ID }, { status: 428 });
   }
+
+  const sourceConfig = await getSourceConfig(SOURCE_ID, { socialIndex: 0 });
+  const socialIndex = Math.max(0, Number(sourceConfig.socialIndex ?? 0) || 0) % SOCIAL_SEARCHES.length;
+  const socialSearch = SOCIAL_SEARCHES[socialIndex];
+  const searches = [BROAD_SEARCH, socialSearch];
 
   const budget = await reserveMonthlyApiUsage(
     "brave-search",
@@ -229,11 +246,25 @@ export async function GET(request: NextRequest) {
 
     const gigs = Array.from(deduped.values());
     const stored = await upsertPowerBiGigs(gigs);
+    const nextSocialIndex = (socialIndex + 1) % SOCIAL_SEARCHES.length;
     await completeCollectorRun(runId, SOURCE_ID, seen, stored, {
+      socialIndex: nextSocialIndex,
+      lastSocialPlatform: socialSearch.platform,
+      nextSocialPlatform: SOCIAL_SEARCHES[nextSocialIndex].platform,
       braveBudgetUsed: budget.used,
       braveBudgetLimit: budget.limit,
     });
-    return privateJson({ ok: true, source: SOURCE_ID, seen, qualified: gigs.length, stored, budget });
+
+    return privateJson({
+      ok: true,
+      source: SOURCE_ID,
+      seen,
+      qualified: gigs.length,
+      stored,
+      socialPlatform: socialSearch.platform,
+      nextSocialPlatform: SOCIAL_SEARCHES[nextSocialIndex].platform,
+      budget,
+    });
   } catch (error) {
     const message = await failCollectorRun(runId, SOURCE_ID, error);
     return privateJson({ error: message, source: SOURCE_ID }, { status: 503 });
