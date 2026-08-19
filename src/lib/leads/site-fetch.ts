@@ -249,7 +249,8 @@ function extractEmails(html: string) {
       matches
         .map((email) => email.toLowerCase())
         .filter((email) => !/\.(?:png|jpg|jpeg|gif|webp|svg)$/i.test(email))
-        .filter((email) => !/(?:example\.com|sentry|wixpress|wordpress)/i.test(email)),
+        .filter((email) => !/(?:example\.(?:com|org|net)|@domain\.com$|sentry|wixpress|wordpress)/i.test(email))
+        .filter((email) => !/^(?:user|username|name|email|test|example|yourname|you)@/i.test(email)),
     ),
   ).slice(0, 5);
 }
