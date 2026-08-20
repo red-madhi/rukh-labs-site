@@ -11,6 +11,7 @@ import {
   sanitizeGmailError,
   verifyGmailConnection,
 } from "@/lib/leads/gmail-connection";
+import { assertLeadEmailSendable } from "@/lib/leads/outreach-suppression";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -121,6 +122,7 @@ export async function POST(request: NextRequest) {
           continue;
         }
         try {
+          await assertLeadEmailSendable(leadId);
           await sendInitialOutreach({
             leadId,
             subject: typeof item.subject === "string" ? item.subject : "",
@@ -149,6 +151,7 @@ export async function POST(request: NextRequest) {
       return privateJson({ ok: true, state: existingState, alreadyActive: true });
     }
 
+    await assertLeadEmailSendable(leadId);
     const state = await sendInitialOutreach({
       leadId,
       subject: typeof body.subject === "string" ? body.subject : "",
