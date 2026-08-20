@@ -23,6 +23,10 @@ export type PowerBiGigInput = {
   rawPayload?: Record<string, unknown>;
 };
 
+const denverMetroPattern = /\b(?:denver|aurora|lakewood|arvada|westminster|thornton|centennial|commerce city|littleton|englewood|wheat ridge|golden|broomfield|parker|castle rock|highlands ranch|lone tree|greenwood village|northglenn|brighton|sheridan|federal heights)\b(?:,?\s*(?:co|colorado))?\b/i;
+const remotePattern = /\b(?:remote|work[- ]from[- ]home|wfh|telecommut(?:e|ing)|virtual position|distributed role)\b/i;
+const remoteNegativePattern = /\b(?:not remote|no remote|remote (?:work )?not (?:available|offered)|on[- ]?site only|onsite only|must be on[- ]?site)\b/i;
+
 function normalizeAccount(value: string) {
   return cleanText(value, 300)
     .toLowerCase()
@@ -37,6 +41,59 @@ function looksLikeJobTitle(value: string) {
   return /\b(?:power\s*bi|fabric|business intelligence)\b.*\b(?:developer|analyst|engineer|consultant|manager|architect|specialist|lead|role|job|position)\b|\b(?:developer|analyst|engineer|consultant|manager|architect|specialist|lead)\b.*\b(?:power\s*bi|fabric|business intelligence)\b/i.test(value);
 }
 
+function isJobBoardInput(input: PowerBiGigInput) {
+  return input.tags.some((tag) => /job[- ]board/i.test(tag));
+}
+
+function rawString(input: PowerBiGigInput, key: string) {
+  const value = input.rawPayload?.[key];
+  return typeof value === "string" ? value : "";
+}
+
+function jobLocationDecision(input: PowerBiGigInput) {
+  const explicitLocation = cleanText(input.location, 180);
+  if (!isJobBoardInput(input)) {
+    return {
+      eligible: true,
+      location: explicitLocation || "Location not confirmed",
+      basis: null as "remote" | "denver-metro" | null,
+    };
+  }
+
+  const locationText = cleanText([
+    explicitLocation,
+    rawString(input, "location"),
+    rawString(input, "locationText"),
+    rawString(input, "jobLocation"),
+    rawString(input, "jobLocationType"),
+    rawString(input, "workplaceType"),
+    input.summary,
+  ].filter(Boolean).join(" | "), 4000);
+
+  const denverMetro = denverMetroPattern.test(locationText);
+  const remote = remotePattern.test(locationText) && !remoteNegativePattern.test(locationText);
+
+  if (denverMetro) {
+    return {
+      eligible: true,
+      location: explicitLocation || "Denver metro",
+      basis: "denver-metro" as const,
+    };
+  }
+  if (remote) {
+    return {
+      eligible: true,
+      location: explicitLocation || "Remote",
+      basis: "remote" as const,
+    };
+  }
+  return {
+    eligible: false,
+    location: explicitLocation || "Location not confirmed",
+    basis: null as "remote" | "denver-metro" | null,
+  };
+}
+
 function inputAccountKey(input: PowerBiGigInput) {
   const explicit = normalizeAccount(input.accountKey || "");
   if (explicit) return explicit;
@@ -48,7 +105,7 @@ function inputAccountKey(input: PowerBiGigInput) {
       : "";
   if (payloadAccount) return payloadAccount;
 
-  const jobBoard = input.tags.some((tag) => /job[- ]board/i.test(tag));
+  const jobBoard = isJobBoardInput(input);
   if (jobBoard && looksLikeJobTitle(input.companyName)) return "";
   return normalizeAccount(input.companyName);
 }
@@ -91,16 +148,24 @@ export async function expirePowerBiJobBoardGigs() {
      WHERE source = 'power-bi'
        AND archived_at IS NULL
        AND tags ? 'job-board'
-       AND COALESCE(source_published_at, discovered_at) <= now() - interval '12 hours'
+       AND (
+         COALESCE(source_published_at, discovered_at) <= now() - interval '12 hours'
+         OR location IS NULL
+         OR trim(location) = ''
+         OR location = 'Remote / location not confirmed'
+       )
      RETURNING id::text`,
   );
   return result.rows?.length ?? result.rowCount ?? 0;
 }
 
 export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
-  const accountSignals = await recentAccountSignals(inputs);
-  const rows = inputs
-    .map((input) => {
+  const eligibleInputs = inputs
+    .map((input) => ({ input, locationDecision: jobLocationDecision(input) }))
+    .filter(({ locationDecision }) => locationDecision.eligible);
+  const accountSignals = await recentAccountSignals(eligibleInputs.map(({ input }) => input));
+  const rows = eligibleInputs
+    .map(({ input, locationDecision }) => {
       const key = inputAccountKey(input);
       const recentKeys = new Set(key ? accountSignals.get(key) ?? [] : []);
       if (key) recentKeys.add(cleanText(input.sourceKey, 500));
@@ -120,6 +185,13 @@ export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
       if (!key && tags.some((tag) => /job[- ]board/i.test(tag))) {
         signals.push("Company identity was not reliable enough to use this job posting for account-level convergence");
       }
+      if (locationDecision.basis === "remote") {
+        signals.push("Job location passed the required remote-work filter");
+        tags.push("remote");
+      } else if (locationDecision.basis === "denver-metro") {
+        signals.push("Job location passed the required Denver-metro filter");
+        tags.push("denver-metro");
+      }
 
       return {
         source_key: cleanText(input.sourceKey, 500),
@@ -138,7 +210,7 @@ export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
         contact_phone: cleanText(input.contactPhone, 80) || null,
         contact_url: cleanText(input.contactUrl, 1000) || null,
         website_url: cleanText(input.website, 1000) || null,
-        location: cleanText(input.location, 180) || "Remote / location not confirmed",
+        location: locationDecision.location,
         discovered_at: input.discoveredAt || null,
         raw_payload: {
           ...(input.rawPayload ?? {}),
@@ -146,6 +218,7 @@ export async function upsertPowerBiGigs(inputs: PowerBiGigInput[]) {
           accountSignalCount,
           convergenceBonus,
           convergenceWindowDays: 45,
+          jobLocationEligibility: locationDecision.basis,
         },
       };
     })
