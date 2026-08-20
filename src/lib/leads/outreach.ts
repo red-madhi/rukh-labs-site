@@ -50,6 +50,14 @@ function words(value: string) {
   return value.trim() ? value.trim().split(/\s+/).length : 0;
 }
 
+function withSiteFooter(value: string) {
+  const normalized = value.trimEnd();
+  if (!normalized) return "rukhlabs.com";
+  const lines = normalized.split(/\r?\n/);
+  if (lines[lines.length - 1]?.trim().toLowerCase() === "rukhlabs.com") return normalized;
+  return `${normalized}\n\nrukhlabs.com`;
+}
+
 function firstName(value?: string) {
   const cleaned = value?.trim().replace(/^@/, "");
   if (!cleaned) return "";
@@ -141,15 +149,19 @@ function websitePlan(lead: LeadOpportunity): OutreachPlan {
   const follow1 = `${hello}\n\nOne other thing I noticed: ${secondary}. That's the kind of fix I'd handle before suggesting a full rebuild.\n\nWant me to send the short list?\n\n— Red`;
   const follow2 = `${hello}\n\nA quick thought on ${lead.company}: I'd focus first on the visitor's path from landing on the site to actually contacting or booking—not on adding a pile of new features.\n\nHappy to send the 3-point version if that would be useful.\n\n— Red`;
   const follow3 = `${hello}\n\nLast note from me. If website changes aren't a priority right now, no problem. If they are, I can send the short list I mentioned and you can decide if any of it is worth acting on.\n\n— Red`;
+  const firstEmailWithFooter = withSiteFooter(firstEmail);
+  const follow1WithFooter = withSiteFooter(follow1);
+  const follow2WithFooter = withSiteFooter(follow2);
+  const follow3WithFooter = withSiteFooter(follow3);
 
   return {
     subject: websiteSubject(lead),
-    firstEmail,
-    wordCount: words(firstEmail),
+    firstEmail: firstEmailWithFooter,
+    wordCount: words(firstEmailWithFooter),
     touches: [
-      { label: "Follow-up 1", timing: "3–4 days later", text: follow1, wordCount: words(follow1) },
-      { label: "Follow-up 2", timing: "3–4 days later", text: follow2, wordCount: words(follow2) },
-      { label: "Follow-up 3", timing: "3–4 days later", text: follow3, wordCount: words(follow3) },
+      { label: "Follow-up 1", timing: "3–4 days later", text: follow1WithFooter, wordCount: words(follow1WithFooter) },
+      { label: "Follow-up 2", timing: "3–4 days later", text: follow2WithFooter, wordCount: words(follow2WithFooter) },
+      { label: "Follow-up 3", timing: "3–4 days later", text: follow3WithFooter, wordCount: words(follow3WithFooter) },
     ],
     approach: [
       "Lead with one verified problem, not a list of services.",
@@ -192,15 +204,19 @@ function powerBiPlan(lead: LeadOpportunity): OutreachPlan {
   const follow1 = `${hello}\n\nOne reason I followed up: on Power BI work like this, I usually check the model and refresh path before touching visuals. It tends to expose the expensive problems early.\n\nWant me to send the short checklist?\n\n— Red`;
   const follow2 = `${hello}\n\nAnother angle that may be useful: I can keep this focused on the specific model/reporting problem rather than turning it into a broad consulting engagement.\n\nHappy to send how I'd scope the first pass.\n\n— Red`;
   const follow3 = `${hello}\n\nLast note from me. If the Power BI work is already covered, no worries. If it's still open, I can send the short approach I mentioned and you can decide whether it's relevant.\n\n— Red`;
+  const firstEmailWithFooter = withSiteFooter(firstEmail);
+  const follow1WithFooter = withSiteFooter(follow1);
+  const follow2WithFooter = withSiteFooter(follow2);
+  const follow3WithFooter = withSiteFooter(follow3);
 
   return {
     subject: powerBiSubject(lead),
-    firstEmail,
-    wordCount: words(firstEmail),
+    firstEmail: firstEmailWithFooter,
+    wordCount: words(firstEmailWithFooter),
     touches: [
-      { label: "Follow-up 1", timing: "3–4 days later", text: follow1, wordCount: words(follow1) },
-      { label: "Follow-up 2", timing: "3–4 days later", text: follow2, wordCount: words(follow2) },
-      { label: "Follow-up 3", timing: "3–4 days later", text: follow3, wordCount: words(follow3) },
+      { label: "Follow-up 1", timing: "3–4 days later", text: follow1WithFooter, wordCount: words(follow1WithFooter) },
+      { label: "Follow-up 2", timing: "3–4 days later", text: follow2WithFooter, wordCount: words(follow2WithFooter) },
+      { label: "Follow-up 3", timing: "3–4 days later", text: follow3WithFooter, wordCount: words(follow3WithFooter) },
     ],
     approach: [
       "Reference the exact Power BI/Fabric need instead of sending a resume paragraph.",
