@@ -1,3 +1,4 @@
+import { selectPrimaryEmail } from "@/lib/leads/contact-values";
 import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 
 export type OutreachMessage = {
@@ -48,11 +49,6 @@ const MAX_MESSAGES = 30;
 
 function clean(value: unknown, max = 8000) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
-
-function normalizeEmail(value: unknown) {
-  const email = clean(value, 320).toLowerCase();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : "";
 }
 
 function gmailConfig() {
@@ -272,13 +268,13 @@ export async function saveOutreachDraft(input: {
   followUpDays?: number;
 }) {
   const result = await leadNeonQuery(
-    `SELECT contact_email, COALESCE(raw_payload->'outreach', '{}'::jsonb)::text AS outreach
+    `SELECT contact_email, website_url, COALESCE(raw_payload->'outreach', '{}'::jsonb)::text AS outreach
      FROM public.lead_opportunities WHERE id = $1::uuid AND archived_at IS NULL`,
     [input.leadId],
   );
   const row = neonRowsToObjects(result)[0];
   if (!row) throw new Error("Lead was not found.");
-  const recipientEmail = normalizeEmail(row.contact_email);
+  const recipientEmail = selectPrimaryEmail(row.contact_email, row.website_url);
   if (!recipientEmail) throw new Error("This lead does not have a valid email address.");
   const previous = parseOutreach(row.outreach);
   const state = nextState(previous, {
@@ -305,13 +301,13 @@ export async function sendInitialOutreach(input: {
   followUpDays?: number;
 }) {
   const result = await leadNeonQuery(
-    `SELECT contact_email, status, COALESCE(raw_payload->'outreach', '{}'::jsonb)::text AS outreach
+    `SELECT contact_email, website_url, status, COALESCE(raw_payload->'outreach', '{}'::jsonb)::text AS outreach
      FROM public.lead_opportunities WHERE id = $1::uuid AND archived_at IS NULL`,
     [input.leadId],
   );
   const row = neonRowsToObjects(result)[0];
   if (!row) throw new Error("Lead was not found.");
-  const recipientEmail = normalizeEmail(row.contact_email);
+  const recipientEmail = selectPrimaryEmail(row.contact_email, row.website_url);
   if (!recipientEmail) throw new Error("This lead does not have a valid email address.");
   const previous = parseOutreach(row.outreach);
   if (previous.sentAt && ["sent", "replied"].includes(previous.state || "")) {
