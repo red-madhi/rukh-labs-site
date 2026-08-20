@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { selectPrimaryEmail } from "@/lib/leads/contact-values";
 import { cleanText, crawlStats } from "@/lib/leads/crawl";
 import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 import type {
@@ -91,7 +92,7 @@ function toLead(row: Record<string, string | null>): LeadOpportunity {
     discoveredAt: row.source_published_at ?? row.discovered_at ?? new Date(0).toISOString(),
     company: row.company_name || "Unnamed prospect",
     contactName: row.contact_name || undefined,
-    contactEmail: row.contact_email || undefined,
+    contactEmail: selectPrimaryEmail(row.contact_email, row.website_url) || undefined,
     contactPhone: row.contact_phone || undefined,
     contactUrl: normalizeLeadUrl(row.contact_url),
     website: row.website_url || undefined,

@@ -1,3 +1,4 @@
+import { contactValueMetadata, selectPrimaryWebsite } from "@/lib/leads/contact-values";
 import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
 
 export type CandidateInput = {
@@ -81,17 +82,7 @@ export function cleanText(value: unknown, max = 320) {
 }
 
 export function normalizeWebsiteUrl(value?: string | null) {
-  const raw = cleanText(value, 500);
-  if (!raw) return null;
-  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  try {
-    const parsed = new URL(withProtocol);
-    if (!["http:", "https:"].includes(parsed.protocol)) return null;
-    parsed.hash = "";
-    return parsed.toString();
-  } catch {
-    return null;
-  }
+  return selectPrimaryWebsite(value);
 }
 
 export function canonicalHost(value?: string | null) {
@@ -325,26 +316,43 @@ export async function failCollectorRun(
 export async function upsertCandidates(candidates: CandidateInput[]) {
   if (!candidates.length) return 0;
   const normalized = candidates
-    .map((candidate) => ({
-      source: cleanText(candidate.source, 80),
-      source_key: cleanText(candidate.sourceKey, 300),
-      organization_name: cleanText(candidate.organizationName, 260),
-      alternate_name: cleanText(candidate.alternateName, 260) || null,
-      category: cleanText(candidate.category, 160) || null,
-      address_line1: cleanText(candidate.addressLine1, 220) || null,
-      city: cleanText(candidate.city, 120) || null,
-      state: cleanText(candidate.state, 80) || null,
-      postal_code: cleanText(candidate.postalCode, 24) || null,
-      country_code: cleanText(candidate.countryCode, 3).toUpperCase() || "US",
-      contact_name: cleanText(candidate.contactName, 180) || null,
-      phone: cleanText(candidate.phone, 60) || null,
-      email: cleanText(candidate.email, 220).toLowerCase() || null,
-      website_url: normalizeWebsiteUrl(candidate.websiteUrl),
-      source_url: normalizeWebsiteUrl(candidate.sourceUrl),
-      formed_at: candidate.formedAt || null,
-      priority_seed: clamp(candidate.prioritySeed ?? 0),
-      metadata: candidate.metadata ?? {},
-    }))
+    .map((candidate) => {
+      const contactValues = contactValueMetadata(candidate.email, candidate.websiteUrl);
+      return {
+        source: cleanText(candidate.source, 80),
+        source_key: cleanText(candidate.sourceKey, 300),
+        organization_name: cleanText(candidate.organizationName, 260),
+        alternate_name: cleanText(candidate.alternateName, 260) || null,
+        category: cleanText(candidate.category, 160) || null,
+        address_line1: cleanText(candidate.addressLine1, 220) || null,
+        city: cleanText(candidate.city, 120) || null,
+        state: cleanText(candidate.state, 80) || null,
+        postal_code: cleanText(candidate.postalCode, 24) || null,
+        country_code: cleanText(candidate.countryCode, 3).toUpperCase() || "US",
+        contact_name: cleanText(candidate.contactName, 180) || null,
+        phone: cleanText(candidate.phone, 60) || null,
+        email: contactValues.primaryEmail,
+        website_url: contactValues.primaryWebsite,
+        source_url: normalizeWebsiteUrl(candidate.sourceUrl),
+        formed_at: candidate.formedAt || null,
+        priority_seed: clamp(candidate.prioritySeed ?? 0),
+        metadata: {
+          ...(candidate.metadata ?? {}),
+          ...(contactValues.emailCandidates.length > 1
+            ? {
+                contactEmailCandidates: contactValues.emailCandidates,
+                alternateContactEmails: contactValues.alternateContactEmails,
+              }
+            : {}),
+          ...(contactValues.websiteCandidates.length > 1
+            ? {
+                websiteCandidates: contactValues.websiteCandidates,
+                alternateWebsiteUrls: contactValues.alternateWebsiteUrls,
+              }
+            : {}),
+        },
+      };
+    })
     .filter((candidate) => candidate.source && candidate.source_key && candidate.organization_name);
 
   if (!normalized.length) return 0;
