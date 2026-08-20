@@ -49,7 +49,7 @@ export type LeadDashboardMetrics = {
   bounceRate: number;
 };
 
-function bool(value: string | undefined) {
+function bool(value: string | null | undefined) {
   return value === "true" || value === "t" || value === "1";
 }
 
