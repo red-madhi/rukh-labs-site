@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, noarchive: true, nosnippet: true },
 };
 
+// Keep this page dynamic so status metrics are always current.
 export default function LeadStatusesPage() {
   return (
     <>
