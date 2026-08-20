@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-export function LeadFeedNav({ active }: { active: "websites" | "power-bi" | "outreach" }) {
+export function LeadFeedNav({ active }: { active: "websites" | "power-bi" | "outreach" | "statuses" }) {
   return (
     <nav className="border-b border-white/10 bg-[#050505] px-3 py-2 sm:px-5" aria-label="Lead feeds">
       <div className="mx-auto flex max-w-[1920px] flex-wrap items-center gap-2">
@@ -34,6 +34,16 @@ export function LeadFeedNav({ active }: { active: "websites" | "power-bi" | "out
           }`}
         >
           Outreach
+        </Link>
+        <Link
+          href="/leads/statuses"
+          className={`border px-3 py-2 text-[11px] font-bold uppercase tracking-[.12em] transition ${
+            active === "statuses"
+              ? "border-violet-300/35 bg-violet-300/[.08] text-violet-200"
+              : "border-white/10 bg-white/[.025] text-white/45 hover:text-white/75"
+          }`}
+        >
+          Statuses
         </Link>
       </div>
     </nav>
