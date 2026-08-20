@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, noarchive: true, nosnippet: true },
 };
 
-// Keep this page dynamic so status metrics and queue outcomes stay current.
+// Keep this page dynamic so status metrics and queue outcomes stay current in production.
 export default function LeadStatusesPage() {
   return (
     <>
