@@ -129,7 +129,7 @@ export async function listLeadStatusDashboard() {
   }));
 
   const sent = rows.filter((row) => Boolean(row.sentAt)).length;
-  const bounced = rows.filter((row) => row.status === "bounced").length;
+  const bounced = rows.filter((row) => Boolean(row.lastBounceAt)).length;
   const replied = rows.filter((row) => row.status === "replied").length;
   const metrics: LeadDashboardMetrics = {
     total: rows.length,
