@@ -92,7 +92,10 @@ export function AdvancedNetworkAutoDm() {
   }, [applyState]);
 
   useEffect(() => {
-    void load();
+    const frame = window.requestAnimationFrame(() => {
+      void load();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [load]);
 
   async function save() {
@@ -325,7 +328,7 @@ export function AdvancedNetworkAutoDm() {
               {"Thanks for the #follow, y'all.\n@handle.one\n@handle.two"}
             </p>
             <p className="mt-3 text-xs leading-5 text-white/34">
-              Handles are packed vertically under Bluesky's post limit. Overflow becomes replies beginning “And y'all too...”. Successful mentions are marked immediately, so a partial failure cannot tag the same person twice.
+              {"Handles are packed vertically under Bluesky's post limit. Overflow becomes replies beginning “And y'all too...”. Successful mentions are marked immediately, so a partial failure cannot tag the same person twice."}
             </p>
           </div>
 
