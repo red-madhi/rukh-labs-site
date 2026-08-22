@@ -1,0 +1,72 @@
+name: Harden outreach guard
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/harden-outreach-guard-20260822.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: harden-outreach-guard-20260822
+  cancel-in-progress: false
+
+jobs:
+  harden-and-build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Apply, build, and push against newest main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          for attempt in $(seq 1 5); do
+            git fetch origin main
+            git reset --hard origin/main
+
+            test -f .github/staging/outreach-guard-route.ts
+            test -f .github/staging/outreach-proxy.ts
+            cp .github/staging/outreach-guard-route.ts src/app/api/leads/outreach/guard/route.ts
+            cp .github/staging/outreach-proxy.ts src/proxy.ts
+
+            rm -f .github/staging/outreach-guard-route.ts
+            rm -f .github/staging/outreach-proxy.ts
+            rm -f .github/workflows/harden-outreach-guard-20260822.yml
+
+            npm run build
+
+            git add -A
+            git commit -m "Harden all outreach send paths"
+
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+
+            echo "Main advanced; retrying hardened guard from the latest tip."
+            sleep 5
+          done
+
+          echo "Could not push the hardened guard after five attempts."
+          exit 1
