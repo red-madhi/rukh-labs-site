@@ -30,6 +30,8 @@ const nextConfig: NextConfig = {
         destination: "https://rukhlabs.com/:path*",
         permanent: true,
       },
+      { source: "/data-operations", destination: "/data-ops", permanent: true },
+      { source: "/services/data-operations", destination: "/data-ops", permanent: true },
       { source: "/farzin", destination: "/products/farzin", permanent: true },
       { source: "/farzin-chess", destination: "/products/farzin", permanent: true },
       { source: "/apps/farzin", destination: "/products/farzin", permanent: true },

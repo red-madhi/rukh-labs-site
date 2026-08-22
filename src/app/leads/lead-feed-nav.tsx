@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-export function LeadFeedNav({ active }: { active: "websites" | "power-bi" | "outreach" | "statuses" }) {
+export function LeadFeedNav({
+  active,
+}: {
+  active: "websites" | "power-bi" | "data-ops" | "outreach" | "statuses";
+}) {
   return (
     <nav className="border-b border-white/10 bg-[#050505] px-3 py-2 sm:px-5" aria-label="Lead feeds">
       <div className="mx-auto flex max-w-[1920px] flex-wrap items-center gap-2">
@@ -24,6 +28,16 @@ export function LeadFeedNav({ active }: { active: "websites" | "power-bi" | "out
           }`}
         >
           Power BI gigs
+        </Link>
+        <Link
+          href="/leads/data-ops"
+          className={`border px-3 py-2 text-[11px] font-bold uppercase tracking-[.12em] transition ${
+            active === "data-ops"
+              ? "border-cyan-300/40 bg-cyan-300/[.08] text-cyan-100"
+              : "border-white/10 bg-white/[.025] text-white/45 hover:text-white/75"
+          }`}
+        >
+          Data Ops pipeline
         </Link>
         <Link
           href="/leads/outreach"

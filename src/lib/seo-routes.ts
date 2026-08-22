@@ -24,9 +24,11 @@ export const SEO_CONTENT_UPDATED = "2026-08-04";
 const SEO_ABOUT_UPDATED = "2026-08-05";
 export const SEO_PHASE_TWO_DEPLOYMENT_DATE = "2026-08-05";
 export const SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE = "2026-08-14";
+export const SEO_DATA_OPS_DEPLOYMENT_DATE = "2026-08-22";
 
 export const seoRoutes: readonly SeoRoute[] = [
-  { path: "/", lastModified: SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE, changeFrequency: "weekly", priority: 1, indexable: true, follow: true, classification: "indexable" },
+  { path: "/", lastModified: SEO_DATA_OPS_DEPLOYMENT_DATE, changeFrequency: "weekly", priority: 1, indexable: true, follow: true, classification: "indexable" },
+  { path: "/data-ops", lastModified: SEO_DATA_OPS_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.95, indexable: true, follow: true, classification: "indexable" },
   { path: "/services/web-development", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.9, indexable: true, follow: true, classification: "indexable" },
   { path: "/services/career-portfolios", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.9, indexable: true, follow: true, classification: "indexable" },
   { path: "/services/web-development/small-business", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
@@ -39,7 +41,7 @@ export const seoRoutes: readonly SeoRoute[] = [
   { path: "/products/glass-squares-os", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.9, indexable: true, follow: true, classification: "indexable" },
   { path: "/download", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/changelog", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "weekly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
-  { path: "/security", lastModified: SEO_CONTENT_UPDATED,changeFrequency: "yearly", priority: 0.5, indexable: true,follow: true, classification: "indexable" },
+  { path: "/security", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "yearly", priority: 0.5, indexable: true, follow: true, classification: "indexable" },
   { path: "/about", lastModified: SEO_ABOUT_UPDATED, changeFrequency: "yearly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/contact", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "yearly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
   { path: "/work", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
@@ -78,6 +80,8 @@ export function getSeoRoute(path: string) {
 }
 
 export const seoRedirects = [
+  { source: "/data-operations", destination: "/data-ops", status: 308 },
+  { source: "/services/data-operations", destination: "/data-ops", status: 308 },
   { source: "/farzin", destination: "/products/farzin", status: 308 },
   { source: "/farzin-chess", destination: "/products/farzin", status: 308 },
   { source: "/apps/farzin", destination: "/products/farzin", status: 308 },

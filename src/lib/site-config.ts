@@ -9,11 +9,12 @@ export const siteConfig = {
   contactEmail: "hello@rukhlabs.com",
   tagline: "Clean tools. Sharper standards.",
   description:
-    "Rukh Labs is an independent digital studio and software lab creating distinctive websites, recruiter-ready career portfolios, and original software including Glass Squares OS and Farzin.",
+    "Rukh Labs is an independent digital studio and software lab providing data operations automation, distinctive websites, recruiter-ready career portfolios, and original software.",
   links: {
     patreon: "https://patreon.com/rukhlabs",
     farzinGooglePlay: FARZIN_GOOGLE_PLAY_URL,
     email: "mailto:hello@rukhlabs.com",
+    dataOpsProject: "/data-ops#intake",
     websiteProject: "/contact?inquiry=website",
     careerPortfolioProject: "/contact?inquiry=career-portfolio",
   },
@@ -22,6 +23,7 @@ export const siteConfig = {
     "Independent digital studio and software lab.",
   ],
   navItems: [
+    { label: "Data Ops", href: "/data-ops" },
     { label: "Websites", href: "/services/web-development" },
     { label: "Career Portfolios", href: "/services/career-portfolios" },
     { label: "Work", href: "/work" },
@@ -40,6 +42,7 @@ export const siteConfig = {
       { label: "Download", href: "/download" },
     ],
     company: [
+      { label: "Data Operations", href: "/data-ops" },
       { label: "Web Development", href: "/services/web-development" },
       { label: "Career Portfolios", href: "/services/career-portfolios" },
       { label: "Work", href: "/work" },
@@ -55,6 +58,7 @@ export const siteConfig = {
   contactReasons: [
     "Website design project",
     "Career portfolio project",
+    "Data operations project",
     "Beta access",
     "Product feedback",
     "Security report",
