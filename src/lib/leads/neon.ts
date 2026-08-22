@@ -6,6 +6,8 @@ export type NeonQueryResponse = {
   rowCount?: number;
 };
 
+type NeonQueryParam = string | number | boolean | null;
+
 function getNeonEndpoint(connectionString: string) {
   const parsed = new URL(connectionString);
   const hostParts = parsed.hostname.split(".");
@@ -25,7 +27,7 @@ function cleanErrorDetail(value: string) {
 
 export async function leadNeonQuery(
   query: string,
-  params: Array<string | null> = [],
+  params: NeonQueryParam[] = [],
 ) {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("Lead storage is not configured.");
@@ -38,7 +40,10 @@ export async function leadNeonQuery(
       "Neon-Raw-Text-Output": "true",
       "Neon-Array-Mode": "true",
     },
-    body: JSON.stringify({ query, params }),
+    body: JSON.stringify({
+      query,
+      params: params.map((value) => (value === null ? null : String(value))),
+    }),
     cache: "no-store",
   });
 

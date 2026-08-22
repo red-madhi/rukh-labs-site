@@ -11,7 +11,6 @@ export const DEFAULT_AUTOMATION_MESSAGE =
   "hey comrade, thanks for the follow — i build weird internet stuff. if you’re making something too, send it my way. i’m nosy.";
 
 const PUBLIC_API = "https://public.api.bsky.app/xrpc";
-const BSKY_ENTRYWAY = "https://bsky.social/xrpc";
 const CHAT_PROXY = "did:web:api.bsky.chat#bsky_chat";
 const SYNC_THROTTLE_MINUTES = 4;
 const MAX_FOLLOWER_PAGES_PER_SYNC = 20;
@@ -46,11 +45,27 @@ type BskySession = {
   accessJwt: string;
   did: string;
   handle: string;
+  pdsUrl: string;
 };
 
 type ChatAvailability = {
   canChat: boolean;
   convo?: { id?: string };
+};
+
+type ResolveHandleResponse = {
+  did: string;
+};
+
+type DidService = {
+  id?: string;
+  type?: string;
+  serviceEndpoint?: unknown;
+};
+
+type DidDocument = {
+  id?: string;
+  service?: DidService[];
 };
 
 type SettingsRow = {
@@ -209,12 +224,64 @@ async function fetchJson<T>(url: URL | string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+async function resolveDid(identifier: string) {
+  if (identifier.startsWith("did:")) return identifier;
+  const url = new URL(`${PUBLIC_API}/com.atproto.identity.resolveHandle`);
+  url.searchParams.set("handle", normalizeHandle(identifier));
+  const resolved = await fetchJson<ResolveHandleResponse>(url);
+  if (!resolved.did.startsWith("did:")) {
+    throw new Error("Bluesky returned an invalid DID for this account.");
+  }
+  return resolved.did;
+}
+
+function didDocumentUrl(did: string) {
+  if (did.startsWith("did:plc:")) {
+    return `https://plc.directory/${did}`;
+  }
+  if (did.startsWith("did:web:")) {
+    const parts = did
+      .slice("did:web:".length)
+      .split(":")
+      .map((part) => decodeURIComponent(part));
+    const host = parts.shift();
+    if (!host) throw new Error("The Bluesky DID document host is invalid.");
+    if (!parts.length) return `https://${host}/.well-known/did.json`;
+    return `https://${host}/${parts.map((part) => encodeURIComponent(part)).join("/")}/did.json`;
+  }
+  throw new Error(`Unsupported Bluesky DID method: ${did.split(":").slice(0, 2).join(":")}`);
+}
+
+async function resolvePds(identifier: string) {
+  const did = await resolveDid(identifier);
+  const document = await fetchJson<DidDocument>(didDocumentUrl(did));
+  const service = document.service?.find(
+    (item) => item.id === `${did}#atproto_pds` || item.id?.endsWith("#atproto_pds"),
+  );
+  if (!service || typeof service.serviceEndpoint !== "string") {
+    throw new Error("Could not find this account's AT Protocol PDS.");
+  }
+  const endpoint = new URL(service.serviceEndpoint);
+  if (endpoint.protocol !== "https:") {
+    throw new Error("The account PDS must use HTTPS.");
+  }
+  return { did, pdsUrl: endpoint.toString().replace(/\/$/, "") };
+}
+
 async function createSession(identifier: string, password: string) {
-  return fetchJson<BskySession>(`${BSKY_ENTRYWAY}/com.atproto.server.createSession`, {
-    method: "POST",
-    headers: { Accept: "application/json", "Content-Type": "application/json" },
-    body: JSON.stringify({ identifier, password }),
-  });
+  const { did, pdsUrl } = await resolvePds(identifier);
+  const session = await fetchJson<Omit<BskySession, "pdsUrl">>(
+    `${pdsUrl}/xrpc/com.atproto.server.createSession`,
+    {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/json" },
+      body: JSON.stringify({ identifier, password }),
+    },
+  );
+  if (session.did !== did) {
+    throw new Error("Bluesky login resolved to a different account than expected.");
+  }
+  return { ...session, pdsUrl };
 }
 
 async function chatRequest<T>(
@@ -222,7 +289,7 @@ async function chatRequest<T>(
   method: string,
   options?: { params?: Record<string, string>; body?: unknown },
 ) {
-  const url = new URL(`${BSKY_ENTRYWAY}/${method}`);
+  const url = new URL(`${session.pdsUrl}/xrpc/${method}`);
   for (const [key, value] of Object.entries(options?.params ?? {})) {
     url.searchParams.append(key, value);
   }
@@ -844,19 +911,22 @@ async function createPost(
     createdAt: new Date().toISOString(),
   };
   if (reply) record.reply = reply;
-  return fetchJson<CreateRecordResponse>(`${BSKY_ENTRYWAY}/com.atproto.repo.createRecord`, {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      Authorization: `Bearer ${session.accessJwt}`,
-      "Content-Type": "application/json",
+  return fetchJson<CreateRecordResponse>(
+    `${session.pdsUrl}/xrpc/com.atproto.repo.createRecord`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${session.accessJwt}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        repo: session.did,
+        collection: "app.bsky.feed.post",
+        record,
+      }),
     },
-    body: JSON.stringify({
-      repo: session.did,
-      collection: "app.bsky.feed.post",
-      record,
-    }),
-  });
+  );
 }
 
 async function weeklyRun(sql: Sql, week: string) {
