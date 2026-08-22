@@ -58,11 +58,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       - name: Install, lint, and build
         run: |
-          npm ci
+          npm install --no-audit --no-fund
           npm run lint
           npm run build
 
