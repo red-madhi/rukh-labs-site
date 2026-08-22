@@ -1,0 +1,58 @@
+name: Finalize controlled outreach
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/finalize-controlled-outreach-20260822.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: finalize-controlled-outreach-20260822
+  cancel-in-progress: false
+
+jobs:
+  validate-and-activate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out current production branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Activate segmented campaign generator in the runner
+        run: cp src/lib/leads/outreach-controlled.ts src/lib/leads/outreach.ts
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Run production build
+        run: npm run build
+
+      - name: Commit only after the production build passes
+        run: |
+          rm -f src/lib/leads/outreach-controlled.ts
+          rm -f .github/workflows/finalize-controlled-outreach-20260822.yml
+          rm -f .github/scripts/apply-data-ops-outreach-safety-20260822.py
+          rm -f .github/workflows/apply-data-ops-outreach-safety-20260822.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Activate segmented outreach and safety controls"
+          git push origin HEAD:main
