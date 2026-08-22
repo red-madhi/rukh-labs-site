@@ -68,12 +68,13 @@ jobs:
           fetch_blob_to_file c12b9eb80632c10389e6c0f32c418d65eeaa75d3 src/lib/leads/outreach-safety.ts
           fetch_blob_to_file ff71455ea33877c56523c1a2d8cea7be6057c294 src/lib/leads/outreach.ts
 
-      - name: Apply lint correction to outreach UI
+      - name: Apply compatibility corrections
         run: |
           python - <<'PY'
           from pathlib import Path
-          path = Path("src/app/leads/outreach/outreach-campaign.tsx")
-          source = path.read_text()
+
+          ui_path = Path("src/app/leads/outreach/outreach-campaign.tsx")
+          ui_source = ui_path.read_text()
           old_timestamp = '''    const verifiedAt = new Date(state.verifiedAt).getTime();
               if (!Number.isFinite(verifiedAt) || verifiedAt < Date.now() - 90 * 86_400_000) return "Email verification is older than 90 days";
               if (safety?.global.health === "paused") return safety.blockReason || "Global sending pause";
@@ -92,10 +93,40 @@ jobs:
           '''
           new_ready = '''  const ready = filtered.filter((lead) => !blockReason(lead));
           '''
-          if old_timestamp not in source or old_ready not in source:
-              raise SystemExit("Expected outreach UI lint targets were not found")
-          source = source.replace(old_timestamp, new_timestamp).replace(old_ready, new_ready)
-          path.write_text(source)
+          if old_timestamp not in ui_source or old_ready not in ui_source:
+              raise SystemExit("Expected outreach UI compatibility targets were not found")
+          ui_path.write_text(ui_source.replace(old_timestamp, new_timestamp).replace(old_ready, new_ready))
+
+          outreach_path = Path("src/lib/leads/outreach.ts")
+          outreach_source = outreach_path.read_text()
+          old_sources = '''  sources: [
+              "Instantly 2025 cold-email benchmark dataset",
+              "Gong cold-email research",
+              "Outreach sequence follow-up research",
+            ],
+          '''
+          new_sources = '''  sources: [
+              {
+                name: "Gong — 28M+ cold emails",
+                href: "https://www.gong.io/blog/does-cold-email-even-work-any-more-heres-what-the-data-says",
+              },
+              {
+                name: "Instantly — billions of cold-email interactions",
+                href: "https://instantly.ai/cold-email-benchmark-report-2026",
+              },
+              {
+                name: "Lavender — 231,818 recent cold emails / ~50k inboxes",
+                href: "https://www.lavender.ai/blog/the-cold-email-benchmark-report",
+              },
+              {
+                name: "Belkins + Reply.io — 5.5M subject-line emails",
+                href: "https://belkins.io/blog/b2b-cold-email-subject-line-statistics",
+              },
+            ],
+          '''
+          if old_sources not in outreach_source:
+              raise SystemExit("Expected outreach research source list was not found")
+          outreach_path.write_text(outreach_source.replace(old_sources, new_sources))
           PY
 
       - name: Set up Node
