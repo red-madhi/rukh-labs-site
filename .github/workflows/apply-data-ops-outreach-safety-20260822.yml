@@ -1,0 +1,55 @@
+name: Apply Data Ops and outreach safety build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/apply-data-ops-outreach-safety-20260822.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-data-ops-outreach-safety-20260822
+  cancel-in-progress: false
+
+jobs:
+  apply-and-validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out current production branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply the build
+        run: python .github/scripts/apply-data-ops-outreach-safety-20260822.py
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Run production build
+        run: npm run build
+
+      - name: Commit only after the build passes
+        run: |
+          rm -f .github/scripts/apply-data-ops-outreach-safety-20260822.py
+          rm -f .github/workflows/apply-data-ops-outreach-safety-20260822.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Build Data Ops funnel and outreach safety controls"
+          git push origin HEAD:main
