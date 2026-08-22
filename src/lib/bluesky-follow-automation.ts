@@ -885,7 +885,7 @@ export async function runWeeklyThanks(options: { force?: boolean } = {}) {
     values (${week}::date, 'running', now())
     on conflict (week_start) do nothing
   `;
-  let run = await weeklyRun(sql, week);
+  const run = await weeklyRun(sql, week);
   if (!run) throw new Error("Could not create the weekly Bluesky run record.");
   if (run.status === "complete") {
     return { ok: true, skipped: true, message: "This week's thank-you thread already ran." };
