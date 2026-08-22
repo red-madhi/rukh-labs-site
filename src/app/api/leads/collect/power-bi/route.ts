@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
     call(request, "power-bi-web", "Fresh public web / LinkedIn / X", "/api/leads/collect/power-bi-web"),
     call(request, "power-bi-rfp", "Public Power BI RFPs", "/api/leads/collect/power-bi-rfp"),
     call(request, "power-bi-sam", "SAM.gov BI opportunities", "/api/leads/collect/power-bi-sam"),
+    call(request, "data-ops-partners", "Verified white-label partner firms", "/api/leads/collect/data-ops-partners"),
   ]);
   const stored = results.reduce((sum, result) => sum + (result.stored ?? 0), 0);
   const qualified = results.reduce((sum, result) => sum + (result.qualified ?? 0), 0);
