@@ -1,8 +1,17 @@
 import type { LeadOpportunity } from "@/lib/leads/types";
+import {
+  CONTROLLED_OUTREACH_CAMPAIGN,
+  pitchVariantForLead,
+  pitchVersionForLead,
+  segmentForLead,
+  type OutreachSegment,
+  type PitchVariant,
+} from "@/lib/leads/segments";
 
 export type OutreachTouch = {
   label: string;
   timing: string;
+  businessDaysAfterPrevious: number;
   text: string;
   wordCount: number;
 };
@@ -14,6 +23,10 @@ export type OutreachPlan = {
   touches: OutreachTouch[];
   approach: string[];
   tone: string;
+  segment: OutreachSegment;
+  variant: PitchVariant;
+  pitchVersion: string;
+  campaignId: string;
 };
 
 export const OUTREACH_RESEARCH = {
@@ -22,10 +35,17 @@ export const OUTREACH_RESEARCH = {
   topDecileReply: "10.7%+",
   firstTouchReplyShare: "58%",
   followUpReplyShare: "42%",
-  targetFirstEmailWords: "50–80",
-  hardCeilingWords: 100,
-  recommendedTouches: "4–7",
-  followUpSpacing: "3–4 days",
+  targetFirstEmailWords: "50–90",
+  hardCeilingWords: 110,
+  recommendedTouches: 3,
+  followUpSpacing: "3 business days, then 4 business days",
+  hardBouncePauseRate: "3% by source",
+  emergencyGlobalBounceRate: "10%",
+  testDecisions: [
+    "50 verified deliveries and zero replies: rewrite the subject and opening.",
+    "100 verified deliveries, at least one follow-up, and zero replies: retire the pitch.",
+    "150–200 verified deliveries and fewer than two replies: change the offer, targeting, or price.",
+  ],
   sources: [
     {
       name: "Gong — 28M+ cold emails",
@@ -50,12 +70,11 @@ function words(value: string) {
   return value.trim() ? value.trim().split(/\s+/).length : 0;
 }
 
-function withSiteFooter(value: string) {
+function withFooter(value: string, path = "") {
   const normalized = value.trimEnd();
-  if (!normalized) return "rukhlabs.com";
-  const lines = normalized.split(/\r?\n/);
-  if (lines[lines.length - 1]?.trim().toLowerCase() === "rukhlabs.com") return normalized;
-  return `${normalized}\n\nrukhlabs.com`;
+  const footer = `rukhlabs.com${path}`;
+  if (normalized.toLowerCase().endsWith(footer.toLowerCase())) return normalized;
+  return `${normalized}\n\n${footer}`;
 }
 
 function firstName(value?: string) {
@@ -70,10 +89,20 @@ function greeting(lead: LeadOpportunity) {
   return name ? `Hi ${name},` : `Hi ${lead.company} team,`;
 }
 
-function compact(value: string, max = 155) {
+function compact(value: string, max = 150) {
   const cleaned = value.replace(/\s+/g, " ").trim().replace(/[.!?]+$/, "");
   if (cleaned.length <= max) return cleaned;
   return `${cleaned.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
+}
+
+function shortCompany(lead: LeadOpportunity) {
+  return lead.company
+    .replace(/\b(?:LLC|PLLC|INC\.?|CORP\.?|LTD\.?)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 3)
+    .join(" ");
 }
 
 function observationFromSignal(signal: string) {
@@ -81,39 +110,17 @@ function observationFromSignal(signal: string) {
   const seconds = signal.match(/(\d+(?:\.\d+)?)\s*seconds?/i)?.[1];
   const year = signal.match(/(?:dated|copyright).*?(20\d{2})/i)?.[1];
 
-  if (/parked|for sale|under construction|coming soon/.test(lower)) {
-    return "the domain is showing a parked or unfinished page instead of a normal business website";
-  }
-  if (/not using https|http instead of https/.test(lower)) {
-    return "the site is still loading without HTTPS";
-  }
-  if (/mobile viewport|mobile configuration/.test(lower)) {
-    return "the site is missing the setup that helps it display properly on phones";
-  }
-  if (/inquiry or booking form|contact form.*missing|no inquiry/.test(lower)) {
-    return "there doesn't appear to be a simple inquiry or booking form for a new visitor";
-  }
-  if (/call-to-action|clear.*cta|no clear quote|no clear.*contact/.test(lower)) {
-    return "the next step for a new customer isn't especially obvious on the site";
-  }
-  if (/response.*slow|took.*seconds|relatively slow/.test(lower)) {
-    return seconds
-      ? `the homepage took about ${seconds} seconds to respond when I checked it`
-      : "the homepage was noticeably slow to respond when I checked it";
-  }
-  if (/missing.*page title|no.*page title/.test(lower)) {
-    return "the homepage is missing a useful page title, which makes the page less clear to search engines and visitors";
-  }
-  if (/meta description/.test(lower)) {
-    return "the homepage is missing the description search engines normally use to understand and preview the page";
-  }
-  if (/alternative text|alt text/.test(lower)) {
-    return "a lot of the site's images are missing accessibility descriptions";
-  }
-  if (/copyright/.test(lower) && year) {
-    return `the site still shows a ${year} copyright date, which can make it look less actively maintained`;
-  }
-  return compact(signal.charAt(0).toLowerCase() + signal.slice(1), 145);
+  if (/parked|for sale|under construction|coming soon/.test(lower)) return "the domain is showing a parked or unfinished page";
+  if (/not using https|http instead of https/.test(lower)) return "the site is still loading without HTTPS";
+  if (/mobile viewport|mobile configuration/.test(lower)) return "the site is missing the setup that helps it display properly on phones";
+  if (/inquiry or booking form|contact form.*missing|no inquiry/.test(lower)) return "there does not appear to be a simple inquiry or booking form";
+  if (/call-to-action|clear.*cta|no clear quote|no clear.*contact/.test(lower)) return "the next step for a new customer is not especially obvious";
+  if (/response.*slow|took.*seconds|relatively slow/.test(lower)) return seconds ? `the homepage took about ${seconds} seconds to respond` : "the homepage was noticeably slow to respond";
+  if (/missing.*page title|no.*page title/.test(lower)) return "the homepage is missing a useful page title";
+  if (/meta description/.test(lower)) return "the homepage is missing the description search engines normally use";
+  if (/alternative text|alt text/.test(lower)) return "many images are missing accessibility descriptions";
+  if (/copyright/.test(lower) && year) return `the site still shows a ${year} copyright date`;
+  return compact(signal.charAt(0).toLowerCase() + signal.slice(1), 140);
 }
 
 function usableSignals(lead: LeadOpportunity) {
@@ -123,111 +130,154 @@ function usableSignals(lead: LeadOpportunity) {
     .filter(Boolean);
 }
 
-function websiteSubject(lead: LeadOpportunity) {
-  const company = lead.company.replace(/\b(?:LLC|PLLC|INC\.?|CORP\.?|LTD\.?)\b/gi, "").replace(/\s+/g, " ").trim();
-  const shortCompany = company.split(/\s+/).slice(0, 3).join(" ");
-  return `${shortCompany} website`;
+function finishPlan(input: {
+  lead: LeadOpportunity;
+  segment: OutreachSegment;
+  variant: PitchVariant;
+  subjectA: string;
+  subjectB: string;
+  firstEmail: string;
+  followUp1: string;
+  followUp2: string;
+  approach: string[];
+  tone: string;
+  footerPath?: string;
+}): OutreachPlan {
+  const firstEmail = withFooter(input.firstEmail, input.footerPath);
+  const followUp1 = withFooter(input.followUp1, input.footerPath);
+  const followUp2 = withFooter(input.followUp2, input.footerPath);
+  return {
+    subject: input.variant === "A" ? input.subjectA : input.subjectB,
+    firstEmail,
+    wordCount: words(firstEmail),
+    touches: [
+      { label: "Follow-up 1", timing: "3 business days later", businessDaysAfterPrevious: 3, text: followUp1, wordCount: words(followUp1) },
+      { label: "Follow-up 2", timing: "4 business days later", businessDaysAfterPrevious: 4, text: followUp2, wordCount: words(followUp2) },
+    ],
+    approach: input.approach,
+    tone: input.tone,
+    segment: input.segment,
+    variant: input.variant,
+    pitchVersion: pitchVersionForLead(input.segment, input.lead.id),
+    campaignId: CONTROLLED_OUTREACH_CAMPAIGN,
+  };
 }
 
-function websitePlan(lead: LeadOpportunity): OutreachPlan {
+function websitePlan(lead: LeadOpportunity, variant: PitchVariant) {
   const hello = greeting(lead);
   const observations = usableSignals(lead);
-  const primary = observations[0] || "I found a couple of practical places where the website could make the path to contacting you clearer";
-  const secondary = observations[1] || "there are a couple of other small changes I would prioritize before doing anything larger";
-  const isIntent = lead.source === "intent";
-  const isParked = lead.signals.some((signal) => /parked|for sale|under construction|coming soon/i.test(signal));
-
-  let firstEmail: string;
-  if (isIntent) {
-    firstEmail = `${hello}\n\nI saw the public post about ${compact(lead.summary, 125)}. I build focused small-business websites, and this looks like the kind of project that can stay pretty straightforward.\n\nIf useful, I can send the 3 things I'd scope first and what I'd leave out. Interested?\n\n— Red\nRukh Labs`;
-  } else if (isParked) {
-    firstEmail = `${hello}\n\nI came across ${lead.company} and noticed ${primary}. I build straightforward small-business sites, but I don't want to turn this into a sales pitch.\n\nIf a proper site is already on your radar, want me to send the 3 things I'd prioritize first?\n\n— Red\nRukh Labs`;
-  } else {
-    firstEmail = `${hello}\n\nI was looking at ${lead.company}'s site and noticed ${primary}. It's a small thing, but it can add friction for someone trying to become a customer.\n\nIf useful, I can send the 3 changes I'd prioritize first—no call needed. Interested?\n\n— Red\nRukh Labs`;
-  }
-
-  const follow1 = `${hello}\n\nOne other thing I noticed: ${secondary}. That's the kind of fix I'd handle before suggesting a full rebuild.\n\nWant me to send the short list?\n\n— Red`;
-  const follow2 = `${hello}\n\nA quick thought on ${lead.company}: I'd focus first on the visitor's path from landing on the site to actually contacting or booking—not on adding a pile of new features.\n\nHappy to send the 3-point version if that would be useful.\n\n— Red`;
-  const follow3 = `${hello}\n\nLast note from me. If website changes aren't a priority right now, no problem. If they are, I can send the short list I mentioned and you can decide if any of it is worth acting on.\n\n— Red`;
-  const firstEmailWithFooter = withSiteFooter(firstEmail);
-  const follow1WithFooter = withSiteFooter(follow1);
-  const follow2WithFooter = withSiteFooter(follow2);
-  const follow3WithFooter = withSiteFooter(follow3);
-
-  return {
-    subject: websiteSubject(lead),
-    firstEmail: firstEmailWithFooter,
-    wordCount: words(firstEmailWithFooter),
-    touches: [
-      { label: "Follow-up 1", timing: "3–4 days later", text: follow1WithFooter, wordCount: words(follow1WithFooter) },
-      { label: "Follow-up 2", timing: "3–4 days later", text: follow2WithFooter, wordCount: words(follow2WithFooter) },
-      { label: "Follow-up 3", timing: "3–4 days later", text: follow3WithFooter, wordCount: words(follow3WithFooter) },
-    ],
+  const primary = observations[0] || "there are a couple of places where the path to contacting you could be clearer";
+  const secondary = observations[1] || "I would fix the customer path before adding more features";
+  const company = shortCompany(lead);
+  const intent = lead.source === "intent";
+  const firstEmail = intent
+    ? `${hello}\n\nI saw the public post about ${compact(lead.summary, 120)}. I build focused small-business websites, and this looks like a project that can stay straightforward.\n\nI can send the three things I would scope first and what I would leave out. Useful?\n\n— Red\nRukh Labs`
+    : `${hello}\n\nI checked ${lead.company}'s site and noticed ${primary}. It is a small issue, but it adds friction for someone trying to become a customer.\n\nI can send the three changes I would prioritize first—no call needed. Useful?\n\n— Red\nRukh Labs`;
+  const followUp1 = `${hello}\n\nOne additional observation: ${secondary}. That is the kind of issue I would resolve before suggesting a full rebuild.\n\nShould I send the short list?\n\n— Red`;
+  const followUp2 = `${hello}\n\nLast note from me. My first pass would focus on the path from landing on the site to contacting or bookinf—not on adding a pile of features.\n\nI can send the three-point version if it would help.\n\n— Red`;
+  return finishPlan({
+    lead,
+    segment: "website",
+    variant,
+    subjectA: `${company} website`,
+    subjectB: `quick site note for ${company}`,
+    firstEmail,
+    followUp1,
+    followUp2,
     approach: [
-      "Lead with one verified problem, not a list of services.",
-      "Offer a useful 3-point assessment before asking for a meeting.",
-      "Keep one easy yes/no CTA and avoid ROI promises or hype.",
-      "Each follow-up adds a new angle; never send a bare 'checking in.'",
+      "Test only the subject line between A and B.",
+      "Lead with one verified observation.",
+      "Offer a useful three-point assessment before asking for a meeting.",
+      "Stop after two follow-ups.",
     ],
-    tone: "Specific, neighborly, low-pressure",
-  };
+    tone: "Specific, calm, low-pressure",
+  });
 }
 
-function powerBiSubject(lead: LeadOpportunity) {
-  if (lead.tags.some((tag) => /job-board|job board/i.test(tag))) return "Power BI role";
-  if (lead.tags.some((tag) => /rfp|procurement|sam\.gov/i.test(tag))) return "Power BI project";
-  if (lead.tags.some((tag) => /migration|proactive/i.test(tag))) return "Power BI migration";
-  return "Power BI help";
-}
-
-function powerBiPlan(lead: LeadOpportunity): OutreachPlan {
+function powerBiPlan(lead: LeadOpportunity, variant: PitchVariant) {
   const hello = greeting(lead);
-  const summary = compact(lead.summary, 145);
-  const jobBoard = lead.tags.some((tag) => /job-board|job board/i.test(tag));
-  const procurement = lead.tags.some((tag) => /rfp|procurement|sam\.gov/i.test(tag));
-  const direct = lead.tags.some((tag) => /direct ask/i.test(tag));
-  const proactive = lead.tags.some((tag) => /proactive/i.test(tag));
-
-  let firstEmail: string;
-  if (jobBoard) {
-    firstEmail = `${hello}\n\nI saw the newly posted Power BI role and the part that stood out was ${summary}. My work is hands-on Power BI/Fabric—data modeling, DAX, Power Query, migrations, and production reporting.\n\nIf useful, I can send 2–3 directly relevant examples rather than a generic skills dump. Interested?\n\n— Red`;
-  } else if (procurement) {
-    firstEmail = `${hello}\n\nI came across the Power BI opportunity around ${summary}. I work hands-on with Power BI/Fabric implementations and reporting migrations, and the scope looks worth a closer read.\n\nWould it help if I sent a short response outline focused on the highest-risk parts of the work?\n\n— Red`;
-  } else if (direct) {
-    firstEmail = `${hello}\n\nI saw your post about ${summary}. I work hands-on with Power BI/Fabric, especially data models, DAX, Power Query, migrations, and production dashboards.\n\nIf useful, I can send the 2–3 things I'd check first based on what you described. Interested?\n\n— Red`;
-  } else if (proactive) {
-    firstEmail = `${hello}\n\nI came across the note about ${summary}. I've worked directly on Tableau-to-Power BI/Fabric reporting migrations, so that caught my attention.\n\nIf useful, I can send a short outline of the first 3 areas I'd de-risk before the build gets expensive. Interested?\n\n— Red`;
-  } else {
-    firstEmail = `${hello}\n\nI came across the Power BI need around ${summary}. I work hands-on with Power BI/Fabric and reporting modernization, and this looks close to the work I do.\n\nIf useful, I can send the 2–3 things I'd look at first. Interested?\n\n— Red`;
-  }
-
-  const follow1 = `${hello}\n\nOne reason I followed up: on Power BI work like this, I usually check the model and refresh path before touching visuals. It tends to expose the expensive problems early.\n\nWant me to send the short checklist?\n\n— Red`;
-  const follow2 = `${hello}\n\nAnother angle that may be useful: I can keep this focused on the specific model/reporting problem rather than turning it into a broad consulting engagement.\n\nHappy to send how I'd scope the first pass.\n\n— Red`;
-  const follow3 = `${hello}\n\nLast note from me. If the Power BI work is already covered, no worries. If it's still open, I can send the short approach I mentioned and you can decide whether it's relevant.\n\n— Red`;
-  const firstEmailWithFooter = withSiteFooter(firstEmail);
-  const follow1WithFooter = withSiteFooter(follow1);
-  const follow2WithFooter = withSiteFooter(follow2);
-  const follow3WithFooter = withSiteFooter(follow3);
-
-  return {
-    subject: powerBiSubject(lead),
-    firstEmail: firstEmailWithFooter,
-    wordCount: words(firstEmailWithFooter),
-    touches: [
-      { label: "Follow-up 1", timing: "3–4 days later", text: follow1WithFooter, wordCount: words(follow1WithFooter) },
-      { label: "Follow-up 2", timing: "3–4 days later", text: follow2WithFooter, wordCount: words(follow2WithFooter) },
-      { label: "Follow-up 3", timing: "3–4 days later", text: follow3WithFooter, wordCount: words(follow3WithFooter) },
-    ],
+  const summary = compact(lead.summary, 140);
+  const firstEmail = `${hello}\n\nI came across the Power BI need around ${summary}. My work is hands-on Power BI and Fabric—data modeling, DAX, Power Query, migrations, refresh paths, and production reporting.\n\nI can send the two or three areas I would check first based on the scope. Useful?\n\n— Red\nRukh Labs`;
+  const followUp1 = `${hello}\n\nOne reason I followed up: on Power BI work like this, I usually check the model, source grain, and refresh path before touching visuals. That tends to expose the expensive problems early.\n\nShould I send the short checklist?\n\n— Red`;
+  const followUp2 = `${hello}\n\nLast note from me. I can keep the first pass focused on the specific reporting problem rather than turning it into a broad consulting engagement.\n\nI can send how I would scope that first pass.\n\n— Red`;
+  return finishPlan({
+    lead,
+    segment: "power-bi",
+    variant,
+    subjectA: "Power BI scope",
+    subjectB: "Power BI first pass",
+    firstEmail,
+    followUp1,
+    followUp2,
     approach: [
-      "Reference the exact Power BI/Fabric need instead of sending a resume paragraph.",
-      "Use relevant capability as proof, then offer a useful next artifact.",
-      "One interest CTA; don't ask a cold prospect for 15–30 minutes immediately.",
-      "For <12h job-board leads, send the first touch immediately while the posting is still fresh.",
+      "Test only the subject line between A and B.",
+      "Reference the exact Power BI or Fabric need.",
+      "Offer a short technical artifact rather than a generic credentials paragraph.",
+      "Stop after two follow-ups.",
     ],
-    tone: "Concise, technical enough to be credible, no jargon pile-up",
-  };
+    tone: "Concise and technically credible",
+    footerPath: "/data-ops",
+  });
 }
 
-export function buildOutreachPlan(lead: LeadOpportunity): OutreachPlan {
-  return lead.source === "power-bi" ? powerBiPlan(lead) : websitePlan(lead);
+function dataOpsPlan(lead: LeadOpportunity, variant: PitchVariant) {
+  const hello = greeting(lead);
+  const summary = compact(lead.summary, 135);
+  const company = shortCompany(lead);
+  const firstEmail = `${hello}\n\nI came across the work around ${summary}. It looks like the kind of reporting, reconciliation, or migration process where someone still has to assemble and check the same output by hand.\n\nI take ownership of one process like that: validated output, an exception list, and evidence the totals reconcile. Want the three-point scope I would test first?\n\n— Red\nRukh Labs`;
+  const followUp1 = `${hello}\n\nThe useful first step is usually not a new dashboard. It is mapping the inputs, manual corrections, failure points, and acceptance checks around one recurring output.\n\nShould I send the three-point diagnostic?\n\n— Red`;
+  const followUp2 = `${hello}\n\nLast note from me. I would keep this to one process and one measurable result rather than proposing a broad transformation project.\n\nI can send the smallest sensible starting scope.\n\n— Red`;
+  return finishPlan({
+    lead,
+    segment: "data-ops",
+    variant,
+    subjectA: `${company} reporting process`,
+    subjectB: `recurring reporting at ${company}`,
+    firstEmail,
+    followUp1,
+    followUp2,
+    approach: [
+      "Test only the subject line between A and B.",
+      "Sell ownership of one recurring result, not tools or agents.",
+      "Name the three outputs: validated result, exceptions, and reconciliation evidence.",
+      "Stop after two follow-ups.",
+    ],
+    tone: "Operational, concrete, no transformation theater",
+    footerPath: "/data-ops",
+  });
+}
+
+function partnerPlan(lead: LeadOpportunity, variant: PitchVariant) {
+  const hello = greeting(lead);
+  const summary = compact(lead.summary, 125);
+  const firstEmail = `${hello}\n\nI came across ${lead.company} while looking at firms working around ${summary}. I provide white-label Power BI, Power Query, reconciliation, migration QA, and reporting-automation delivery for consultancies that need extra capacity.\n\nYou keep the client, relationship, and markup. I work under NDA with fixed wholesale scopes and no poaching. Worth sending a one-page capability map?\n\n— Red\nRukh Labs`;
+  const followUp1 = `${hello}\n\nThe most useful fit is usually overflow work that is too specialized or too small to staff internally: model repair, migration reconciliation, mapping, refresh failures, or recurring report automation.\n\nShould I send the wholesale scope examples?\n\n— Red`;
+  const followUp2 = `${hello}\n\nLast note from me. This is meant to expand delivery capacity without creating channel conflict—the partner stays client-facing and I stay behind the work.\n\nI can send the one-page outline if relevant.\n\n— Red`;
+  return finishPlan({
+    lead,
+    segment: "partners",
+    variant,
+    subjectA: "white-label data delivery",
+    subjectB: "overflow Power BI support",
+    firstEmail,
+    followUp1,
+    followUp2,
+    approach: [
+      "Test only the subject line between A and B.",
+      "Lead with channel safety: the partner keeps the client and markup.",
+      "Offer fixed wholesale scopes, NDA delivery, and no poaching.",
+      "Stop after two follow-ups.",
+    ],
+    tone: "Peer-to-peer, commercially clear, no client-grab anxiety",
+    footerPath: "/data-ops",
+  });
+}
+
+export function buildOutreachPlan(lead: LeadOpportunity, requestedVariant?: PitchVariant): OutreachPlan {
+  const segment = segmentForLead(lead);
+  const variant = requestedVariant || pitchVariantForLead(lead.id);
+  if (segment === "partners") return partnerPlan(lead, variant);
+  if (segment === "data-ops") return dataOpsPlan(lead, variant);
+  if (segment === "power-bi") return powerBiPlan(lead, variant);
+  return websitePlan(lead, variant);
 }

@@ -1,5 +1,6 @@
 import { extractEmailAddresses, selectPrimaryEmail } from "@/lib/leads/contact-values";
 import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
+import { assertLeadOutreachSafety } from "@/lib/leads/outreach-safety";
 
 export async function assertLeadEmailSendable(leadId: string) {
   const [leadResult, bouncedResult] = await Promise.all([
@@ -13,8 +14,7 @@ export async function assertLeadEmailSendable(leadId: string) {
     leadNeonQuery(
       `SELECT COALESCE(raw_payload->'outreach'->>'recipientEmail', contact_email) AS recipient_email
        FROM public.lead_opportunities
-       WHERE archived_at IS NULL
-         AND contact_email IS NOT NULL
+       WHERE contact_email IS NOT NULL
          AND (
            COALESCE(raw_payload->'outreach'->>'state', '') = 'bounced'
            OR COALESCE(raw_payload->'outreach'->>'emailSuppressed', 'false') = 'true'
@@ -33,8 +33,9 @@ export async function assertLeadEmailSendable(leadId: string) {
     neonRowsToObjects(bouncedResult).flatMap((item) => extractEmailAddresses(item.recipient_email)),
   );
   if (suppressedEmails.has(email)) {
-    throw new Error(`Delivery is suppressed for ${email} because that address previously bounced. No email was sent.`);
+    throw new Error(`Delivery is permanently suppressed for ${email} because that address previously bounced. No email was sent.`);
   }
 
-  return { email, suppressed: false };
+  const safety = await assertLeadOutreachSafety(leadId);
+  return { email, suppressed: false, segment: safety.segment, snapshot: safety.snapshot };
 }
