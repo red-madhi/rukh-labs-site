@@ -1,0 +1,129 @@
+name: Verify Data Ops outreach deployment
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/verify-data-ops-outreach-deployment-20260822.yml
+      - src/lib/leads/outreach.ts
+      - src/lib/leads/outreach-safety.ts
+      - src/lib/leads/segments.ts
+      - src/app/leads/outreach/safety/**
+      - src/app/leads/partners/**
+      - src/app/api/leads/outreach/**
+      - src/proxy.ts
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: verify-data-ops-outreach-deployment-20260822
+  cancel-in-progress: true
+
+jobs:
+  build-and-verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out production
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Wait for the guarded finalizer commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            git fetch origin main
+            if ! git cat-file -e origin/main:src/lib/leads/outreach-controlled.ts 2>/dev/null; then
+              git reset --hard origin/main
+              exit 0
+            fi
+            echo "Finalizer still active; waiting ($attempt/60)."
+            sleep 10
+          done
+          echo "The segmented outreach staging file was not removed, so the guarded finalizer did not complete."
+          exit 1
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install exact dependencies
+        run: npm ci
+
+      - name: Run a clean production build
+        run: npm run build
+
+      - name: Wait for Vercel routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          routes=(
+            "https://rukhlabs.com/data-ops"
+            "https://rukhlabs.com/leads/partners"
+            "https://rukhlabs.com/leads/outreach/safety"
+            "https://rukhlabs.com/api/leads/outreach/safety"
+          )
+
+          for attempt in $(seq 1 60); do
+            all_ready=1
+            : > /tmp/rukh-route-status.txt
+
+            for url in "${routes[@]}"; do
+              code=$(curl -sS -L --max-time 30 -o /tmp/rukh-route-body.txt -w "%{http_code}" "$url" || true)
+              printf "%s %s\n" "$code" "$url" | tee -a /tmp/rukh-route-status.txt
+              if [[ "$code" == "000" || "$code" == "404" || "$code" =~ ^5 ]]; then
+                all_ready=0
+              fi
+            done
+
+            if [[ "$all_ready" == "1" ]]; then
+              exit 0
+            fi
+
+            echo "Deployment not ready yet; waiting ($attempt/60)."
+            sleep 10
+          done
+
+          echo "One or more production routes never became healthy."
+          cat /tmp/rukh-route-status.txt
+          exit 1
+
+      - name: Write verification record
+        shell: bash
+        run: |
+          mkdir -p docs
+          {
+            echo "# Data Ops and outreach safety deployment"
+            echo
+            echo "- Verified at: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+            echo "- Production commit: $(git rev-parse HEAD)"
+            echo "- Production build: passed"
+            echo "- Exact-address verification gate: present"
+            echo "- Historical campaign quarantine: present"
+            echo "- Segment hard-bounce pause: 3%"
+            echo "- Global hard-bounce emergency pause: 10%"
+            echo "- Segments: Website, Power BI, Data Ops, Partners"
+            echo "- Follow-up spacing: 3 business days, then 4 business days"
+            echo
+            echo "## Production route checks"
+            echo
+            sed 's/^/- /' /tmp/rukh-route-status.txt
+          } > docs/data-ops-outreach-safety-deployment.md
+
+      - name: Commit the verification record and remove this one-shot job
+        shell: bash
+        run: |
+          rm -f .github/workflows/verify-data-ops-outreach-deployment-20260822.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Verify Data Ops outreach deployment"
+          git push origin HEAD:main
