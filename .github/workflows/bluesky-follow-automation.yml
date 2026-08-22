@@ -1,0 +1,28 @@
+name: Bluesky follow automation
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bluesky-follow-automation
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check for new followers
+        run: |
+          curl --fail --silent --show-error --retry 2 --retry-delay 3 \
+            https://rukhlabs.com/api/advanced-network/follower-sync >/dev/null
+
+      - name: Run Monday thank-you check
+        run: |
+          curl --fail --silent --show-error --retry 2 --retry-delay 3 \
+            https://rukhlabs.com/api/advanced-network/weekly-thanks >/dev/null
