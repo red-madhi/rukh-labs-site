@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - feature/data-ops-and-outreach-safety
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
@@ -20,6 +24,7 @@ jobs:
       - name: Check out feature branch
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
 
       - name: Reconstruct and verify source bundle
@@ -49,7 +54,7 @@ jobs:
           tar -tzf /tmp/rukh-bundle.tgz
           tar -xzf /tmp/rukh-bundle.tgz
 
-      - name: Validate application
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -76,4 +81,5 @@ jobs:
             src/app/leads/statuses/lead-status-dashboard.tsx \
             .github/workflows/apply-outreach-safety.yml
           git commit -m "Add controlled outreach safety and segmented reporting"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          target_branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          git push origin "HEAD:${target_branch}"
