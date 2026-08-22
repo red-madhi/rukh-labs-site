@@ -75,6 +75,33 @@ function isSocialHandle(value: string) {
   return /^@[a-z0-9._-]+(?:\.[a-z0-9._-]+)*$/i.test(value.trim());
 }
 
+function socialIdentityName(lead: LeadOpportunity, tags: Set<string>) {
+  if (lead.contactName && isSocialHandle(lead.contactName)) return lead.contactName;
+  if (isSocialHandle(lead.company)) return lead.company;
+
+  const sourceUrl = lead.sourceUrl || lead.contactUrl;
+  if (!sourceUrl) return "";
+  try {
+    const url = new URL(sourceUrl);
+    if (tags.has("bluesky") || url.hostname === "bsky.app") {
+      const actor = decodeURIComponent(url.pathname.match(/\/profile\/([^/]+)(?:\/|$)/i)?.[1] || "");
+      if (!actor) return "";
+      if (actor.startsWith("did:")) {
+        const compact = actor.length > 24 ? `${actor.slice(0, 21)}…` : actor;
+        return `Bluesky account ${compact}`;
+      }
+      return actor.startsWith("@") ? actor : `@${actor}`;
+    }
+    if (tags.has("mastodon")) {
+      const account = decodeURIComponent(url.pathname.split("/").find((part) => part.startsWith("@")) || "");
+      return account ? `${account}@${url.hostname.replace(/^www\./i, "")}` : "";
+    }
+  } catch {
+    return "";
+  }
+  return "";
+}
+
 export function looksLikeResolvedEntityName(value: string) {
   const name = value.trim().replace(/\s+/g, " ");
   if (name.length < 2 || name.length > 120) return false;
@@ -91,8 +118,11 @@ function evidenceEntityName(lead: LeadOpportunity) {
     if (hiring && looksLikeResolvedEntityName(hiring)) return hiring;
   }
 
-  const federal = lead.summary.match(/^(.{2,160}?)\s+published a federal\b/i)?.[1]?.trim();
-  if (federal && looksLikeResolvedEntityName(federal)) return federal;
+  const federal = lead.summary.match(/^(.{2,180}?)\s+published a federal\b/i)?.[1]?.trim();
+  if (federal) {
+    const shortened = federal.length > 120 ? federal.split(/[.|>]/).filter(Boolean).slice(-2).join(" · ").slice(0, 120) : federal;
+    if (looksLikeResolvedEntityName(shortened)) return shortened;
+  }
 
   const namedBuyer = lead.summary.match(/^(.{2,140}?)\s+(?:issued|published|posted|released)\s+(?:an?\s+)?(?:rfp|rfq|solicitation|procurement|bid)\b/i)?.[1]?.trim();
   if (namedBuyer && looksLikeResolvedEntityName(namedBuyer)) return namedBuyer;
@@ -139,21 +169,6 @@ function organizationTypeFor(lead: LeadOpportunity, tags: Set<string>, kind: Dat
   return "Organization with an active data-operations need";
 }
 
-function entityNameFor(lead: LeadOpportunity, kind: DataOpsLeadKind) {
-  const evidenceName = evidenceEntityName(lead);
-  if (evidenceName) return evidenceName;
-
-  const company = lead.company.trim().replace(/\s+/g, " ");
-  if (looksLikeResolvedEntityName(company) || (kind === "active-problem" && isSocialHandle(company))) {
-    return company;
-  }
-  if (kind === "active-problem" && lead.contactName && isSocialHandle(lead.contactName)) {
-    return lead.contactName;
-  }
-  const host = sourceHost(lead);
-  return host ? readableHost(host) : company || "Unresolved entity";
-}
-
 export function verifyDataOpsLead(lead: LeadOpportunity): DataOpsVerification {
   const tags = normalizedTags(lead);
   const text = textFor(lead);
@@ -170,26 +185,44 @@ export function verifyDataOpsLead(lead: LeadOpportunity): DataOpsVerification {
   const activeTrigger = procurementTrigger || directTrigger || servicesTrigger;
   const kind: DataOpsLeadKind = partnerTagged ? "partner-prospect" : "active-problem";
   const candidate = partnerTagged || activeTrigger;
-  const entityName = entityNameFor(lead, kind);
   const evidenceName = evidenceEntityName(lead);
-  const resolvedEntityName = looksLikeResolvedEntityName(entityName);
-  const socialIdentity = Boolean(lead.contactName && isSocialHandle(lead.contactName)) || isSocialHandle(lead.company);
+  const socialName = directTrigger ? socialIdentityName(lead, tags) : "";
   const explicitEntityTag = tags.has("entity-verified") || tags.has("organization-resolved");
+  const storedName = lead.company.trim().replace(/\s+/g, " ");
+  const storedNameResolved = looksLikeResolvedEntityName(storedName);
 
+  let entityName = "Unresolved entity";
+  if (partnerTagged && storedNameResolved) {
+    entityName = storedName;
+  } else if (evidenceName) {
+    entityName = evidenceName;
+  } else if (procurementTrigger) {
+    if (tags.has("sam.gov")) entityName = "Federal buyer via SAM.gov";
+    else if (isGovernmentOrEducationHost(host)) entityName = readableHost(host);
+    else entityName = "Unresolved procurement buyer";
+  } else if (directTrigger && socialName) {
+    entityName = socialName;
+  } else if (directTrigger && explicitEntityTag && storedNameResolved) {
+    entityName = storedName;
+  } else if (tags.has("job-board") && evidenceName) {
+    entityName = evidenceName;
+  }
+
+  const resolvedEntityName = looksLikeResolvedEntityName(entityName) || Boolean(socialName);
   let entityVerified = false;
   if (partnerTagged) {
-    entityVerified = explicitEntityTag && resolvedEntityName;
+    entityVerified = explicitEntityTag && storedNameResolved;
   } else if (procurementTrigger) {
     entityVerified =
-      (explicitEntityTag && resolvedEntityName) ||
       Boolean(evidenceName) ||
+      (tags.has("sam.gov") && host === "sam.gov") ||
       (isGovernmentOrEducationHost(host) && Boolean(host));
   } else if (tags.has("job-board")) {
-    entityVerified = (explicitEntityTag && resolvedEntityName) || Boolean(evidenceName);
+    entityVerified = Boolean(evidenceName) || (explicitEntityTag && storedNameResolved);
   } else if (directTrigger && (tags.has("bluesky") || tags.has("mastodon"))) {
-    entityVerified = socialIdentity;
+    entityVerified = Boolean(socialName);
   } else if (directTrigger) {
-    entityVerified = explicitEntityTag && resolvedEntityName;
+    entityVerified = explicitEntityTag && storedNameResolved;
   }
 
   const categoryVerified = kind === "partner-prospect" ? partnerTagged : true;
@@ -203,9 +236,10 @@ export function verifyDataOpsLead(lead: LeadOpportunity): DataOpsVerification {
 
   let entityConfidence = 0;
   if (partnerTagged) entityConfidence = 82;
-  else if (procurementTrigger && entityVerified) entityConfidence = evidenceName ? 91 : isGovernmentOrEducationHost(host) ? 82 : 86;
-  else if (tags.has("job-board") && entityVerified) entityConfidence = evidenceName ? 86 : 78;
-  else if (directTrigger && socialIdentity) entityConfidence = 74;
+  else if (procurementTrigger && entityVerified) {
+    entityConfidence = evidenceName ? 91 : tags.has("sam.gov") ? 80 : 82;
+  } else if (tags.has("job-board") && entityVerified) entityConfidence = evidenceName ? 86 : 78;
+  else if (directTrigger && socialName) entityConfidence = socialName.includes("did:") ? 72 : 78;
   else if (entityVerified) entityConfidence = 72;
   else if (resolvedEntityName) entityConfidence = 48;
   else entityConfidence = 20;
@@ -214,7 +248,9 @@ export function verifyDataOpsLead(lead: LeadOpportunity): DataOpsVerification {
   if (lead.contactEmail || lead.contactPhone) entityConfidence += 6;
   else if (lead.contactUrl) entityConfidence += 3;
   if (host && partnerTagged) entityConfidence += 4;
-  if (pageTitlePattern.test(lead.company) || urlLikePattern.test(lead.company)) entityConfidence -= evidenceName ? 0 : 35;
+  if (pageTitlePattern.test(lead.company) || urlLikePattern.test(lead.company)) {
+    if (!evidenceName && !socialName && !procurementTrigger) entityConfidence -= 35;
+  }
   entityConfidence = Math.max(0, Math.min(99, entityConfidence));
 
   const whyQualified: string[] = [];
@@ -223,6 +259,8 @@ export function verifyDataOpsLead(lead: LeadOpportunity): DataOpsVerification {
   if (directTrigger) whyQualified.push("Source contains an explicit public request for outside help");
   if (servicesTrigger) whyQualified.push("Positive contract / freelance / project evidence indicates outside-service intent");
   if (evidenceName) whyQualified.push(`Organization resolved from source evidence: ${evidenceName}`);
+  else if (socialName) whyQualified.push(`Public social identity resolved from the source URL: ${socialName}`);
+  else if (entityVerified && procurementTrigger) whyQualified.push("Procurement source domain independently verifies the buyer channel");
   else if (entityVerified) whyQualified.push("Buyer or partner identity passed entity-resolution checks");
   if (contactVerified) whyQualified.push("A usable public contact or reply path is available");
   if (lead.website && kind === "partner-prospect") whyQualified.push("A first-party company website was resolved");
