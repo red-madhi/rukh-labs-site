@@ -1,9 +1,6 @@
 name: Apply outreach safety bundle
 
 on:
-  push:
-    branches:
-      - feature/data-ops-and-outreach-safety
   pull_request:
     branches:
       - main
@@ -54,10 +51,40 @@ jobs:
           tar -tzf /tmp/rukh-bundle.tgz
           tar -xzf /tmp/rukh-bundle.tgz
 
+      - name: Apply lint correction to outreach UI
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("src/app/leads/outreach/outreach-campaign.tsx")
+          source = path.read_text()
+          old_timestamp = '''    const verifiedAt = new Date(state.verifiedAt).getTime();
+              if (!Number.isFinite(verifiedAt) || verifiedAt < Date.now() - 90 * 86_400_000) return "Email verification is older than 90 days";
+              if (safety?.global.health === "paused") return safety.blockReason || "Global sending pause";
+          '''
+          new_timestamp = '''    const verifiedAt = new Date(state.verifiedAt).getTime();
+              if (!safety) return "Safety status unavailable";
+              const safetyGeneratedAt = new Date(safety.generatedAt).getTime();
+              if (!Number.isFinite(safetyGeneratedAt)) return "Safety timestamp unavailable";
+              if (!Number.isFinite(verifiedAt) || verifiedAt < safetyGeneratedAt - 90 * 86_400_000) return "Email verification is older than 90 days";
+              if (safety.global.health === "paused") return safety.blockReason || "Global sending pause";
+          '''
+          old_ready = '''  const ready = useMemo(
+              () => filtered.filter((lead) => !blockReason(lead)),
+              [filtered, states, drafts, safety],
+            );
+          '''
+          new_ready = '''  const ready = filtered.filter((lead) => !blockReason(lead));
+          '''
+          if old_timestamp not in source or old_ready not in source:
+              raise SystemExit("Expected outreach UI lint targets were not found")
+          source = source.replace(old_timestamp, new_timestamp).replace(old_ready, new_ready)
+          path.write_text(source)
+          PY
+
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install, lint, and build
         run: |
