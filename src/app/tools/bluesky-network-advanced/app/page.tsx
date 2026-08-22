@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { AdvancedNetworkAccessGate } from "@/components/tools/advanced-network-access-gate";
+import { AdvancedNetworkAutoDm } from "@/components/tools/advanced-network-auto-dm";
 import { AdvancedNetworkDashboard } from "@/components/tools/advanced-network-dashboard";
 import { AdvancedNetworkExplorePanel } from "@/components/tools/advanced-network-explore-panel";
 import { AdvancedNetworkFitPanel } from "@/components/tools/advanced-network-fit-panel";
@@ -73,6 +74,7 @@ export default async function AdvancedNetworkAppPage() {
             <AdvancedNetworkStartingScope />
             <AdvancedNetworkGoal />
             <AdvancedNetworkProgress />
+            <AdvancedNetworkAutoDm />
             <AdvancedNetworkExplorePanel />
             <AdvancedNetworkDashboard />
             <AdvancedNetworkStrategyPanel />
