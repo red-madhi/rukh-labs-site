@@ -1,5 +1,7 @@
 import { selectPrimaryEmail } from "@/lib/leads/contact-values";
 import { leadNeonQuery, neonRowsToObjects } from "@/lib/leads/neon";
+import { assertLeadOutreachSafety } from "@/lib/leads/outreach-safety";
+import type { OutreachSegment } from "@/lib/leads/segments";
 
 export type OutreachMessage = {
   direction: "outbound" | "inbound";
@@ -11,11 +13,19 @@ export type OutreachMessage = {
   gmailMessageId?: string;
 };
 
+export type EmailVerificationStatus = "unknown" | "valid" | "invalid";
+export type EmailVerificationMethod =
+  | "external-verifier"
+  | "confirmed-by-recipient"
+  | "existing-correspondence";
+
 export type LeadOutreachState = {
   recipientEmail?: string;
   subject?: string;
   body?: string;
   followUpBody?: string;
+  followUpBodies?: string[];
+  followUpBusinessDays?: number[];
   state?: "draft" | "ready" | "sent" | "replied" | "bounced" | "paused" | "completed" | "error";
   autoFollowUp?: boolean;
   followUpDays?: number;
@@ -30,6 +40,14 @@ export type LeadOutreachState = {
   lastBounceAt?: string;
   lastBounceReason?: string;
   lastError?: string;
+  emailSuppressed?: boolean;
+  verificationStatus?: EmailVerificationStatus;
+  verifiedAt?: string;
+  verificationMethod?: EmailVerificationMethod;
+  verificationNote?: string;
+  segment?: OutreachSegment;
+  pitchVersion?: string;
+  campaignId?: string;
   messages?: OutreachMessage[];
 };
 
@@ -46,9 +64,37 @@ type GmailThread = { id?: string; messages?: GmailMessage[] };
 const PRIMARY_FROM = "rukh.labs@gmail.com";
 const REPLY_TO = "hello@rukhlabs.com";
 const MAX_MESSAGES = 30;
+const DEFAULT_FOLLOW_UP_BUSINESS_DAYS = [3, 4] as const;
 
 function clean(value: unknown, max = 8000) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function cleanBodies(value: unknown) {
+  return Array.isArray(value)
+    ? value.map((item) => clean(item, 8000)).filter(Boolean).slice(0, 2)
+    : [];
+}
+
+function cleanBusinessDaySchedule(value: unknown) {
+  const items = Array.isArray(value) ? value : DEFAULT_FOLLOW_UP_BUSINESS_DAYS;
+  const cleaned = items
+    .map((item) => Math.min(10, Math.max(1, Number(item) || 0)))
+    .filter(Boolean)
+    .slice(0, 2);
+  return cleaned.length ? cleaned : [...DEFAULT_FOLLOW_UP_BUSINESS_DAYS];
+}
+
+function addBusinessDays(input: Date | string, businessDays: number) {
+  const date = new Date(input);
+  if (Number.isNaN(date.getTime())) return new Date().toISOString();
+  let remaining = Math.max(1, Math.floor(businessDays));
+  while (remaining > 0) {
+    date.setUTCDate(date.getUTCDate() + 1);
+    const day = date.getUTCDay();
+    if (day !== 0 && day !== 6) remaining -= 1;
+  }
+  return date.toISOString();
 }
 
 function gmailConfig() {
@@ -241,7 +287,10 @@ async function persist(leadId: string, state: LeadOutreachState, action: string,
      INSERT INTO public.lead_activity (lead_id, action, from_status, to_status, note)
      SELECT id, $3, NULL, $4, jsonb_build_object(
        'outreachState', $2::jsonb->>'state',
-       'followUpCount', COALESCE(($2::jsonb->>'followUpCount')::int, 0)
+       'followUpCount', COALESCE(($2::jsonb->>'followUpCount')::int, 0),
+       'pitchVersion', $2::jsonb->>'pitchVersion',
+       'segment', $2::jsonb->>'segment',
+       'verificationStatus', $2::jsonb->>'verificationStatus'
      )::text
      FROM updated`,
     [leadId, serialized, action, status ?? null],
@@ -259,13 +308,63 @@ export async function listOutreachStates() {
   );
 }
 
+export async function recordEmailVerification(input: {
+  leadId: string;
+  status: EmailVerificationStatus;
+  method?: EmailVerificationMethod;
+  note?: string;
+}) {
+  const result = await leadNeonQuery(
+    `SELECT contact_email, website_url, COALESCE(raw_payload->'outreach', '{}'::jsonb)::text AS outreach
+     FROM public.lead_opportunities WHERE id = $1::uuid AND archived_at IS NULL`,
+    [input.leadId],
+  );
+  const row = neonRowsToObjects(result)[0];
+  if (!row) throw new Error("Lead was not found.");
+  const recipientEmail = selectPrimaryEmail(row.contact_email, row.website_url);
+  if (!recipientEmail) throw new Error("This lead does not have a valid email address.");
+
+  const previous = parseOutreach(row.outreach);
+  if (previous.lastBounceAt || previous.state === "bounced") {
+    throw new Error("This lead record is permanently suppressed after a bounce or invalid verification. Create a new lead record for a replacement contact.");
+  }
+
+  const status = input.status;
+  if (!(["unknown", "valid", "invalid"] as const).includes(status)) {
+    throw new Error("Verification status is invalid.");
+  }
+  if (status === "valid" && !input.method) {
+    throw new Error("A verification method is required before an address can be marked valid.");
+  }
+
+  const state = nextState(previous, {
+    recipientEmail,
+    verificationStatus: status,
+    verifiedAt: status === "unknown" ? undefined : new Date().toISOString(),
+    verificationMethod: status === "valid" ? input.method : undefined,
+    verificationNote: clean(input.note, 500) || undefined,
+    emailSuppressed: status === "invalid" ? true : previous.emailSuppressed,
+    autoFollowUp: status === "invalid" ? false : previous.autoFollowUp,
+    nextFollowUpAt: status === "invalid" ? undefined : previous.nextFollowUpAt,
+    state: status === "invalid" ? "paused" : previous.sentAt ? previous.state : "ready",
+    lastError: status === "invalid" ? "Address was marked invalid during verification." : undefined,
+  });
+  await persist(input.leadId, state, status === "valid" ? "email_verified" : status === "invalid" ? "email_invalidated" : "email_verification_cleared");
+  return state;
+}
+
 export async function saveOutreachDraft(input: {
   leadId: string;
   subject: string;
   body: string;
   followUpBody?: string;
+  followUpBodies?: string[];
+  followUpBusinessDays?: number[];
   autoFollowUp?: boolean;
   followUpDays?: number;
+  segment?: OutreachSegment;
+  pitchVersion?: string;
+  campaignId?: string;
 }) {
   const result = await leadNeonQuery(
     `SELECT contact_email, website_url, COALESCE(raw_payload->'outreach', '{}'::jsonb)::text AS outreach
@@ -277,13 +376,20 @@ export async function saveOutreachDraft(input: {
   const recipientEmail = selectPrimaryEmail(row.contact_email, row.website_url);
   if (!recipientEmail) throw new Error("This lead does not have a valid email address.");
   const previous = parseOutreach(row.outreach);
+  const followUpBodies = cleanBodies(input.followUpBodies);
+  const legacyFollowUp = clean(input.followUpBody, 8000);
   const state = nextState(previous, {
     recipientEmail,
     subject: clean(input.subject, 300),
     body: clean(input.body, 8000),
-    followUpBody: clean(input.followUpBody, 8000),
+    followUpBody: legacyFollowUp || followUpBodies[0] || previous.followUpBody,
+    followUpBodies: followUpBodies.length ? followUpBodies : previous.followUpBodies,
+    followUpBusinessDays: cleanBusinessDaySchedule(input.followUpBusinessDays),
     autoFollowUp: Boolean(input.autoFollowUp),
     followUpDays: Math.min(30, Math.max(1, Number(input.followUpDays) || 7)),
+    segment: input.segment || previous.segment,
+    pitchVersion: clean(input.pitchVersion, 120) || previous.pitchVersion,
+    campaignId: clean(input.campaignId, 120) || previous.campaignId,
     state: previous.sentAt ? previous.state : "ready",
     lastError: undefined,
   });
@@ -297,8 +403,13 @@ export async function sendInitialOutreach(input: {
   subject: string;
   body: string;
   followUpBody?: string;
+  followUpBodies?: string[];
+  followUpBusinessDays?: number[];
   autoFollowUp?: boolean;
   followUpDays?: number;
+  segment?: OutreachSegment;
+  pitchVersion?: string;
+  campaignId?: string;
 }) {
   const result = await leadNeonQuery(
     `SELECT contact_email, website_url, status, COALESCE(raw_payload->'outreach', '{}'::jsonb)::text AS outreach
@@ -310,20 +421,19 @@ export async function sendInitialOutreach(input: {
   const recipientEmail = selectPrimaryEmail(row.contact_email, row.website_url);
   if (!recipientEmail) throw new Error("This lead does not have a valid email address.");
   const previous = parseOutreach(row.outreach);
-  if (previous.sentAt && ["sent", "replied"].includes(previous.state || "")) {
-    return previous;
-  }
+  if (previous.sentAt && ["sent", "replied"].includes(previous.state || "")) return previous;
 
   const subject = clean(input.subject, 300);
   const body = clean(input.body, 8000);
   if (!subject || !body) throw new Error("Subject and email body are required.");
-  const followUpDays = Math.min(30, Math.max(1, Number(input.followUpDays) || 7));
+
+  const followUpBodies = cleanBodies(input.followUpBodies);
+  const legacyFollowUp = clean(input.followUpBody, 8000);
+  const schedule = cleanBusinessDaySchedule(input.followUpBusinessDays);
+  const autoFollowUp = Boolean(input.autoFollowUp && (followUpBodies.length || legacyFollowUp));
   const sent = await sendGmail({ to: recipientEmail, subject, body });
   const sentAt = new Date().toISOString();
-  const autoFollowUp = Boolean(input.autoFollowUp);
-  const nextFollowUpAt = autoFollowUp
-    ? new Date(Date.now() + followUpDays * 86_400_000).toISOString()
-    : undefined;
+  const nextFollowUpAt = autoFollowUp ? addBusinessDays(sentAt, schedule[0] || 3) : undefined;
   const messages = [
     ...(previous.messages ?? []),
     { direction: "outbound" as const, kind: "initial" as const, at: sentAt, subject, body, gmailMessageId: sent.id },
@@ -332,10 +442,12 @@ export async function sendInitialOutreach(input: {
     recipientEmail,
     subject,
     body,
-    followUpBody: clean(input.followUpBody, 8000),
+    followUpBody: legacyFollowUp || followUpBodies[0] || previous.followUpBody,
+    followUpBodies: followUpBodies.length ? followUpBodies : previous.followUpBodies,
+    followUpBusinessDays: schedule,
     state: "sent",
     autoFollowUp,
-    followUpDays,
+    followUpDays: Math.min(30, Math.max(1, Number(input.followUpDays) || 7)),
     gmailThreadId: sent.threadId,
     gmailMessageId: sent.id,
     rfcMessageId: sent.rfcMessageId,
@@ -345,6 +457,10 @@ export async function sendInitialOutreach(input: {
     lastBounceAt: undefined,
     lastBounceReason: undefined,
     lastError: undefined,
+    emailSuppressed: false,
+    segment: input.segment || previous.segment,
+    pitchVersion: clean(input.pitchVersion, 120) || previous.pitchVersion,
+    campaignId: clean(input.campaignId, 120) || previous.campaignId,
     messages,
   });
   await persist(input.leadId, state, "email_sent", "contacted");
@@ -402,6 +518,10 @@ export async function syncLeadReply(leadId: string) {
       lastBounceAt: at,
       lastBounceReason: reason,
       lastError: reason,
+      emailSuppressed: true,
+      verificationStatus: "invalid",
+      verifiedAt: at,
+      verificationMethod: undefined,
       messages,
     });
     await persist(leadId, state, "email_bounce_detected", "new");
@@ -419,6 +539,9 @@ export async function syncLeadReply(leadId: string) {
     lastReplyAt: at,
     lastReplySnippet: item.snippet || "Reply received",
     lastError: undefined,
+    verificationStatus: "valid",
+    verifiedAt: previous.verifiedAt || at,
+    verificationMethod: previous.verificationMethod || "confirmed-by-recipient",
     messages,
   });
   await persist(leadId, state, "email_reply_detected", "replied");
@@ -427,7 +550,7 @@ export async function syncLeadReply(leadId: string) {
 
 export async function runOutreachCycle(limit = 40) {
   const configured = getOutreachConfiguration();
-  if (!configured.configured) return { configured: false, checked: 0, replies: 0, bounces: 0, followUps: 0, errors: configured.missing };
+  if (!configured.configured) return { configured: false, checked: 0, replies: 0, bounces: 0, followUps: 0, blocked: 0, errors: configured.missing };
 
   const result = await leadNeonQuery(
     `SELECT id::text, contact_email, COALESCE(raw_payload->'outreach', '{}'::jsonb)::text AS outreach
@@ -444,6 +567,7 @@ export async function runOutreachCycle(limit = 40) {
   let replies = 0;
   let bounces = 0;
   let followUps = 0;
+  let blocked = 0;
   const errors: string[] = [];
   for (const row of neonRowsToObjects(result)) {
     if (!row.id) continue;
@@ -461,13 +585,36 @@ export async function runOutreachCycle(limit = 40) {
       const state = synced.state;
       if (!state.autoFollowUp || !state.nextFollowUpAt || !state.gmailThreadId || !state.recipientEmail) continue;
       if (new Date(state.nextFollowUpAt).getTime() > Date.now()) continue;
-      if ((state.followUpCount ?? 0) >= 2) {
+
+      try {
+        await assertLeadOutreachSafety(row.id);
+      } catch (safetyError) {
+        blocked += 1;
+        const paused = nextState(state, {
+          state: "paused",
+          autoFollowUp: false,
+          nextFollowUpAt: undefined,
+          lastError: safetyError instanceof Error ? safetyError.message : "Follow-up blocked by outreach safety.",
+        });
+        await persist(row.id, paused, "followup_blocked_by_safety");
+        continue;
+      }
+
+      const bodies = state.followUpBodies?.filter(Boolean) || (state.followUpBody ? [state.followUpBody, state.followUpBody] : []);
+      const maxFollowUps = Math.min(2, bodies.length);
+      const currentCount = state.followUpCount ?? 0;
+      if (currentCount >= maxFollowUps) {
         const completed = nextState(state, { autoFollowUp: false, nextFollowUpAt: undefined, state: "completed" });
         await persist(row.id, completed, "followup_sequence_completed");
         continue;
       }
-      const body = clean(state.followUpBody, 8000);
-      if (!body) continue;
+
+      const body = clean(bodies[currentCount], 8000);
+      if (!body) {
+        const completed = nextState(state, { autoFollowUp: false, nextFollowUpAt: undefined, state: "completed" });
+        await persist(row.id, completed, "followup_sequence_completed");
+        continue;
+      }
       const subject = state.subject?.startsWith("Re:") ? state.subject : `Re: ${state.subject || "Quick follow-up"}`;
       const sent = await sendGmail({
         to: state.recipientEmail,
@@ -478,8 +625,9 @@ export async function runOutreachCycle(limit = 40) {
         references: state.rfcMessageId,
       });
       const at = new Date().toISOString();
-      const count = (state.followUpCount ?? 0) + 1;
-      const nextAt = count < 2 ? new Date(Date.now() + (state.followUpDays || 7) * 86_400_000).toISOString() : undefined;
+      const count = currentCount + 1;
+      const schedule = state.followUpBusinessDays?.length ? state.followUpBusinessDays : [...DEFAULT_FOLLOW_UP_BUSINESS_DAYS];
+      const nextAt = count < maxFollowUps ? addBusinessDays(at, schedule[count] || 4) : undefined;
       const messages = [
         ...(state.messages ?? []),
         { direction: "outbound" as const, kind: "follow-up" as const, at, subject, body, gmailMessageId: sent.id },
@@ -500,5 +648,5 @@ export async function runOutreachCycle(limit = 40) {
       errors.push(`${row.id}: ${error instanceof Error ? error.message : "Outreach cycle failed."}`);
     }
   }
-  return { configured: true, checked, replies, bounces, followUps, errors: errors.slice(0, 10) };
+  return { configured: true, checked, replies, bounces, followUps, blocked, errors: errors.slice(0, 10) };
 }

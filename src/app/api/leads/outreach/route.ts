@@ -1,17 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   listOutreachStates,
+  recordEmailVerification,
   runOutreachCycle,
   saveOutreachDraft,
   sendInitialOutreach,
   syncLeadReply,
+  type EmailVerificationMethod,
+  type EmailVerificationStatus,
 } from "@/lib/leads/email-outreach";
 import {
   normalizeGmailEnvironment,
   sanitizeGmailError,
   verifyGmailConnection,
 } from "@/lib/leads/gmail-connection";
+import { getOutreachSafetySnapshot } from "@/lib/leads/outreach-safety";
 import { assertLeadEmailSendable } from "@/lib/leads/outreach-suppression";
+import type { OutreachSegment } from "@/lib/leads/segments";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +34,35 @@ function validId(value: unknown) {
 }
 
 function hasActiveOutreach(state: { sentAt?: string; state?: string } | undefined) {
-  return Boolean(state?.sentAt && ["sent", "replied", "completed"].includes(state.state || ""));
+  return Boolean(state?.sentAt && ["sent", "replied", "completed", "paused", "bounced"].includes(state.state || ""));
+}
+
+function strings(value: unknown, maxItems = 2) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string").slice(0, maxItems)
+    : [];
+}
+
+function numbers(value: unknown, maxItems = 2) {
+  return Array.isArray(value)
+    ? value.map((item) => Number(item)).filter(Number.isFinite).slice(0, maxItems)
+    : [];
+}
+
+function segment(value: unknown): OutreachSegment | undefined {
+  return value === "website" || value === "power-bi" || value === "data-ops" || value === "partners"
+    ? value
+    : undefined;
+}
+
+function verificationStatus(value: unknown): EmailVerificationStatus | undefined {
+  return value === "unknown" || value === "valid" || value === "invalid" ? value : undefined;
+}
+
+function verificationMethod(value: unknown): EmailVerificationMethod | undefined {
+  return value === "external-verifier" || value === "existing-correspondence" || value === "confirmed-by-recipient"
+    ? value
+    : undefined;
 }
 
 async function requireVerifiedGmail() {
@@ -50,11 +83,12 @@ async function requireVerifiedGmail() {
 export async function GET() {
   normalizeGmailEnvironment();
   try {
-    const [configuration, states] = await Promise.all([
+    const [configuration, states, safety] = await Promise.all([
       verifyGmailConnection(),
       listOutreachStates(),
+      getOutreachSafetySnapshot(),
     ]);
-    return privateJson({ configuration, states });
+    return privateJson({ configuration, states, safety });
   } catch (error) {
     console.error("Lead outreach GET failed", sanitizeGmailError(error));
     return privateJson({ error: "Outreach state could not be loaded." }, { status: 503 });
@@ -71,8 +105,13 @@ export async function PATCH(request: NextRequest) {
       subject: typeof body.subject === "string" ? body.subject : "",
       body: typeof body.body === "string" ? body.body : "",
       followUpBody: typeof body.followUpBody === "string" ? body.followUpBody : "",
+      followUpBodies: strings(body.followUpBodies),
+      followUpBusinessDays: numbers(body.followUpBusinessDays),
       autoFollowUp: body.autoFollowUp === true,
       followUpDays: Number(body.followUpDays) || 7,
+      segment: segment(body.segment),
+      pitchVersion: typeof body.pitchVersion === "string" ? body.pitchVersion : "",
+      campaignId: typeof body.campaignId === "string" ? body.campaignId : "",
     });
     return privateJson({ ok: true, state });
   } catch (error) {
@@ -95,22 +134,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (action === "record-verification") {
+      if (!validId(body.leadId)) return privateJson({ error: "Lead ID is invalid." }, { status: 400 });
+      const status = verificationStatus(body.status);
+      if (!status) return privateJson({ error: "Verification status is invalid." }, { status: 400 });
+      const method = verificationMethod(body.method);
+      const state = await recordEmailVerification({
+        leadId: body.leadId as string,
+        status,
+        method,
+        note: typeof body.note === "string" ? body.note : "",
+      });
+      return privateJson({ ok: true, state, safety: await getOutreachSafetySnapshot() });
+    }
+
+    if (action === "safety") {
+      return privateJson({ ok: true, safety: await getOutreachSafetySnapshot() });
+    }
+
     if (["cycle", "sync", "send-bulk", "send"].includes(action)) {
       const verification = await requireVerifiedGmail();
       if (verification.response) return verification.response;
     }
 
     if (action === "cycle") {
-      return privateJson(await runOutreachCycle(Number(body.limit) || 40));
+      return privateJson({ ...(await runOutreachCycle(Number(body.limit) || 40)), safety: await getOutreachSafetySnapshot() });
     }
 
     if (action === "sync") {
       if (!validId(body.leadId)) return privateJson({ error: "Lead ID is invalid." }, { status: 400 });
-      return privateJson({ ok: true, ...(await syncLeadReply(body.leadId as string)) });
+      return privateJson({ ok: true, ...(await syncLeadReply(body.leadId as string)), safety: await getOutreachSafetySnapshot() });
     }
 
     if (action === "send-bulk") {
-      const items = Array.isArray(body.items) ? body.items.slice(0, 25) : [];
+      const items = Array.isArray(body.items) ? body.items.slice(0, 10) : [];
       const existingStates = await listOutreachStates();
       const results: Array<{ leadId: string; ok: boolean; error?: string }> = [];
       for (const raw of items) {
@@ -118,7 +175,7 @@ export async function POST(request: NextRequest) {
         if (!validId(item.leadId)) continue;
         const leadId = item.leadId as string;
         if (hasActiveOutreach(existingStates[leadId])) {
-          results.push({ leadId, ok: true });
+          results.push({ leadId, ok: false, error: `Sequence already ${existingStates[leadId]?.state || "active"}.` });
           continue;
         }
         try {
@@ -128,8 +185,13 @@ export async function POST(request: NextRequest) {
             subject: typeof item.subject === "string" ? item.subject : "",
             body: typeof item.body === "string" ? item.body : "",
             followUpBody: typeof item.followUpBody === "string" ? item.followUpBody : "",
+            followUpBodies: strings(item.followUpBodies),
+            followUpBusinessDays: numbers(item.followUpBusinessDays),
             autoFollowUp: item.autoFollowUp !== false,
             followUpDays: Number(item.followUpDays) || 7,
+            segment: segment(item.segment),
+            pitchVersion: typeof item.pitchVersion === "string" ? item.pitchVersion : "",
+            campaignId: typeof item.campaignId === "string" ? item.campaignId : "",
           });
           results.push({ leadId, ok: true });
         } catch (error) {
@@ -139,7 +201,7 @@ export async function POST(request: NextRequest) {
       const sent = results.filter((item) => item.ok).length;
       const firstFailure = results.find((item) => !item.ok)?.error;
       return privateJson(
-        { ok: sent > 0, results, error: sent === 0 ? firstFailure || "No emails were sent." : undefined },
+        { ok: sent > 0, results, safety: await getOutreachSafetySnapshot(), error: sent === 0 ? firstFailure || "No emails were sent." : undefined },
         { status: results.length > 0 && sent === 0 ? 400 : 200 },
       );
     }
@@ -148,7 +210,7 @@ export async function POST(request: NextRequest) {
     const leadId = body.leadId as string;
     const existingState = (await listOutreachStates())[leadId];
     if (hasActiveOutreach(existingState)) {
-      return privateJson({ ok: true, state: existingState, alreadyActive: true });
+      return privateJson({ ok: true, state: existingState, alreadyActive: true, safety: await getOutreachSafetySnapshot() });
     }
 
     await assertLeadEmailSendable(leadId);
@@ -157,10 +219,15 @@ export async function POST(request: NextRequest) {
       subject: typeof body.subject === "string" ? body.subject : "",
       body: typeof body.body === "string" ? body.body : "",
       followUpBody: typeof body.followUpBody === "string" ? body.followUpBody : "",
+      followUpBodies: strings(body.followUpBodies),
+      followUpBusinessDays: numbers(body.followUpBusinessDays),
       autoFollowUp: body.autoFollowUp !== false,
       followUpDays: Number(body.followUpDays) || 7,
+      segment: segment(body.segment),
+      pitchVersion: typeof body.pitchVersion === "string" ? body.pitchVersion : "",
+      campaignId: typeof body.campaignId === "string" ? body.campaignId : "",
     });
-    return privateJson({ ok: true, state });
+    return privateJson({ ok: true, state, safety: await getOutreachSafetySnapshot() });
   } catch (error) {
     const message = sanitizeGmailError(error);
     console.error("Lead outreach POST failed", message);
