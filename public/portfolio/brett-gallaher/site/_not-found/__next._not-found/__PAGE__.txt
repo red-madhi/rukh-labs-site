@@ -1,6 +1,0 @@
-1:"$Sreact.fragment"
-2:I[70467,["/portfolio/brett-gallaher/site/_next/static/chunks/30zk4dxs5mceg.js","/portfolio/brett-gallaher/site/_next/static/chunks/3ialrnk38c072.js"],""]
-3:I[62655,["/portfolio/brett-gallaher/site/_next/static/chunks/30zk4dxs5mceg.js","/portfolio/brett-gallaher/site/_next/static/chunks/3ialrnk38c072.js"],"OutletBoundary"]
-4:"$Sreact.suspense"
-0:{"rsc":["$","$1","c",{"children":[["$","section",null,{"className":"section-shell page-intro","children":[["$","p",null,{"className":"eyebrow","children":"404 · NO RELATIONSHIP FOUND"}],["$","h1",null,{"children":"This route is outside the model."}],["$","$L2",null,{"className":"button primary","href":"/","children":"Return to the portfolio"}]]}],null,["$","$L3",null,{"children":["$","$4",null,{"name":"Next.MetadataOutlet","children":"$@5"}]}]]}],"isPartial":false,"staleTime":300,"varyParams":null,"buildId":"ixaHB7X7kODoXy9IcpDt1"}
-5:null
