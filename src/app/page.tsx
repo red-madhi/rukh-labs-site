@@ -12,9 +12,9 @@ import { ChessMockup } from "@/components/visuals/chess-mockup";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Custom Websites & Digital Products",
+  title: "Custom Websites, Data Operations & Software",
   description:
-    "Rukh Labs is an independent design and development studio building distinctive websites, recruiter-ready career portfolios, and focused software.",
+    "Rukh Labs designs distinctive websites, automates recurring reporting and data workflows, builds recruiter-ready career portfolios, and ships focused software.",
 });
 
 const serviceLanes = [
@@ -24,19 +24,19 @@ const serviceLanes = [
     title: "Custom websites",
     description:
       "Distinctive, fast websites for small businesses, creators, and independent teams that need to look credible without looking interchangeable.",
-    detail: "Strategy, design, development, launch, and practical support.",
+    detail: "Strategy, design, development, career portfolios, launch, and practical support.",
     href: "/services/web-development",
     cta: "Explore website services",
   },
   {
     number: "02",
-    eyebrow: "Specialized website service",
-    title: "Career portfolios",
+    eyebrow: "Systems and automation",
+    title: "Data operations",
     description:
-      "Recruiter-ready portfolio sites that turn experience into evidence, make strong work easier to scan, and respect privacy boundaries.",
-    detail: "Positioning, case studies, résumé structure, and interactive proof.",
-    href: "/services/career-portfolios",
-    cta: "Explore career portfolios",
+      "Automation and control for recurring spreadsheet, reporting, reconciliation, and data-migration work—built to reduce manual handling without hiding the evidence.",
+    detail: "Power BI, Power Query, validation, exception handling, monitoring, and handoff.",
+    href: "/data-ops",
+    cta: "Explore data operations",
   },
   {
     number: "03",
@@ -197,6 +197,14 @@ export default function Home() {
               "@type": "Offer",
               itemOffered: {
                 "@type": "Service",
+                name: "Data operations automation and reconciliation",
+                url: `${siteConfig.url}/data-ops`,
+              },
+            },
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
                 name: "Career portfolio website design",
                 url: `${siteConfig.url}/services/career-portfolios`,
               },
@@ -256,7 +264,7 @@ export default function Home() {
                   </span>
                 </h1>
                 <p className="mt-8 max-w-3xl text-lg leading-8 text-white/66 sm:text-xl sm:leading-9">
-                  Rukh Labs builds distinctive websites for small businesses, creators, and professionals—plus focused software of its own. Clear purpose. Clean systems. No template aftertaste.
+                  Rukh Labs builds distinctive websites and dependable data workflows for businesses, professionals, and teams—plus focused software of its own. Clear purpose. Clean systems. No template aftertaste.
                 </p>
                 <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                   <Link href="/contact" className={buttonStyles({ size: "lg" })}>
@@ -295,7 +303,7 @@ export default function Home() {
           <Reveal delay={0.18}>
             <div className="mt-20 grid gap-4 border-t border-white/10 pt-6 text-xs font-semibold uppercase tracking-[0.14em] text-white/38 sm:grid-cols-3 lg:mt-24">
               <span><strong className="mr-3 text-white/72">01</strong> Custom websites</span>
-              <span><strong className="mr-3 text-white/72">02</strong> Career portfolios</span>
+              <span><strong className="mr-3 text-white/72">02</strong> Data operations</span>
               <span><strong className="mr-3 text-white/72">03</strong> First-party software</span>
             </div>
           </Reveal>
@@ -316,7 +324,7 @@ export default function Home() {
                   One studio. Three clear lanes.
                 </h2>
                 <p className="mt-5 max-w-2xl text-lg leading-8 text-white/58">
-                  The homepage gives you the hierarchy. The deeper pages carry the details.
+                  Custom websites lead the studio. Data operations and first-party software extend what the lab can build.
                 </p>
               </div>
             </div>
@@ -506,7 +514,7 @@ export default function Home() {
               </div>
               <div>
                 <p className="max-w-xl text-lg leading-8 text-white/58">
-                  Bring the real problem. Rukh Labs will help shape the right site, system, or next step without burying it under agency theater.
+                  Bring the real problem. Rukh Labs will help shape the right site, data workflow, or next step without burying it under agency theater.
                 </p>
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                   <Link href="/contact" className={buttonStyles({ size: "lg" })}>
