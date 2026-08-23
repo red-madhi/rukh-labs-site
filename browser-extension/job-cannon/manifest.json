@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Job Cannon Autofill",
-  "version": "0.1.0",
-  "description": "User-triggered ATS autofill that leaves final review and submission to you.",
+  "version": "0.2.0",
+  "description": "User-triggered ATS-aware autofill with structured history, explicit answer learning, and human final submission.",
   "permissions": ["activeTab", "scripting", "storage", "unlimitedStorage"],
   "action": {
     "default_title": "Job Cannon Autofill",

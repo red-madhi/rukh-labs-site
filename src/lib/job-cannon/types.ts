@@ -1,5 +1,6 @@
 export type JobCannonStatus =
   | "new"
+  | "ready"
   | "queued"
   | "applying"
   | "applied"
@@ -7,6 +8,52 @@ export type JobCannonStatus =
   | "offer"
   | "rejected"
   | "skipped";
+
+export type JobCannonExperience = {
+  id: string;
+  company: string;
+  title: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  current: boolean;
+  bullets: string[];
+  technologies: string[];
+};
+
+export type JobCannonEducation = {
+  id: string;
+  school: string;
+  degree: string;
+  field: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+};
+
+export type JobCannonAnswer = {
+  pattern: string;
+  answer: string;
+  source?: "manual" | "learned";
+  lastUsedAt?: string;
+  uses?: number;
+};
+
+export type JobCannonTailoredExperience = {
+  experienceId: string;
+  company: string;
+  title: string;
+  bullets: string[];
+};
+
+export type JobCannonTailoredResume = {
+  createdAt: string;
+  headline: string;
+  summary: string;
+  skills: string[];
+  matchedKeywords: string[];
+  experience: JobCannonTailoredExperience[];
+};
 
 export type JobCannonJob = {
   id: string;
@@ -25,6 +72,10 @@ export type JobCannonJob = {
   salaryUnit?: string;
   sourceSnippet?: string;
   status?: JobCannonStatus;
+  companyKey?: string;
+  duplicateOf?: string;
+  lastOpenedAt?: string;
+  tailoredResume?: JobCannonTailoredResume;
 };
 
 export type JobCannonSearchRequest = {
@@ -50,11 +101,6 @@ export type JobCannonSearchResponse = {
   error?: string;
 };
 
-export type JobCannonAnswer = {
-  pattern: string;
-  answer: string;
-};
-
 export type JobCannonProfile = {
   firstName: string;
   lastName: string;
@@ -75,6 +121,11 @@ export type JobCannonProfile = {
   willingToTravel: string;
   sourceAnswer: string;
   skills: string;
+  headline: string;
+  masterSummary: string;
+  certifications: string[];
+  experience: JobCannonExperience[];
+  education: JobCannonEducation[];
   answerBank: JobCannonAnswer[];
 };
 
@@ -85,4 +136,6 @@ export type JobCannonSettings = {
   maxAgeHours: number;
   remoteOnly: boolean;
   rejectTerms: string;
+  autoReadyThreshold: number;
+  duplicateWindowDays: number;
 };
