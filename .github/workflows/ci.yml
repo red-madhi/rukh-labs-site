@@ -30,3 +30,6 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Check Job Cannon extension syntax
+        run: npm run check:job-cannon-extension
