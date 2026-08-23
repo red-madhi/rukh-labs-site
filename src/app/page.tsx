@@ -12,41 +12,41 @@ import { ChessMockup } from "@/components/visuals/chess-mockup";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Custom Websites, Data Operations & Software",
+  title: "Custom Websites, Data Tools & Software",
   description:
-    "Rukh Labs designs distinctive websites, automates recurring reporting and data workflows, builds recruiter-ready career portfolios, and ships focused software.",
+    "Rukh Labs builds custom websites, automates recurring reports and data work, creates career portfolios, and develops useful software.",
 });
 
 const serviceLanes = [
   {
     number: "01",
-    eyebrow: "Primary studio service",
+    eyebrow: "Main service",
     title: "Custom websites",
     description:
-      "Distinctive, fast websites for small businesses, creators, and independent teams that need to look credible without looking interchangeable.",
-    detail: "Strategy, design, development, career portfolios, launch, and practical support.",
+      "Fast, custom websites for small businesses, creators, and independent teams that need to look professional and stand out from competitors.",
+    detail: "Planning, design, development, career portfolios, launch, and practical support.",
     href: "/services/web-development",
-    cta: "Explore website services",
+    cta: "See website services",
   },
   {
     number: "02",
-    eyebrow: "Systems and automation",
+    eyebrow: "Reports and data tools",
     title: "Data operations",
     description:
-      "Automation and control for recurring spreadsheet, reporting, reconciliation, and data-migration work—built to reduce manual handling without hiding the evidence.",
-    detail: "Power BI, Power Query, validation, exception handling, monitoring, and handoff.",
+      "We automate recurring spreadsheet, reporting, and data-migration work so teams spend less time copying, checking, and fixing data by hand.",
+    detail: "Power BI, Power Query, data checks, error reports, monitoring, and documentation.",
     href: "/data-ops",
-    cta: "Explore data operations",
+    cta: "See data services",
   },
   {
     number: "03",
-    eyebrow: "The product lab",
+    eyebrow: "Software by Rukh Labs",
     title: "Original software",
     description:
-      "Focused first-party products built around clarity, user control, and the belief that useful software does not need to be ugly or bloated.",
-    detail: "Farzin, Glass Squares OS, IAZMA, and active experiments.",
+      "Apps and tools built by Rukh Labs to solve specific problems without unnecessary clutter or confusing settings.",
+    detail: "Farzin, Glass Squares OS, IAZMA, and other projects in development.",
     href: "/products",
-    cta: "Explore products",
+    cta: "See our software",
   },
 ] as const;
 
@@ -54,22 +54,22 @@ const principles = [
   {
     number: "01",
     title: "Clean by default",
-    description: "No noisy onboarding maze, mystery utilities, or hostile defaults.",
+    description: "Easy to start, easy to understand, and never designed to work against you.",
   },
   {
     number: "02",
     title: "Private where it matters",
-    description: "Data decisions should be obvious, minimal, and respectful.",
+    description: "We collect as little data as possible and explain what happens to it.",
   },
   {
     number: "03",
     title: "Fast enough to feel different",
-    description: "Performance is a product feature, not a benchmark footnote.",
+    description: "Pages and tools should load quickly and respond without making you wait.",
   },
   {
     number: "04",
-    title: "Designed like beauty matters",
-    description: "Power should not require visual punishment.",
+    title: "Good design matters",
+    description: "Useful tools should also be pleasant to look at and easy to use.",
   },
 ] as const;
 
@@ -77,19 +77,19 @@ const additionalWork = [
   {
     title: "Glass Squares OS",
     status: "In development",
-    description: "A low-bloat Linux desktop built around glassy surfaces, square layouts, compatibility, and control.",
+    description: "A lightweight Linux desktop with a glass-style look, square layouts, broad compatibility, and more user control.",
     href: "/products/glass-squares-os",
   },
   {
     title: "IAZMA",
     status: "Free web app",
-    description: "Bluesky network discovery ranked by shared connections, overlap, and reach.",
+    description: "A Bluesky tool that helps you find useful accounts through shared connections and network reach.",
     href: "/tools/bluesky-network",
   },
   {
-    title: "Rukh Labs platform",
-    status: "Public · active iteration",
-    description: "The design system, technical architecture, privacy controls, and search foundation behind this site.",
+    title: "Rukh Labs website",
+    status: "Live · still improving",
+    description: "This website itself, including its code, privacy controls, search, and ongoing improvements.",
     href: "/work/rukh-labs-website",
   },
 ] as const;
@@ -102,7 +102,7 @@ function PortfolioPreview() {
         <span className="size-2.5 rounded-full bg-white/12" />
         <span className="size-2.5 rounded-full bg-white/8" />
         <span className="ml-3 truncate text-[0.68rem] font-medium uppercase tracking-[0.14em] text-white/28">
-          Fictional career portfolio · interactive demonstration
+          Fictional career portfolio · live example
         </span>
       </div>
 
@@ -119,16 +119,16 @@ function PortfolioPreview() {
       <div className="grid gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:px-10 lg:py-12">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8aeaff]">
-            Fictional operations portfolio
+            Fictional career portfolio
           </p>
           <h3 className="mt-5 max-w-2xl text-4xl font-semibold leading-[1.03] text-white sm:text-5xl">
             I make complex work easier to run.
           </h3>
           <p className="mt-5 max-w-xl text-sm leading-7 text-white/54 sm:text-base">
-            A complete candidate story with case studies, a résumé view, and an interactive scenario dashboard—without exposing a real person or confidential work.
+            A complete example with case studies, a résumé, and a working dashboard—without using a real person&apos;s private information.
           </p>
           <div className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-white">
-            Explore the work
+            Explore the example
             <ArrowRight aria-hidden className="size-4 text-[#8aeaff]" />
           </div>
         </div>
@@ -136,8 +136,8 @@ function PortfolioPreview() {
         <div className="grid grid-cols-2 gap-3">
           {[
             ["3", "fictional case studies"],
-            ["1", "interactive dashboard"],
-            ["92", "problem-solving signal"],
+            ["1", "working dashboard"],
+            ["5", "portfolio sections"],
             ["0", "personal files or data"],
           ].map(([value, label]) => (
             <div key={label} className="border-l border-[#67e8f9]/24 py-3 pl-4 sm:py-4 sm:pl-5">
@@ -151,9 +151,9 @@ function PortfolioPreview() {
       </div>
 
       <div className="grid gap-4 border-t border-white/10 bg-white/[0.018] px-5 py-5 text-xs leading-5 text-white/42 sm:grid-cols-3 sm:px-8 lg:px-10">
-        <span><strong className="text-white/72">01</strong> Frame the decision</span>
-        <span><strong className="text-white/72">02</strong> Model the system</span>
-        <span><strong className="text-white/72">03</strong> Make action visible</span>
+        <span><strong className="text-white/72">01</strong> Define the problem</span>
+        <span><strong className="text-white/72">02</strong> Build the solution</span>
+        <span><strong className="text-white/72">03</strong> Show the result</span>
       </div>
     </div>
   );
@@ -173,7 +173,7 @@ export default function Home() {
           url: `${siteConfig.url}/brand/rukh-labs-primary.png`,
         },
         email: siteConfig.contactEmail,
-        description: "An independent design and development studio and software lab.",
+        description: "An independent website, data, and software studio.",
         contactPoint: {
           "@type": "ContactPoint",
           contactType: "customer support",
@@ -197,7 +197,7 @@ export default function Home() {
               "@type": "Offer",
               itemOffered: {
                 "@type": "Service",
-                name: "Data operations automation and reconciliation",
+                name: "Reporting and data automation",
                 url: `${siteConfig.url}/data-ops`,
               },
             },
@@ -255,16 +255,16 @@ export default function Home() {
             <Reveal>
               <div className="max-w-5xl">
                 <Badge tone="red" className="uppercase tracking-[0.18em]">
-                  Independent design & development studio
+                  Independent website, data & software studio
                 </Badge>
                 <h1 className="mt-8 text-5xl font-semibold leading-[0.98] text-white sm:text-7xl lg:text-[5.8rem] 2xl:text-[6.8rem]">
-                  Digital products that actually{" "}
+                  Websites, data tools, and software{" "}
                   <span className="bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_42%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent">
-                    feel designed.
+                    built with care.
                   </span>
                 </h1>
                 <p className="mt-8 max-w-3xl text-lg leading-8 text-white/66 sm:text-xl sm:leading-9">
-                  Rukh Labs builds distinctive websites and dependable data workflows for businesses, professionals, and teams—plus focused software of its own. Clear purpose. Clean systems. No template aftertaste.
+                  Rukh Labs builds custom websites, automated reports, and useful software for small businesses, professionals, and teams. Everything is made to be clear, fast, and easy to use.
                 </p>
                 <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                   <Link href="/contact" className={buttonStyles({ size: "lg" })}>
@@ -272,7 +272,7 @@ export default function Home() {
                     <ArrowRight aria-hidden className="size-4" />
                   </Link>
                   <Link href="#selected-work" className={buttonStyles({ variant: "secondary", size: "lg" })}>
-                    See selected work
+                    See examples
                   </Link>
                 </div>
               </div>
@@ -281,19 +281,19 @@ export default function Home() {
             <Reveal delay={0.12}>
               <div className="relative border-l border-white/14 pl-6 lg:mb-3 lg:pl-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ff8f9a]">
-                  Primary studio work
+                  Main service
                 </p>
                 <p className="mt-4 text-3xl font-semibold leading-tight text-white sm:text-4xl">
                   Custom websites.
                 </p>
                 <p className="mt-4 max-w-sm text-sm leading-7 text-white/52">
-                  Designed and built directly—not assembled from a theme and dressed up with adjectives.
+                  Built around your business, not copied from a generic template.
                 </p>
                 <Link
                   href="/services/web-development"
                   className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-white transition hover:text-[#ff8f9a]"
                 >
-                  Explore the website studio
+                  See website services
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
               </div>
@@ -303,8 +303,8 @@ export default function Home() {
           <Reveal delay={0.18}>
             <div className="mt-20 grid gap-4 border-t border-white/10 pt-6 text-xs font-semibold uppercase tracking-[0.14em] text-white/38 sm:grid-cols-3 lg:mt-24">
               <span><strong className="mr-3 text-white/72">01</strong> Custom websites</span>
-              <span><strong className="mr-3 text-white/72">02</strong> Data operations</span>
-              <span><strong className="mr-3 text-white/72">03</strong> First-party software</span>
+              <span><strong className="mr-3 text-white/72">02</strong> Reports and data tools</span>
+              <span><strong className="mr-3 text-white/72">03</strong> Software we build</span>
             </div>
           </Reveal>
         </Container>
@@ -321,10 +321,10 @@ export default function Home() {
               </div>
               <div>
                 <h2 className="max-w-4xl text-4xl font-semibold leading-[1.03] text-white sm:text-6xl">
-                  One studio. Three clear lanes.
+                  Three things we build.
                 </h2>
                 <p className="mt-5 max-w-2xl text-lg leading-8 text-white/58">
-                  Custom websites lead the studio. Data operations and first-party software extend what the lab can build.
+                  Custom websites are the main service. Rukh Labs also automates reporting and data work, and builds its own software.
                 </p>
               </div>
             </div>
@@ -370,14 +370,14 @@ export default function Home() {
           <Reveal>
             <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-end">
               <div>
-                <Badge tone="gold">Selected proof</Badge>
+                <Badge tone="gold">Real examples</Badge>
               </div>
               <div>
                 <h2 className="max-w-4xl text-4xl font-semibold leading-[1.03] text-white sm:text-6xl">
-                  Don’t take the copy’s word for it.
+                  See what Rukh Labs has actually built.
                 </h2>
                 <p className="mt-5 max-w-2xl text-lg leading-8 text-white/58">
-                  Real products and working demonstrations do more for credibility than a wall of feature cards.
+                  Explore a live portfolio example, a released Android app, and other working projects.
                 </p>
               </div>
             </div>
@@ -390,19 +390,19 @@ export default function Home() {
             <Reveal delay={0.1}>
               <div className="lg:pl-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8aeaff]">
-                  Working service demonstration
+                  Live portfolio example
                 </p>
                 <h3 className="mt-5 text-3xl font-semibold leading-tight text-white sm:text-4xl">
                   A portfolio you can actually explore.
                 </h3>
                 <p className="mt-5 text-base leading-8 text-white/56">
-                  The career portfolio demonstration includes a complete fictional candidate story, case studies, a résumé view, and an operable scenario dashboard. It is clearly labeled, privacy-safe, and built to show the service rather than merely describe it.
+                  This fictional example includes case studies, a résumé, and a working dashboard. It shows exactly what a client can receive without using anyone&apos;s private information.
                 </p>
                 <Link
                   href="/services/career-portfolios/demo"
                   className={buttonStyles({ variant: "secondary", className: "mt-7" })}
                 >
-                  Open the interactive demo
+                  Open the live example
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
               </div>
@@ -413,13 +413,13 @@ export default function Home() {
             <Reveal>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#f3d99d]">
-                  Shipped first-party product
+                  Available on Google Play
                 </p>
                 <h3 className="mt-5 text-3xl font-semibold leading-tight text-white sm:text-5xl">
-                  Farzin turns chess study into a focused system.
+                  Farzin makes chess study easier to organize.
                 </h3>
                 <p className="mt-5 text-base leading-8 text-white/56">
-                  A released Android app for game review, opening preparation, tactical practice, engine-assisted analysis, and progress tracking—designed and shipped by Rukh Labs.
+                  An Android app for reviewing games, studying openings, practicing tactics, using chess-engine analysis, and tracking progress.
                 </p>
                 <div className="mt-7 flex flex-wrap items-center gap-4">
                   <Link href="/products/farzin" className={buttonStyles({ variant: "secondary" })}>
@@ -442,7 +442,7 @@ export default function Home() {
               <div className="grid gap-6 lg:grid-cols-[0.55fr_1.45fr]">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/38">
-                    More from the lab
+                    More projects
                   </p>
                 </div>
                 <div className="border-t border-white/10">
@@ -481,7 +481,7 @@ export default function Home() {
                 The standard is simple: respect the user.
               </h2>
               <p className="mt-6 max-w-xl text-lg leading-8 text-white/56">
-                Clear purpose before decoration. Useful defaults before feature theater. Proof before promises.
+                Make it useful first. Make it easy to understand. Show the work instead of making empty promises.
               </p>
             </div>
           </Reveal>
@@ -514,7 +514,7 @@ export default function Home() {
               </div>
               <div>
                 <p className="max-w-xl text-lg leading-8 text-white/58">
-                  Bring the real problem. Rukh Labs will help shape the right site, data workflow, or next step without burying it under agency theater.
+                  Tell us what you need. Rukh Labs will help plan the right website, data tool, or next step without vague sales talk or wasted time.
                 </p>
                 <div className="mt-7 flex flex-col gap-3 sm:flex-row">
                   <Link href="/contact" className={buttonStyles({ size: "lg" })}>
