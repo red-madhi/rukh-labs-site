@@ -73,6 +73,24 @@ h3 {
   letter-spacing: -0.035em;
 }
 
+/* Keep the homepage hero as exactly three lines: one phrase per line. */
+#main-content h1[class*="tracking-[-0.055em]"] > span {
+  display: block !important;
+  white-space: nowrap !important;
+}
+
+@media (min-width: 640px) {
+  #main-content h1[class*="tracking-[-0.055em]"] {
+    font-size: clamp(2.8rem, 8vw, 4rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  #main-content h1[class*="tracking-[-0.055em]"] {
+    font-size: clamp(4rem, 4.7vw, 5.2rem);
+  }
+}
+
 .rukh-display {
   font-family: var(--font-rukh-display), var(--font-site-sans), sans-serif;
   font-weight: 400;
