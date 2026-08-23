@@ -20,7 +20,7 @@ export const metadata: Metadata = createPageMetadata({
 const serviceLanes = [
   {
     number: "01",
-    eyebrow: "Main service",
+    eyebrow: "Featured service",
     title: "Custom websites",
     description:
       "Fast, custom websites for small businesses, creators, and independent teams that need to look professional and stand out from competitors.",
@@ -250,7 +250,7 @@ export default function Home() {
         </div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_42%,rgba(240,0,28,0.11),transparent_27%),radial-gradient(circle_at_68%_70%,rgba(22,200,255,0.08),transparent_29%)]" />
 
-        <Container className="relative flex flex-col justify-between py-10 sm:py-20 lg:min-h-[calc(100svh-4.5rem)] lg:py-24">
+        <Container className="relative flex flex-col justify-center py-10 sm:py-20 lg:min-h-[calc(100svh-4.5rem)] lg:py-24">
           <div className="grid gap-10 lg:grid-cols-[minmax(0,1.18fr)_minmax(17rem,0.48fr)] lg:items-end lg:gap-14">
             <Reveal>
               <div className="max-w-5xl">
@@ -282,7 +282,7 @@ export default function Home() {
             <Reveal delay={0.12}>
               <div className="relative border-l border-white/14 pl-6 lg:mb-3 lg:pl-8">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ff8f9a]">
-                  Main service
+                  Featured service
                 </p>
                 <p className="mt-4 text-3xl font-semibold leading-tight text-white sm:text-4xl">
                   Custom websites.
@@ -300,14 +300,6 @@ export default function Home() {
               </div>
             </Reveal>
           </div>
-
-          <Reveal delay={0.18}>
-            <div className="mt-14 grid gap-4 border-t border-white/10 pt-6 text-xs font-semibold uppercase tracking-[0.14em] text-white/38 sm:mt-20 sm:grid-cols-3 lg:mt-24">
-              <span><strong className="mr-3 text-white/72">01</strong> Custom websites</span>
-              <span><strong className="mr-3 text-white/72">02</strong> Reports and data tools</span>
-              <span><strong className="mr-3 text-white/72">03</strong> Software we build</span>
-            </div>
-          </Reveal>
         </Container>
       </section>
 
