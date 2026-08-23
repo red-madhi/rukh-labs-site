@@ -93,8 +93,15 @@ CREATE TABLE IF NOT EXISTS actions (
   metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+CREATE TABLE IF NOT EXISTS web_sessions (
+  token_hash text PRIMARY KEY,
+  did text NOT NULL REFERENCES users(did) ON DELETE CASCADE,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
 CREATE INDEX IF NOT EXISTS idx_relationships_owner_follower ON relationships(owner_did, is_follower);
 CREATE INDEX IF NOT EXISTS idx_assessments_scan_status ON assessments(owner_did, scan_id, status);
 CREATE INDEX IF NOT EXISTS idx_assessments_review ON assessments(owner_did, status, assessed_at DESC);
 CREATE INDEX IF NOT EXISTS idx_suppressions_active ON suppressions(owner_did, active);
 CREATE INDEX IF NOT EXISTS idx_actions_owner_created ON actions(owner_did, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_web_sessions_expiry ON web_sessions(expires_at);

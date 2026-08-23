@@ -15,7 +15,7 @@ function validApiKey(request) {
 }
 
 export async function GET(request) {
-  const sessionDid = getSessionDid(request);
+  const sessionDid = await getSessionDid(request);
   const ownerDid = sessionDid || request.nextUrl.searchParams.get("ownerDid");
   if (!ownerDid || (!sessionDid && !validApiKey(request))) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -5,13 +5,13 @@ import { getSessionDid } from "@/lib/session";
 export const runtime = "nodejs";
 
 export async function GET(request) {
-  const ownerDid = getSessionDid(request);
+  const ownerDid = await getSessionDid(request);
   if (!ownerDid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   return NextResponse.json(await getSettings(ownerDid));
 }
 
 export async function POST(request) {
-  const ownerDid = getSessionDid(request);
+  const ownerDid = await getSessionDid(request);
   if (!ownerDid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   const inactiveDays = Math.max(30, Math.min(365, Number(body.inactive_days) || 90));

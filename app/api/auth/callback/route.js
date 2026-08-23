@@ -35,7 +35,7 @@ export async function GET(request) {
     );
 
     const response = NextResponse.redirect(new URL("/", request.url));
-    response.cookies.set(SESSION_COOKIE, createSessionToken(session.did), sessionCookieOptions);
+    response.cookies.set(SESSION_COOKIE, await createSessionToken(session.did), sessionCookieOptions);
     return response;
   } catch (error) {
     const response = NextResponse.redirect(new URL("/?auth=failed", request.url));

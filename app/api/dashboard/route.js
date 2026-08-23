@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request) {
-  const ownerDid = getSessionDid(request);
+  const ownerDid = await getSessionDid(request);
   if (!ownerDid) return NextResponse.json({ authenticated: false }, { status: 401 });
 
   const [users, settings, queue, actions, suppressions, scans, counts] = await Promise.all([

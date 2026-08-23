@@ -15,7 +15,6 @@
   },
   "dependencies": {
     "@atproto/api": "0.20.41",
-    "@atproto/jwk-jose": "0.2.4",
     "@atproto/oauth-client-node": "0.5.3",
     "@neondatabase/serverless": "1.1.0",
     "next": "16.2.10",

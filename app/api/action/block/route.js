@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 export async function POST(request) {
-  const ownerDid = getSessionDid(request);
+  const ownerDid = await getSessionDid(request);
   if (!ownerDid) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await request.json().catch(() => ({}));
   const targetDid = body.did;

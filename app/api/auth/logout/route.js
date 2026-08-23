@@ -5,7 +5,7 @@ import { getSessionDid, SESSION_COOKIE } from "@/lib/session";
 export const runtime = "nodejs";
 
 export async function POST(request) {
-  const did = getSessionDid(request);
+  const did = await getSessionDid(request);
   if (did) {
     try {
       const client = await getOAuthClient();
