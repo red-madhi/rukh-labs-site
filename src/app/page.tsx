@@ -87,9 +87,9 @@ const additionalWork = [
     href: "/tools/bluesky-network",
   },
   {
-    title: "Rukh Labs website",
-    status: "Live · still improving",
-    description: "This website itself, including its code, privacy controls, search, and ongoing improvements.",
+    title: "RukhLabs.com",
+    status: "Live website",
+    description: "The site you’re using now—designed, built, and maintained by Rukh Labs.",
     href: "/work/rukh-labs-website",
   },
 ] as const;
@@ -314,17 +314,13 @@ export default function Home() {
         <Container>
           <Reveal>
             <div className="grid gap-8 lg:grid-cols-[0.62fr_1.38fr] lg:items-end">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/38">
-                  What Rukh Labs does
-                </p>
-              </div>
+              <div aria-hidden="true" />
               <div>
                 <h2 className="max-w-4xl text-4xl font-semibold leading-[1.03] text-white sm:text-6xl">
-                  Three things we build.
+                  What we do.
                 </h2>
                 <p className="mt-5 max-w-2xl text-lg leading-8 text-white/58">
-                  Custom websites are the main service. Rukh Labs also automates reporting and data work, and builds its own software.
+                  We build custom websites, automate repetitive reporting and data work, and create our own software.
                 </p>
               </div>
             </div>
@@ -374,10 +370,10 @@ export default function Home() {
               </div>
               <div>
                 <h2 className="max-w-4xl text-4xl font-semibold leading-[1.03] text-white sm:text-6xl">
-                  See what Rukh Labs has actually built.
+                  See the work.
                 </h2>
                 <p className="mt-5 max-w-2xl text-lg leading-8 text-white/58">
-                  Explore a live portfolio example, a released Android app, and other working projects.
+                  Explore a live portfolio, a released Android app, and other Rukh Labs projects.
                 </p>
               </div>
             </div>
