@@ -92,7 +92,7 @@ export function normalizeProfile(value?: Partial<JobCannonProfile> | null): JobC
     answerBank: Array.isArray(value?.answerBank) ? value.answerBank.map((item) => ({
       pattern: item.pattern || "",
       answer: item.answer || "",
-      source: item.source === "learned" ? "learned" : "manual",
+      source: (item.source === "learned" ? "learned" : "manual") as const,
       lastUsedAt: item.lastUsedAt,
       uses: Number(item.uses) || 0,
     })).filter((item) => item.pattern && item.answer) : [],
