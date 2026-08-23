@@ -258,9 +258,9 @@ export default function Home() {
                   Independent website, data & software studio
                 </Badge>
                 <h1 className="mt-8 text-5xl font-semibold leading-[0.98] text-white sm:text-7xl lg:text-[5.8rem] 2xl:text-[6.8rem]">
-                  Websites, data tools, and software{" "}
+                  Websites, custom. Data work, automated.{" "}
                   <span className="bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_42%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent">
-                    built with care.
+                    Software, purposeful.
                   </span>
                 </h1>
                 <p className="mt-8 max-w-3xl text-lg leading-8 text-white/66 sm:text-xl sm:leading-9">
