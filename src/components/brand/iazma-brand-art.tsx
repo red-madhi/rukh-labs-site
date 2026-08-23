@@ -14,6 +14,21 @@ export function IazmaBrandArt({
   const isSquare = variant === "square";
   const isCompact = variant === "compact";
 
+  if (isSquare) {
+    return (
+      <div
+        role={decorative ? undefined : "img"}
+        aria-hidden={decorative || undefined}
+        aria-label={decorative ? undefined : "IAZMA"}
+        className={cn(
+          "relative isolate aspect-square w-full min-w-0 overflow-hidden rounded-[2rem] border border-[#77e9ff]/30 bg-[#086cff] bg-cover bg-center bg-no-repeat shadow-[0_22px_80px_rgba(0,126,255,0.24)]",
+          className,
+        )}
+        style={{ backgroundImage: "url('/brand/iazma-square.svg')" }}
+      />
+    );
+  }
+
   return (
     <div
       role={decorative ? undefined : "img"}
@@ -21,19 +36,14 @@ export function IazmaBrandArt({
       aria-label={decorative ? undefined : "IAZMA"}
       className={cn(
         "relative isolate w-full min-w-0 overflow-hidden border border-[#77e9ff]/30 bg-[#086cff] shadow-[0_22px_80px_rgba(0,126,255,0.24)]",
-        isSquare ? "aspect-square rounded-[2rem]" : isCompact ? "aspect-[1.7/1] rounded-2xl" : "aspect-[2/1] rounded-[2rem]",
+        isCompact ? "aspect-[1.7/1] rounded-2xl" : "aspect-[2/1] rounded-[2rem]",
         className,
       )}
     >
       <div className="absolute inset-0 bg-[linear-gradient(180deg,#0658ec_0%,#078af8_48%,#19d8f4_100%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_92%,rgba(255,255,255,0.72),transparent_25%),radial-gradient(circle_at_48%_38%,rgba(27,222,255,0.2),transparent_48%)]" />
 
-      <div
-        className={cn(
-          "absolute left-1/2 top-[8%] -translate-x-1/2 rounded-full border border-[#75f5ff]/85 shadow-[0_0_18px_rgba(77,240,255,0.85),inset_0_0_28px_rgba(0,199,255,0.16)]",
-          isSquare ? "size-[86%]" : "h-[128%] w-[72%]",
-        )}
-      />
+      <div className="absolute left-1/2 top-[8%] h-[128%] w-[72%] -translate-x-1/2 rounded-full border border-[#75f5ff]/85 shadow-[0_0_18px_rgba(77,240,255,0.85),inset_0_0_28px_rgba(0,199,255,0.16)]" />
       <div className="absolute left-[19%] top-[11%] size-2 rounded-full bg-white shadow-[0_0_16px_6px_rgba(255,255,255,0.7)]" />
 
       <svg
@@ -62,7 +72,7 @@ export function IazmaBrandArt({
         <span
           className={cn(
             "inline-block font-sans font-medium lowercase tracking-[-0.075em] text-white [text-shadow:0_0_10px_rgba(255,255,255,.55),0_0_26px_rgba(59,229,255,.68)]",
-            isSquare ? "text-[clamp(3.5rem,18vw,8.5rem)]" : isCompact ? "text-[clamp(2.3rem,8vw,5.5rem)]" : "text-[clamp(3.2rem,11vw,8rem)]",
+            isCompact ? "text-[clamp(2.3rem,8vw,5.5rem)]" : "text-[clamp(3.2rem,11vw,8rem)]",
           )}
         >
           iazma
