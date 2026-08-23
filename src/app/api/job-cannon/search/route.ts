@@ -12,7 +12,7 @@ export const maxDuration = 60;
 const MAX_ROLES = 8;
 const MAX_PAGE_CHECKS = 28;
 const PROVIDERS = [
-  { label: "Greenhouse", host: "boards.greenhouse.io" },
+  { label: "Greenhouse", host: "job-boards.greenhouse.io" },
   { label: "Lever", host: "jobs.lever.co" },
   { label: "Ashby", host: "jobs.ashbyhq.com" },
   { label: "Workday", host: "myworkdayjobs.com" },
