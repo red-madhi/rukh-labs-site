@@ -73,21 +73,21 @@ h3 {
   letter-spacing: -0.035em;
 }
 
-/* Keep the homepage hero as exactly three lines: one phrase per line. */
-#main-content h1[class*="tracking-[-0.055em]"] > span {
+/* Homepage hero: exactly one phrase per line. */
+#main-content > section:first-of-type h1:has(> span:nth-child(3)) > span {
   display: block !important;
   white-space: nowrap !important;
 }
 
 @media (min-width: 640px) {
-  #main-content h1[class*="tracking-[-0.055em]"] {
-    font-size: clamp(2.8rem, 8vw, 4rem);
+  #main-content > section:first-of-type h1:has(> span:nth-child(3)) {
+    font-size: clamp(2.8rem, 7vw, 4rem) !important;
   }
 }
 
 @media (min-width: 1024px) {
-  #main-content h1[class*="tracking-[-0.055em]"] {
-    font-size: clamp(4rem, 4.7vw, 5.2rem);
+  #main-content > section:first-of-type h1:has(> span:nth-child(3)) {
+    font-size: clamp(3.4rem, 4vw, 4.8rem) !important;
   }
 }
 
