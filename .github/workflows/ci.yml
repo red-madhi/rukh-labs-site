@@ -30,3 +30,6 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: SEO audit
+        run: npm run seo:audit
