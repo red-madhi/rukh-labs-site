@@ -37,7 +37,7 @@ export function ProductCard({ product, cta }: ProductCardProps) {
           : isFarzin
             ? "product-card-farzin"
             : isIazma
-              ? "product-card-iazma"
+              ? "border-[#67e8f9]/24 bg-[radial-gradient(circle_at_88%_0%,rgba(91,238,255,0.18),transparent_36%),radial-gradient(circle_at_12%_100%,rgba(42,104,255,0.14),transparent_42%),rgba(4,25,58,0.84)]"
               : "product-card-rukh"
       }`}
     >
