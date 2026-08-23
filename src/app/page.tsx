@@ -250,23 +250,24 @@ export default function Home() {
         </div>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_42%,rgba(240,0,28,0.11),transparent_27%),radial-gradient(circle_at_68%_70%,rgba(22,200,255,0.08),transparent_29%)]" />
 
-        <Container className="relative flex min-h-[calc(100svh-4.5rem)] flex-col justify-between py-16 sm:py-20 lg:py-24">
-          <div className="grid gap-14 lg:grid-cols-[minmax(0,1.18fr)_minmax(17rem,0.48fr)] lg:items-end">
+        <Container className="relative flex flex-col justify-between py-10 sm:py-20 lg:min-h-[calc(100svh-4.5rem)] lg:py-24">
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.18fr)_minmax(17rem,0.48fr)] lg:items-end lg:gap-14">
             <Reveal>
               <div className="max-w-5xl">
-                <Badge tone="red" className="uppercase tracking-[0.18em]">
+                <Badge tone="red" className="whitespace-nowrap text-[0.6rem] leading-4 tracking-[0.12em] sm:text-xs sm:tracking-[0.18em]">
                   Independent website, data & software studio
                 </Badge>
-                <h1 className="mt-8 text-5xl font-semibold leading-[0.98] text-white sm:text-7xl lg:text-[5.8rem] 2xl:text-[6.8rem]">
-                  Websites, custom. Data work, automated.{" "}
-                  <span className="bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_42%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent">
+                <h1 className="mt-7 text-[2rem] font-semibold leading-[1.02] tracking-[-0.055em] text-white min-[360px]:text-[2.15rem] min-[390px]:text-[2.35rem] sm:mt-8 sm:text-7xl sm:tracking-[-0.04em] lg:text-[5.8rem] 2xl:text-[6.8rem]">
+                  <span className="block sm:inline">Websites, custom.</span>{" "}
+                  <span className="block sm:inline">Data work, automated.</span>{" "}
+                  <span className="block bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_42%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent sm:inline">
                     Software, purposeful.
                   </span>
                 </h1>
-                <p className="mt-8 max-w-3xl text-lg leading-8 text-white/66 sm:text-xl sm:leading-9">
-                  Rukh Labs builds custom websites, automated reports, and useful software for small businesses, professionals, and teams. Everything is made to be clear, fast, and easy to use.
+                <p className="mt-6 max-w-3xl text-base leading-7 text-white/66 sm:mt-8 sm:text-xl sm:leading-9">
+                  Rukh Labs builds custom websites, automated reports, and purposeful software for small businesses, professionals, and teams. Everything is made to be clear, fast, and easy to use.
                 </p>
-                <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+                <div className="mt-8 flex flex-col gap-3 sm:mt-10 sm:flex-row">
                   <Link href="/contact" className={buttonStyles({ size: "lg" })}>
                     Start a project
                     <ArrowRight aria-hidden className="size-4" />
@@ -301,7 +302,7 @@ export default function Home() {
           </div>
 
           <Reveal delay={0.18}>
-            <div className="mt-20 grid gap-4 border-t border-white/10 pt-6 text-xs font-semibold uppercase tracking-[0.14em] text-white/38 sm:grid-cols-3 lg:mt-24">
+            <div className="mt-14 grid gap-4 border-t border-white/10 pt-6 text-xs font-semibold uppercase tracking-[0.14em] text-white/38 sm:mt-20 sm:grid-cols-3 lg:mt-24">
               <span><strong className="mr-3 text-white/72">01</strong> Custom websites</span>
               <span><strong className="mr-3 text-white/72">02</strong> Reports and data tools</span>
               <span><strong className="mr-3 text-white/72">03</strong> Software we build</span>
