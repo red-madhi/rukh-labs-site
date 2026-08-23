@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Job Cannon Autofill</title>
+  <link rel="stylesheet" href="extension.css" />
+</head>
+<body>
+  <main>
+    <span class="kicker">Human-submit mode</span>
+    <h1>Job Cannon</h1>
+    <p>Fill routine application fields on the page you are viewing. Review everything before submitting.</p>
+    <div id="profileStatus" class="status">Checking profile…</div>
+    <div class="card">
+      <button id="fillButton">Fill this page</button>
+      <div class="row" style="margin-top:8px">
+        <button id="scanButton" class="secondary">Scan fields</button>
+        <button id="optionsButton" class="secondary">Profile</button>
+      </div>
+    </div>
+    <div id="result" class="status">No page action yet.</div>
+    <p class="small" style="margin-bottom:0">No CAPTCHA bypass. No demographic answers. No legal attestations. No automatic submit.</p>
+  </main>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -58,5 +58,10 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/leads/:path*", "/api/leads/:path*"],
+  matcher: [
+    "/leads/:path*",
+    "/api/leads/:path*",
+    "/job-cannon/:path*",
+    "/api/job-cannon/:path*",
+  ],
 };

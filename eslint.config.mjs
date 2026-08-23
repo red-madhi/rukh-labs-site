@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
   },
   {
     files: [
+      "src/app/job-cannon/job-cannon-dashboard.tsx",
       "src/app/leads/leads-dashboard.tsx",
       "src/app/leads/outreach-playbook.tsx",
       "src/app/leads/outreach/outreach-campaign.tsx",
@@ -21,8 +22,8 @@ const eslintConfig = defineConfig([
       "src/app/leads/statuses/lead-status-dashboard.tsx",
     ],
     rules: {
-      // These established private dashboards intentionally load remote state on mount
-      // and reset local editor state when the selected database record changes.
+      // These private dashboards intentionally load saved or remote state on mount
+      // and reset local editor state when the selected record changes.
       "react-hooks/set-state-in-effect": "off",
     },
   },
