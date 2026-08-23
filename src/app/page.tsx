@@ -1,92 +1,165 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  ArrowRight,
-  EyeOff,
-  Gauge,
-  Gem,
-  LockKeyhole,
-  MonitorCog,
-  ShieldCheck,
-  Sparkles,
-  Zap,
-} from "lucide-react";
-import { BrandBanner } from "@/components/brand/brand-banner";
-import { InsightCard } from "@/components/content/insight-card";
-import { WorkCard } from "@/components/content/work-card";
-import { TrackedAnchor } from "@/components/analytics/tracked-link";
+import { ArrowRight } from "lucide-react";
 import { RukhMark } from "@/components/brand/rukh-mark";
 import { StructuredData } from "@/components/seo/structured-data";
-import { ProductCard } from "@/components/sections/product-card";
-import { WebsiteStudioTeaser } from "@/components/sections/website-studio-teaser";
-import { CareerPortfolioTeaser } from "@/components/sections/career-portfolio-teaser";
 import { Badge } from "@/components/ui/badge";
 import { buttonStyles } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/ui/reveal";
 import { Section } from "@/components/ui/section";
 import { ChessMockup } from "@/components/visuals/chess-mockup";
-import { HeroVisual } from "@/components/visuals/hero-visual";
-import { OSMockup } from "@/components/visuals/os-mockup";
-import { labProduct, products } from "@/lib/products";
-import { insights } from "@/lib/insights";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
-import { workProjects } from "@/lib/work";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Custom Websites, Career Portfolios & Software",
+  title: "Custom Websites, Data Operations & Software",
   description:
-    "Rukh Labs creates distinctive websites, recruiter-ready career portfolios, and original software including Farzin and Glass Squares OS.",
+    "Rukh Labs designs distinctive websites, automates recurring reporting and data workflows, builds recruiter-ready career portfolios, and ships focused software.",
 });
 
-const philosophy = [
+const serviceLanes = [
   {
+    number: "01",
+    eyebrow: "Primary studio service",
+    title: "Custom websites",
+    description:
+      "Distinctive, fast websites for small businesses, creators, and independent teams that need to look credible without looking interchangeable.",
+    detail: "Strategy, design, development, career portfolios, launch, and practical support.",
+    href: "/services/web-development",
+    cta: "Explore website services",
+  },
+  {
+    number: "02",
+    eyebrow: "Systems and automation",
+    title: "Data operations",
+    description:
+      "Automation and control for recurring spreadsheet, reporting, reconciliation, and data-migration work—built to reduce manual handling without hiding the evidence.",
+    detail: "Power BI, Power Query, validation, exception handling, monitoring, and handoff.",
+    href: "/data-ops",
+    cta: "Explore data operations",
+  },
+  {
+    number: "03",
+    eyebrow: "The product lab",
+    title: "Original software",
+    description:
+      "Focused first-party products built around clarity, user control, and the belief that useful software does not need to be ugly or bloated.",
+    detail: "Farzin, Glass Squares OS, IAZMA, and active experiments.",
+    href: "/products",
+    cta: "Explore products",
+  },
+] as const;
+
+const principles = [
+  {
+    number: "01",
     title: "Clean by default",
     description: "No noisy onboarding maze, mystery utilities, or hostile defaults.",
-    icon: Sparkles,
   },
   {
+    number: "02",
     title: "Private where it matters",
     description: "Data decisions should be obvious, minimal, and respectful.",
-    icon: EyeOff,
   },
   {
+    number: "03",
     title: "Fast enough to feel different",
     description: "Performance is a product feature, not a benchmark footnote.",
-    icon: Zap,
   },
   {
+    number: "04",
     title: "Designed like beauty matters",
     description: "Power should not require visual punishment.",
-    icon: Gem,
   },
-];
+] as const;
 
-const osBullets = [
-  "Glass-panel desktop shell",
-  "Square-based layout system",
-  "Low-bloat default apps",
-  "Practical compatibility paths",
-  "Clean visual system",
-];
+const additionalWork = [
+  {
+    title: "Glass Squares OS",
+    status: "In development",
+    description: "A low-bloat Linux desktop built around glassy surfaces, square layouts, compatibility, and control.",
+    href: "/products/glass-squares-os",
+  },
+  {
+    title: "IAZMA",
+    status: "Free web app",
+    description: "Bluesky network discovery ranked by shared connections, overlap, and reach.",
+    href: "/tools/bluesky-network",
+  },
+  {
+    title: "Rukh Labs platform",
+    status: "Public · active iteration",
+    description: "The design system, technical architecture, privacy controls, and search foundation behind this site.",
+    href: "/work/rukh-labs-website",
+  },
+] as const;
 
-const farzinBullets = [
-  "Game review",
-  "Opening prep",
-  "Tactical drills",
-  "Engine-assisted analysis",
-  "Progress tracking",
-];
+function PortfolioPreview() {
+  return (
+    <div className="overflow-hidden rounded-[1.6rem] border border-[#16c8ff]/20 bg-[#07101b] shadow-[0_30px_120px_rgba(0,0,0,0.48)]">
+      <div className="flex items-center gap-2 border-b border-white/10 bg-black/25 px-4 py-3 sm:px-5">
+        <span className="size-2.5 rounded-full bg-white/18" />
+        <span className="size-2.5 rounded-full bg-white/12" />
+        <span className="size-2.5 rounded-full bg-white/8" />
+        <span className="ml-3 truncate text-[0.68rem] font-medium uppercase tracking-[0.14em] text-white/28">
+          Fictional career portfolio · interactive demonstration
+        </span>
+      </div>
+
+      <div className="border-b border-white/10 px-5 py-4 sm:px-7">
+        <div className="flex gap-5 overflow-hidden text-[0.68rem] font-semibold uppercase tracking-[0.12em] text-white/32">
+          <span className="text-[#8aeaff]">Overview</span>
+          <span>Work</span>
+          <span>Live dashboard</span>
+          <span>About</span>
+          <span>Résumé</span>
+        </div>
+      </div>
+
+      <div className="grid gap-8 px-5 py-8 sm:px-8 sm:py-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center lg:px-10 lg:py-12">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8aeaff]">
+            Fictional operations portfolio
+          </p>
+          <h3 className="mt-5 max-w-2xl text-4xl font-semibold leading-[1.03] text-white sm:text-5xl">
+            I make complex work easier to run.
+          </h3>
+          <p className="mt-5 max-w-xl text-sm leading-7 text-white/54 sm:text-base">
+            A complete candidate story with case studies, a résumé view, and an interactive scenario dashboard—without exposing a real person or confidential work.
+          </p>
+          <div className="mt-7 inline-flex items-center gap-2 text-sm font-semibold text-white">
+            Explore the work
+            <ArrowRight aria-hidden className="size-4 text-[#8aeaff]" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          {[
+            ["3", "fictional case studies"],
+            ["1", "interactive dashboard"],
+            ["92", "problem-solving signal"],
+            ["0", "personal files or data"],
+          ].map(([value, label]) => (
+            <div key={label} className="border-l border-[#67e8f9]/24 py-3 pl-4 sm:py-4 sm:pl-5">
+              <strong className="block text-3xl font-semibold tracking-[-0.05em] text-white sm:text-4xl">
+                {value}
+              </strong>
+              <span className="mt-2 block text-xs leading-5 text-white/38">{label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-4 border-t border-white/10 bg-white/[0.018] px-5 py-5 text-xs leading-5 text-white/42 sm:grid-cols-3 sm:px-8 lg:px-10">
+        <span><strong className="text-white/72">01</strong> Frame the decision</span>
+        <span><strong className="text-white/72">02</strong> Model the system</span>
+        <span><strong className="text-white/72">03</strong> Make action visible</span>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
-  const featuredWorkProjects = ["rukh-labs-website", "career-portfolio-demo"].map((slug) => {
-    const project = workProjects.find((candidate) => candidate.slug === slug);
-    if (!project) throw new Error(`Missing featured Work project: ${slug}`);
-    return project;
-  });
-  const featuredProduct = products.find((product) => product.slug === "farzin");
-
   const structuredData = {
     "@context": "https://schema.org",
     "@graph": [
@@ -100,7 +173,7 @@ export default function Home() {
           url: `${siteConfig.url}/brand/rukh-labs-primary.png`,
         },
         email: siteConfig.contactEmail,
-        description: "An independent digital studio and software lab.",
+        description: "An independent design and development studio and software lab.",
         contactPoint: {
           "@type": "ContactPoint",
           contactType: "customer support",
@@ -118,6 +191,14 @@ export default function Home() {
                 "@type": "Service",
                 name: "Website design and development",
                 url: `${siteConfig.url}/services/web-development`,
+              },
+            },
+            {
+              "@type": "Offer",
+              itemOffered: {
+                "@type": "Service",
+                name: "Data operations automation and reconciliation",
+                url: `${siteConfig.url}/data-ops`,
               },
             },
             {
@@ -161,334 +242,287 @@ export default function Home() {
   return (
     <>
       <StructuredData data={structuredData} />
+
       <section className="relative overflow-hidden border-b border-white/10">
-        <div className="absolute left-[-7rem] top-24 hidden opacity-[0.08] lg:block">
+        <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f0001c_40%,#16c8ff_72%,transparent)]" />
+        <div className="absolute -right-48 top-1/2 hidden -translate-y-1/2 opacity-[0.12] lg:block">
           <RukhMark size="hero" glow container={false} decorative />
         </div>
-        <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f0001c_45%,#16c8ff_70%,transparent)]" />
-        <Container className="grid min-h-[calc(100vh-4.5rem)] items-center gap-12 py-16 sm:py-20 lg:grid-cols-[0.95fr_1.05fr] lg:py-24">
-          <Reveal>
-            <div className="max-w-3xl">
-              <Badge tone="red" className="uppercase tracking-[0.18em]">
-                Independent digital studio & software lab
-              </Badge>
-              <h1 className="mt-7 text-5xl font-semibold leading-[1.02] text-white sm:text-6xl 2xl:text-7xl">
-                Websites, career portfolios, and software built to{" "}
-                <span className="bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_45%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent">
-                  do more than exist.
-                </span>
-              </h1>
-              <p className="mt-7 max-w-2xl text-lg leading-8 text-white/68 sm:text-xl">
-                Rukh Labs designs distinctive websites and recruiter-ready career
-                portfolios, and builds original software including Glass Squares
-                OS and Farzin.
-              </p>
-              <div className="mt-9 flex flex-col gap-3 sm:flex-row">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_82%_42%,rgba(240,0,28,0.11),transparent_27%),radial-gradient(circle_at_68%_70%,rgba(22,200,255,0.08),transparent_29%)]" />
+
+        <Container className="relative flex min-h-[calc(100svh-4.5rem)] flex-col justify-between py-16 sm:py-20 lg:py-24">
+          <div className="grid gap-14 lg:grid-cols-[minmax(0,1.18fr)_minmax(17rem,0.48fr)] lg:items-end">
+            <Reveal>
+              <div className="max-w-5xl">
+                <Badge tone="red" className="uppercase tracking-[0.18em]">
+                  Independent design & development studio
+                </Badge>
+                <h1 className="mt-8 text-5xl font-semibold leading-[0.98] text-white sm:text-7xl lg:text-[5.8rem] 2xl:text-[6.8rem]">
+                  Digital products that actually{" "}
+                  <span className="bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_42%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent">
+                    feel designed.
+                  </span>
+                </h1>
+                <p className="mt-8 max-w-3xl text-lg leading-8 text-white/66 sm:text-xl sm:leading-9">
+                  Rukh Labs builds distinctive websites and dependable data workflows for businesses, professionals, and teams—plus focused software of its own. Clear purpose. Clean systems. No template aftertaste.
+                </p>
+                <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+                  <Link href="/contact" className={buttonStyles({ size: "lg" })}>
+                    Start a project
+                    <ArrowRight aria-hidden className="size-4" />
+                  </Link>
+                  <Link href="#selected-work" className={buttonStyles({ variant: "secondary", size: "lg" })}>
+                    See selected work
+                  </Link>
+                </div>
+              </div>
+            </Reveal>
+
+            <Reveal delay={0.12}>
+              <div className="relative border-l border-white/14 pl-6 lg:mb-3 lg:pl-8">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#ff8f9a]">
+                  Primary studio work
+                </p>
+                <p className="mt-4 text-3xl font-semibold leading-tight text-white sm:text-4xl">
+                  Custom websites.
+                </p>
+                <p className="mt-4 max-w-sm text-sm leading-7 text-white/52">
+                  Designed and built directly—not assembled from a theme and dressed up with adjectives.
+                </p>
                 <Link
                   href="/services/web-development"
-                  className={buttonStyles({ size: "lg" })}
+                  className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-white transition hover:text-[#ff8f9a]"
                 >
-                  Build your website
+                  Explore the website studio
                   <ArrowRight aria-hidden className="size-4" />
                 </Link>
-                <Link
-                  href="/services/career-portfolios"
-                  className={buttonStyles({ variant: "secondary", size: "lg" })}
-                >
-                  Build a career portfolio
-                </Link>
               </div>
-              <div className="mt-10 grid gap-3 text-xs font-medium uppercase tracking-[0.14em] text-white/42 sm:grid-cols-3">
-                <span className="border-l border-[#16c8ff]/50 pl-3">Web development</span>
-                <span className="border-l border-[#9a6dff]/50 pl-3">Career portfolios</span>
-                <span className="border-l border-[#f0001c]/50 pl-3">Original software</span>
-              </div>
+            </Reveal>
+          </div>
+
+          <Reveal delay={0.18}>
+            <div className="mt-20 grid gap-4 border-t border-white/10 pt-6 text-xs font-semibold uppercase tracking-[0.14em] text-white/38 sm:grid-cols-3 lg:mt-24">
+              <span><strong className="mr-3 text-white/72">01</strong> Custom websites</span>
+              <span><strong className="mr-3 text-white/72">02</strong> Data operations</span>
+              <span><strong className="mr-3 text-white/72">03</strong> First-party software</span>
             </div>
-          </Reveal>
-          <Reveal delay={0.12}>
-            <HeroVisual />
           </Reveal>
         </Container>
       </section>
 
-      <Section className="py-8 sm:py-10">
+      <Section id="services" className="py-16 sm:py-20">
         <Container>
           <Reveal>
-            <BrandBanner />
-          </Reveal>
-        </Container>
-      </Section>
-
-      <WebsiteStudioTeaser />
-      <CareerPortfolioTeaser />
-
-      <Section className="border-y border-white/10 bg-white/[0.02]">
-        <Container>
-          <Reveal>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="grid gap-8 lg:grid-cols-[0.62fr_1.38fr] lg:items-end">
               <div>
-                <Badge tone="gold">Selected work</Badge>
-                <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  Selected work from the lab.
-                </h2>
-                <p className="mt-4 max-w-2xl text-lg leading-8 text-white/64">
-                  Explore the Rukh Labs platform, original products, and a clearly identified fictional career-portfolio demonstration.
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/38">
+                  What Rukh Labs does
                 </p>
               </div>
-              <Link href="/work" className={buttonStyles({ variant: "ghost", className: "self-start sm:self-auto" })}>
-                Explore all work <ArrowRight aria-hidden className="size-4" />
-              </Link>
-            </div>
-          </Reveal>
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
-            {featuredWorkProjects.map((project, index) => <Reveal key={project.slug} delay={index * 0.05}><WorkCard project={project} /></Reveal>)}
-            {featuredProduct ? <Reveal delay={0.1}><ProductCard product={featuredProduct} cta="View Farzin" /></Reveal> : null}
-          </div>
-        </Container>
-      </Section>
-
-      <Section>
-        <Container>
-          <Reveal>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <Badge tone="blue">Featured insights</Badge>
-                <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  Practical guidance for the work ahead.
+                <h2 className="max-w-4xl text-4xl font-semibold leading-[1.03] text-white sm:text-6xl">
+                  One studio. Three clear lanes.
                 </h2>
-              </div>
-              <Link href="/insights" className={buttonStyles({ variant: "ghost", className: "self-start sm:self-auto" })}>
-                Explore insights <ArrowRight aria-hidden className="size-4" />
-              </Link>
-            </div>
-          </Reveal>
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
-            {insights.map((insight, index) => <Reveal key={insight.slug} delay={index * 0.05}><InsightCard insight={insight} /></Reveal>)}
-          </div>
-        </Container>
-      </Section>
-
-      <Section>
-        <Container>
-          <Reveal>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <Badge tone="slate">Products from the lab</Badge>
-                <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  Original software built with sharper standards.
-                </h2>
-                <p className="mt-4 max-w-2xl text-lg leading-8 text-white/64">
-                  Glass Squares OS and Farzin apply the same standards used across
-                  Rukh Labs services and products: clarity, control, and distinctive design.
+                <p className="mt-5 max-w-2xl text-lg leading-8 text-white/58">
+                  Custom websites lead the studio. Data operations and first-party software extend what the lab can build.
                 </p>
               </div>
-              <Link
-                href="/products"
-                className={buttonStyles({ variant: "ghost", className: "self-start sm:self-auto" })}
-              >
-                View all products
-                <ArrowRight aria-hidden className="size-4" />
-              </Link>
             </div>
           </Reveal>
-          <div className="mt-10 grid gap-5 lg:grid-cols-3">
-            {[...products, labProduct].map((product, index) => (
-              <Reveal key={product.slug} delay={index * 0.06}>
-                <ProductCard
-                  product={product}
-                  cta={
-                    product.slug === "lab"
-                      ? "Follow the Changelog"
-                      : product.slug === "farzin"
-                        ? "Get Farzin on Google Play"
-                        : `View ${product.name}`
-                  }
-                />
+
+          <div className="mt-14 border-y border-white/10">
+            {serviceLanes.map((service, index) => (
+              <Reveal key={service.title} delay={index * 0.05}>
+                <Link
+                  href={service.href}
+                  className={`group grid gap-6 py-9 transition sm:py-11 lg:grid-cols-[0.25fr_0.75fr_1.1fr_0.55fr] lg:items-start ${
+                    index < serviceLanes.length - 1 ? "border-b border-white/10" : ""
+                  } ${
+                    index === 0
+                      ? "bg-[linear-gradient(90deg,rgba(240,0,28,0.07),transparent_64%)]"
+                      : "hover:bg-white/[0.018]"
+                  }`}
+                >
+                  <span className="text-xs font-semibold tracking-[0.16em] text-white/32">{service.number}</span>
+                  <div>
+                    <p className={`text-[0.68rem] font-semibold uppercase tracking-[0.15em] ${index === 0 ? "text-[#ff8f9a]" : "text-white/34"}`}>
+                      {service.eyebrow}
+                    </p>
+                    <h3 className="mt-3 text-3xl font-semibold text-white sm:text-4xl">{service.title}</h3>
+                  </div>
+                  <div>
+                    <p className="max-w-2xl text-base leading-7 text-white/58">{service.description}</p>
+                    <p className="mt-3 text-sm leading-6 text-white/34">{service.detail}</p>
+                  </div>
+                  <span className="inline-flex items-center gap-2 text-sm font-semibold text-white transition group-hover:text-[#ff8f9a] lg:justify-self-end">
+                    {service.cta}
+                    <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                </Link>
               </Reveal>
             ))}
           </div>
         </Container>
       </Section>
 
-      <Section className="border-y border-white/10 bg-white/[0.025]">
+      <Section id="selected-work" className="border-y border-white/10 bg-white/[0.018]">
         <Container>
           <Reveal>
-            <div className="max-w-3xl">
-              <Badge tone="gold">Built against bloat.</Badge>
-              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                The standard is simple: respect the user.
-              </h2>
+            <div className="grid gap-8 lg:grid-cols-[0.72fr_1.28fr] lg:items-end">
+              <div>
+                <Badge tone="gold">Selected proof</Badge>
+              </div>
+              <div>
+                <h2 className="max-w-4xl text-4xl font-semibold leading-[1.03] text-white sm:text-6xl">
+                  Don’t take the copy’s word for it.
+                </h2>
+                <p className="mt-5 max-w-2xl text-lg leading-8 text-white/58">
+                  Real products and working demonstrations do more for credibility than a wall of feature cards.
+                </p>
+              </div>
             </div>
           </Reveal>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {philosophy.map((item, index) => {
-              const Icon = item.icon;
 
-              return (
-                <Reveal key={item.title} delay={index * 0.05}>
-                  <Card interactive className="h-full p-5">
-                    <span className="grid size-11 place-items-center rounded-lg border border-[color:var(--brand-red)]/24 bg-[color:var(--brand-red)]/10 text-[#ffb4b8]">
-                      <Icon aria-hidden className="size-5" />
-                    </span>
-                    <h3 className="mt-5 text-lg font-semibold text-white">{item.title}</h3>
-                    <p className="mt-3 text-sm leading-6 text-white/58">{item.description}</p>
-                  </Card>
-                </Reveal>
-              );
-            })}
+          <div className="mt-16 grid gap-10 lg:grid-cols-[1.35fr_0.65fr] lg:items-center">
+            <Reveal>
+              <PortfolioPreview />
+            </Reveal>
+            <Reveal delay={0.1}>
+              <div className="lg:pl-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#8aeaff]">
+                  Working service demonstration
+                </p>
+                <h3 className="mt-5 text-3xl font-semibold leading-tight text-white sm:text-4xl">
+                  A portfolio you can actually explore.
+                </h3>
+                <p className="mt-5 text-base leading-8 text-white/56">
+                  The career portfolio demonstration includes a complete fictional candidate story, case studies, a résumé view, and an operable scenario dashboard. It is clearly labeled, privacy-safe, and built to show the service rather than merely describe it.
+                </p>
+                <Link
+                  href="/services/career-portfolios/demo"
+                  className={buttonStyles({ variant: "secondary", className: "mt-7" })}
+                >
+                  Open the interactive demo
+                  <ArrowRight aria-hidden className="size-4" />
+                </Link>
+              </div>
+            </Reveal>
+          </div>
+
+          <div className="mt-24 grid gap-10 border-t border-white/10 pt-16 lg:grid-cols-[0.62fr_1.38fr] lg:items-center">
+            <Reveal>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#f3d99d]">
+                  Shipped first-party product
+                </p>
+                <h3 className="mt-5 text-3xl font-semibold leading-tight text-white sm:text-5xl">
+                  Farzin turns chess study into a focused system.
+                </h3>
+                <p className="mt-5 text-base leading-8 text-white/56">
+                  A released Android app for game review, opening preparation, tactical practice, engine-assisted analysis, and progress tracking—designed and shipped by Rukh Labs.
+                </p>
+                <div className="mt-7 flex flex-wrap items-center gap-4">
+                  <Link href="/products/farzin" className={buttonStyles({ variant: "secondary" })}>
+                    View Farzin
+                    <ArrowRight aria-hidden className="size-4" />
+                  </Link>
+                  <span className="text-xs font-semibold uppercase tracking-[0.14em] text-white/34">
+                    Google Play · v1.0.0
+                  </span>
+                </div>
+              </div>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <ChessMockup />
+            </Reveal>
+          </div>
+
+          <div className="mt-20 border-t border-white/10 pt-10">
+            <Reveal>
+              <div className="grid gap-6 lg:grid-cols-[0.55fr_1.45fr]">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/38">
+                    More from the lab
+                  </p>
+                </div>
+                <div className="border-t border-white/10">
+                  {additionalWork.map((item) => (
+                    <Link
+                      key={item.title}
+                      href={item.href}
+                      className="group grid gap-3 border-b border-white/10 py-6 transition hover:pl-2 sm:grid-cols-[0.7fr_1.2fr_auto] sm:items-center"
+                    >
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">{item.title}</h3>
+                        <p className="mt-1 text-[0.68rem] font-semibold uppercase tracking-[0.13em] text-white/30">
+                          {item.status}
+                        </p>
+                      </div>
+                      <p className="text-sm leading-6 text-white/48">{item.description}</p>
+                      <ArrowRight aria-hidden className="size-4 text-white/42 transition group-hover:translate-x-1 group-hover:text-white" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
           </div>
         </Container>
       </Section>
 
-      <Section>
-        <Container className="grid items-center gap-10 lg:grid-cols-[0.9fr_1.1fr]">
+      <Section className="overflow-hidden">
+        <div className="absolute -left-44 top-12 hidden opacity-[0.06] lg:block">
+          <RukhMark size="hero" container={false} decorative />
+        </div>
+        <Container className="relative grid gap-16 lg:grid-cols-[0.9fr_1.1fr]">
           <Reveal>
-            <div>
-              <Badge tone="blue">Glass Squares OS</Badge>
-              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                A desktop OS without the usual mess.
+            <div className="lg:sticky lg:top-28 lg:self-start">
+              <Badge tone="red">Why Rukh</Badge>
+              <h2 className="mt-6 max-w-2xl text-4xl font-semibold leading-[1.03] text-white sm:text-6xl">
+                The standard is simple: respect the user.
               </h2>
-              <p className="mt-6 text-lg leading-8 text-white/64">
-                Glass Squares OS is a Linux-based desktop operating system designed
-                around glassy surfaces, square layouts, speed, compatibility, and
-                control.
+              <p className="mt-6 max-w-xl text-lg leading-8 text-white/56">
+                Clear purpose before decoration. Useful defaults before feature theater. Proof before promises.
               </p>
-              <ul className="mt-7 grid gap-3">
-                {osBullets.map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-white/68">
-                    <ShieldCheck aria-hidden className="size-4 text-[#55d9ff]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/products/glass-squares-os"
-                className={buttonStyles({ variant: "secondary", className: "mt-8" })}
-              >
-                Explore Glass Squares OS
-              </Link>
             </div>
           </Reveal>
-          <Reveal delay={0.1}>
-            <OSMockup />
-          </Reveal>
+
+          <div className="border-t border-white/10">
+            {principles.map((principle, index) => (
+              <Reveal key={principle.title} delay={index * 0.05}>
+                <div className="grid gap-5 border-b border-white/10 py-9 sm:grid-cols-[0.2fr_0.8fr_1fr] sm:py-11">
+                  <span className="text-xs font-semibold tracking-[0.15em] text-white/30">{principle.number}</span>
+                  <h3 className="text-2xl font-semibold text-white sm:text-3xl">{principle.title}</h3>
+                  <p className="text-sm leading-7 text-white/50 sm:text-base">{principle.description}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </Container>
       </Section>
 
-      <Section className="border-y border-white/10 bg-white/[0.025]">
-        <Container className="grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-          <Reveal>
-            <ChessMockup />
-          </Reveal>
-          <Reveal delay={0.1}>
-            <div>
-              <Badge tone="gold">Farzin</Badge>
-              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Serious chess training without the circus.
-              </h2>
-              <p className="mt-6 text-lg leading-8 text-white/64">
-                Farzin is a premium Android chess training app for focused game
-                review, opening preparation, tactical practice, and progress
-                tracking.
-              </p>
-              <ul className="mt-7 grid gap-3">
-                {farzinBullets.map((item) => (
-                  <li key={item} className="flex items-center gap-3 text-sm text-white/68">
-                    <Gauge aria-hidden className="size-4 text-[#f3d99d]" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link
-                  href="/products/farzin"
-                  className={buttonStyles({ variant: "secondary" })}
-                >
-                  Explore Farzin
-                </Link>
-                <TrackedAnchor
-                  href={siteConfig.links.farzinGooglePlay}
-                  eventName="google_play_click"
-                  eventProperties={{ product: "farzin", source_page: "/" }}
-                  className={buttonStyles({ variant: "ghost" })}
-                >
-                  Install on Google Play
-                </TrackedAnchor>
-              </div>
-            </div>
-          </Reveal>
-        </Container>
-      </Section>
-
-      <Section>
+      <Section className="border-t border-white/10 bg-[linear-gradient(135deg,rgba(240,0,28,0.10),rgba(214,173,91,0.07)_48%,rgba(22,200,255,0.07))]">
         <Container>
           <Reveal>
-            <Card className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[0.85fr_1.15fr] lg:p-10">
+            <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-end">
               <div>
-                <Badge tone="ivory">Trust</Badge>
-                <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                  How trust shows up in the product.
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#ff8f9a]">
+                  Start a project
+                </p>
+                <h2 className="mt-6 max-w-4xl text-5xl font-semibold leading-[0.98] text-white sm:text-7xl">
+                  Have something worth building?
                 </h2>
               </div>
-              <div className="grid gap-5 sm:grid-cols-3">
-                {[
-                  {
-                    title: "Clear defaults",
-                    copy: "Products should explain what they do and stay quiet when they should.",
-                    icon: MonitorCog,
-                  },
-                  {
-                    title: "Security direction",
-                    copy: "Sane update paths, minimal bloat, and transparent release notes.",
-                    icon: LockKeyhole,
-                  },
-                  {
-                    title: "Privacy stance",
-                    copy: "Collect less, disclose more, and avoid manipulative product behavior.",
-                    icon: ShieldCheck,
-                  },
-                ].map((item) => {
-                  const Icon = item.icon;
-
-                  return (
-                    <div key={item.title}>
-                      <Icon aria-hidden className="size-5 text-[#ffb4b8]" />
-                      <h3 className="mt-4 text-base font-semibold text-white">{item.title}</h3>
-                      <p className="mt-3 text-sm leading-6 text-white/58">{item.copy}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </Card>
-          </Reveal>
-        </Container>
-      </Section>
-
-      <Section className="pt-0">
-        <Container>
-          <Reveal>
-            <div className="rounded-lg border border-[#d6ad5b]/20 bg-[linear-gradient(135deg,rgba(214,173,91,0.12),rgba(77,183,255,0.08)_54%,rgba(255,255,255,0.035))] p-6 shadow-[0_24px_100px_rgba(0,0,0,0.35)] sm:p-8 lg:p-10">
-              <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:items-center">
-                <div>
-                  <Badge tone="gold">Start a project</Badge>
-                  <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                    Start a project with Rukh Labs.
-                  </h2>
-                </div>
-                <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
-                  <Link
-                    href="/services/web-development"
-                    className={buttonStyles({ size: "lg" })}
-                  >
-                    Plan a website
+              <div>
+                <p className="max-w-xl text-lg leading-8 text-white/58">
+                  Bring the real problem. Rukh Labs will help shape the right site, data workflow, or next step without burying it under agency theater.
+                </p>
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+                  <Link href="/contact" className={buttonStyles({ size: "lg" })}>
+                    Start the conversation
                     <ArrowRight aria-hidden className="size-4" />
                   </Link>
-                  <Link
-                    href="/services/career-portfolios"
-                    className={buttonStyles({ variant: "secondary", size: "lg" })}
-                  >
-                    Build a career portfolio
-                    <ArrowRight aria-hidden className="size-4" />
+                  <Link href="/services/web-development" className={buttonStyles({ variant: "secondary", size: "lg" })}>
+                    Website services
                   </Link>
                 </div>
               </div>
