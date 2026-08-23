@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Boxes, Crown, LayoutGrid } from "lucide-react";
-import { IazmaBrandArt } from "@/components/brand/iazma-brand-art";
 import { OfficialBrandArt } from "@/components/brand/official-brand-art";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -43,7 +42,11 @@ export function ProductCard({ product, cta }: ProductCardProps) {
     >
       <div className="flex items-start justify-between gap-4">
         {isIazma ? (
-          <IazmaBrandArt variant="square" decorative className="size-16 shrink-0 rounded-2xl" />
+          <div
+            aria-hidden="true"
+            className="size-16 shrink-0 rounded-2xl border border-[#77e9ff]/30 bg-[#086cff] bg-cover bg-center bg-no-repeat shadow-[0_16px_50px_rgba(0,126,255,0.22)]"
+            style={{ backgroundImage: "url('/brand/iazma-square.svg')" }}
+          />
         ) : isGlass || isFarzin ? (
           <OfficialBrandArt
             brand={isGlass ? "glass-squares" : "farzin"}
