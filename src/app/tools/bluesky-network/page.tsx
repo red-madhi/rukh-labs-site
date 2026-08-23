@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { IazmaBrandArt } from "@/components/brand/iazma-brand-art";
 import { BlueskyNetworkModeExplorer } from "@/components/tools/bluesky-network-mode-explorer";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { StructuredData } from "@/components/seo/structured-data";
@@ -84,21 +85,30 @@ export default function BlueskyNetworkPage() {
       </div>
 
       <Section className="relative overflow-hidden border-b border-white/10">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#f0001c_35%,#16c8ff_65%,transparent)]" />
-        <Container>
-          <div className="max-w-5xl">
-            <Badge tone="blue">IAZMA · Free · Public scans · Optional sign-in</Badge>
-            <h1 className="mt-6 text-4xl font-semibold leading-[1.02] tracking-[-0.045em] text-white sm:text-6xl lg:text-7xl">
-              IAZMA: Find the accounts your network already knows.
-            </h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-white/68 sm:text-xl">
-              Choose followers to see who your audience already knows, or choose
-              following to use the accounts you deliberately follow as human
-              curators. Then rank people by overlap, shared connections, and
-              public reach.
-            </p>
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#16c8ff_32%,#7bf4ff_62%,transparent)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_22%,rgba(22,200,255,0.12),transparent_34%),radial-gradient(circle_at_14%_75%,rgba(32,111,255,0.09),transparent_38%)]" />
+        <Container className="relative">
+          <div className="grid min-w-0 gap-10 lg:grid-cols-[1.08fr_0.92fr] lg:items-center">
+            <div className="min-w-0 max-w-5xl">
+              <Badge tone="blue">IAZMA · Free · Public scans · Optional sign-in</Badge>
+              <h1 className="mt-6 text-4xl font-semibold leading-[1.02] tracking-[-0.045em] text-white sm:text-6xl lg:text-7xl">
+                Find the accounts your network already knows.
+              </h1>
+              <p className="mt-6 max-w-3xl text-lg leading-8 text-white/68 sm:text-xl">
+                Choose followers to see who your audience already knows, or choose
+                following to use the accounts you deliberately follow as human
+                curators. Then rank people by overlap, shared connections, and
+                public reach.
+              </p>
+            </div>
 
-            <div className="mt-7 flex max-w-4xl flex-col gap-4 rounded-2xl border border-[#aa63ff]/22 bg-[radial-gradient(circle_at_100%_0%,rgba(170,99,255,0.13),transparent_42%),rgba(170,99,255,0.035)] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+            <div className="min-w-0">
+              <IazmaBrandArt variant="square" className="mx-auto max-w-[34rem]" />
+            </div>
+          </div>
+
+          <div className="mt-10 max-w-5xl">
+            <div className="flex max-w-4xl flex-col gap-4 rounded-2xl border border-[#aa63ff]/22 bg-[radial-gradient(circle_at_100%_0%,rgba(170,99,255,0.13),transparent_42%),rgba(170,99,255,0.035)] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge tone="gold">IAZMA PRO</Badge>
