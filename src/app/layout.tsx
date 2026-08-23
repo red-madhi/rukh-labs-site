@@ -43,10 +43,10 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${geistMono.variable} ${michroma.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col bg-background text-foreground">
+      <body className="flex min-h-full w-full min-w-0 max-w-full flex-col overflow-x-hidden bg-background text-foreground">
         <GlowBackground />
         <Header />
-        <main id="main-content" className="flex-1">
+        <main id="main-content" className="w-full min-w-0 max-w-full flex-1 overflow-x-hidden">
           {children}
         </main>
         <Footer />
