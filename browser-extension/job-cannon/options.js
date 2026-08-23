@@ -1,7 +1,7 @@
 const PROFILE_FIELDS = [
   "firstName", "lastName", "email", "phone", "address1", "city", "state", "postalCode", "country",
   "linkedin", "portfolio", "github", "salaryExpectation", "workAuthorized", "needsSponsorship",
-  "willingToRelocate", "willingToTravel", "sourceAnswer", "skills",
+  "willingToRelocate", "willingToTravel", "sourceAnswer", "skills", "headline", "masterSummary",
 ];
 
 const RESUME_INPUTS = {
@@ -11,19 +11,29 @@ const RESUME_INPUTS = {
 };
 
 const status = document.getElementById("status");
+let existingProfile = {};
 
 function setStatus(message, good = false) {
   status.className = good ? "status good" : "status";
   status.textContent = message;
 }
 
-function answerBankFromText(value) {
+function answerBankFromText(value, previous = []) {
+  const byPattern = new Map((previous || []).map((item) => [String(item.pattern || "").toLowerCase(), item]));
   return value.split("\n").map((line) => {
     const index = line.indexOf("=>");
     if (index < 1) return null;
     const pattern = line.slice(0, index).trim();
     const answer = line.slice(index + 2).trim();
-    return pattern && answer ? { pattern, answer } : null;
+    if (!pattern || !answer) return null;
+    const old = byPattern.get(pattern.toLowerCase());
+    return {
+      pattern,
+      answer,
+      source: old?.source === "learned" ? "learned" : "manual",
+      uses: Number(old?.uses || 0),
+      lastUsedAt: old?.lastUsedAt,
+    };
   }).filter(Boolean);
 }
 
@@ -56,20 +66,36 @@ function renderResumeNotes(resumes = {}) {
   }
 }
 
+function renderStructuredNote(profile = {}) {
+  const experienceCount = Array.isArray(profile.experience) ? profile.experience.length : 0;
+  const educationCount = Array.isArray(profile.education) ? profile.education.length : 0;
+  const bulletCount = (profile.experience || []).reduce((sum, item) => sum + (Array.isArray(item.bullets) ? item.bullets.length : 0), 0);
+  const learnedCount = (profile.answerBank || []).filter((item) => item?.source === "learned").length;
+  const note = document.getElementById("structuredNote");
+  note.className = experienceCount || educationCount ? "status good" : "status";
+  note.textContent = `${experienceCount} work roles · ${bulletCount} factual bullets · ${educationCount} education entries · ${learnedCount} learned answers`;
+}
+
 async function load() {
   const { profile = {}, resumes = {} } = await chrome.storage.local.get(["profile", "resumes"]);
+  existingProfile = { ...profile };
   for (const field of PROFILE_FIELDS) {
     const element = document.getElementById(field);
     if (element) element.value = profile[field] || (field === "country" ? "United States" : "");
   }
+  document.getElementById("certifications").value = Array.isArray(profile.certifications) ? profile.certifications.join("\n") : "";
   document.getElementById("answerBank").value = answerBankToText(profile.answerBank);
   renderResumeNotes(resumes);
+  renderStructuredNote(profile);
 }
 
 async function buildProfileFromForm() {
-  const profile = {};
+  const profile = { ...existingProfile };
   for (const field of PROFILE_FIELDS) profile[field] = document.getElementById(field)?.value?.trim() || "";
-  profile.answerBank = answerBankFromText(document.getElementById("answerBank").value || "");
+  profile.certifications = (document.getElementById("certifications").value || "").split("\n").map((item) => item.trim()).filter(Boolean);
+  profile.answerBank = answerBankFromText(document.getElementById("answerBank").value || "", existingProfile.answerBank || []);
+  if (!Array.isArray(profile.experience)) profile.experience = [];
+  if (!Array.isArray(profile.education)) profile.education = [];
   return profile;
 }
 
@@ -83,17 +109,22 @@ async function save() {
     if (file) resumes[key] = await fileToStoredResume(file);
   }
   await chrome.storage.local.set({ profile, resumes });
+  existingProfile = { ...profile };
   renderResumeNotes(resumes);
-  setStatus(`Saved ${PROFILE_FIELDS.filter((field) => profile[field]).length} profile fields, ${profile.answerBank.length} custom answers, and ${Object.values(resumes).filter((item) => item?.base64).length} resume variants.`, true);
+  renderStructuredNote(profile);
+  setStatus(`Saved ${PROFILE_FIELDS.filter((field) => profile[field]).length} profile fields, ${profile.experience.length} jobs, ${profile.education.length} education entries, ${profile.answerBank.length} answers, and ${Object.values(resumes).filter((item) => item?.base64).length} resume variants.`, true);
 }
 
 async function importProfile(file) {
   const parsed = JSON.parse(await file.text());
   const profile = { ...parsed };
   if (!Array.isArray(profile.answerBank)) profile.answerBank = [];
+  if (!Array.isArray(profile.experience)) profile.experience = [];
+  if (!Array.isArray(profile.education)) profile.education = [];
+  if (!Array.isArray(profile.certifications)) profile.certifications = [];
   await chrome.storage.local.set({ profile });
   await load();
-  setStatus("Profile JSON imported. Resume files are stored separately and were not changed.", true);
+  setStatus("Profile JSON imported. Structured history was loaded; resume files were not changed.", true);
 }
 
 async function exportProfile() {
