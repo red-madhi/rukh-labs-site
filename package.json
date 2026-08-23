@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check:job-cannon-extension": "node --check browser-extension/job-cannon/content.js && node --check browser-extension/job-cannon/popup.js && node --check browser-extension/job-cannon/options.js",
     "seo:audit": "node scripts/seo-audit.mjs"
   },
   "dependencies": {
