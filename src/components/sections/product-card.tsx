@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Boxes, Crown, LayoutGrid } from "lucide-react";
+import { IazmaBrandArt } from "@/components/brand/iazma-brand-art";
 import { OfficialBrandArt } from "@/components/brand/official-brand-art";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -24,6 +25,7 @@ export function ProductCard({ product, cta }: ProductCardProps) {
   const Icon = iconMap[product.slug as keyof typeof iconMap] ?? Boxes;
   const isGlass = product.slug === "glass-squares-os";
   const isFarzin = product.slug === "farzin";
+  const isIazma = product.slug === "bluesky-network";
   const isExternal = product.href.startsWith("http");
 
   return (
@@ -34,11 +36,15 @@ export function ProductCard({ product, cta }: ProductCardProps) {
           ? "product-card-glass"
           : isFarzin
             ? "product-card-farzin"
-            : "product-card-rukh"
+            : isIazma
+              ? "product-card-iazma"
+              : "product-card-rukh"
       }`}
     >
       <div className="flex items-start justify-between gap-4">
-        {isGlass || isFarzin ? (
+        {isIazma ? (
+          <IazmaBrandArt variant="square" decorative className="size-16 shrink-0 rounded-2xl" />
+        ) : isGlass || isFarzin ? (
           <OfficialBrandArt
             brand={isGlass ? "glass-squares" : "farzin"}
             decorative
@@ -54,7 +60,7 @@ export function ProductCard({ product, cta }: ProductCardProps) {
         </Badge>
       </div>
       <div className="mt-7">
-        <p className="text-sm font-medium text-[#d6ad5b]">{product.category}</p>
+        <p className={`text-sm font-medium ${isIazma ? "text-[#8ce8ff]" : "text-[#d6ad5b]"}`}>{product.category}</p>
         <h2 className="mt-3 text-2xl font-semibold text-white">{product.name}</h2>
         <p className="mt-4 text-sm leading-6 text-white/62">
           {product.shortDescription}
@@ -63,7 +69,7 @@ export function ProductCard({ product, cta }: ProductCardProps) {
       <ul className="mt-6 grid gap-2 text-sm text-white/56">
         {product.features.slice(0, 3).map((feature) => (
           <li key={feature} className="flex items-center gap-2">
-            <span aria-hidden className="size-1.5 rounded-full bg-[color:var(--brand-red)]" />
+            <span aria-hidden className={`size-1.5 rounded-full ${isIazma ? "bg-[#52e5ff]" : "bg-[color:var(--brand-red)]"}`} />
             {feature}
           </li>
         ))}
