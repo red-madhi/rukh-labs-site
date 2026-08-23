@@ -257,10 +257,10 @@ export default function Home() {
                 <Badge tone="red" className="whitespace-nowrap text-[0.6rem] leading-4 tracking-[0.12em] sm:text-xs sm:tracking-[0.18em]">
                   Independent website, data & software studio
                 </Badge>
-                <h1 className="mt-7 text-[2rem] font-semibold leading-[1.02] tracking-[-0.055em] text-white min-[360px]:text-[2.15rem] min-[390px]:text-[2.35rem] sm:mt-8 sm:text-7xl sm:tracking-[-0.04em] lg:text-[5.8rem] 2xl:text-[6.8rem]">
-                  <span className="block sm:inline">Websites, custom.</span>{" "}
-                  <span className="block sm:inline">Data work, automated.</span>{" "}
-                  <span className="block bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_42%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent sm:inline">
+                <h1 className="mt-7 text-[clamp(1.55rem,7.5vw,2.35rem)] font-semibold leading-[0.98] tracking-[-0.055em] text-white sm:mt-8 sm:text-7xl sm:leading-[0.98] sm:tracking-[-0.04em] lg:text-[5.8rem] 2xl:text-[6.8rem]">
+                  <span className="block whitespace-nowrap sm:inline sm:whitespace-normal">Websites, custom.</span>{" "}
+                  <span className="block whitespace-nowrap sm:inline sm:whitespace-normal">Data work, automated.</span>{" "}
+                  <span className="block whitespace-nowrap bg-[linear-gradient(105deg,#ffffff_5%,#ff596b_42%,#36d4ff_78%,#9a6dff)] bg-clip-text text-transparent sm:inline sm:whitespace-normal">
                     Software, purposeful.
                   </span>
                 </h1>
