@@ -11,7 +11,7 @@ function challenge(message = "Authentication required.") {
     status: 401,
     headers: {
       ...LEADS_SECURITY_HEADERS,
-      "WWW-Authenticate": 'Basic realm="Rukh Leads", charset="UTF-8"',
+      "WWW-Authenticate": 'Basic realm="Rukh Private", charset="UTF-8"',
     },
   });
 }
@@ -42,7 +42,7 @@ export function proxy(request: NextRequest) {
   } else {
     if (!process.env.LEADS_USERNAME || !process.env.LEADS_PASSWORD) {
       return new NextResponse(
-        "Rukh Leads is locked until LEADS_USERNAME and LEADS_PASSWORD are configured in the server environment.",
+        "Rukh private tools are locked until LEADS_USERNAME and LEADS_PASSWORD are configured in the server environment.",
         { status: 503, headers: LEADS_SECURITY_HEADERS },
       );
     }
@@ -59,6 +59,7 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    "/admin/:path*",
     "/leads/:path*",
     "/api/leads/:path*",
     "/job-cannon/:path*",
