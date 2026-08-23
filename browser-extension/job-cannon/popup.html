@@ -8,19 +8,20 @@
 </head>
 <body>
   <main>
-    <span class="kicker">Human-submit mode</span>
+    <span class="kicker">Human-submit mode · v2</span>
     <h1>Job Cannon</h1>
-    <p>Fill routine application fields on the page you are viewing. Review everything before submitting.</p>
+    <p>ATS-aware autofill for the application page you are viewing. Review everything before submitting.</p>
     <div id="profileStatus" class="status">Checking profile…</div>
     <div class="card">
       <button id="fillButton">Fill this page</button>
       <div class="row" style="margin-top:8px">
         <button id="scanButton" class="secondary">Scan fields</button>
-        <button id="optionsButton" class="secondary">Profile</button>
+        <button id="learnButton" class="secondary">Learn current answers</button>
       </div>
+      <button id="optionsButton" class="secondary" style="margin-top:8px;width:100%">Profile / resumes</button>
     </div>
     <div id="result" class="status">No page action yet.</div>
-    <p class="small" style="margin-bottom:0">No CAPTCHA bypass. No demographic answers. No legal attestations. No automatic submit.</p>
+    <p class="small" style="margin-bottom:0">Learning is explicit and skips protected questions. No CAPTCHA bypass. No demographic answers. No legal attestations. No automatic submit.</p>
   </main>
   <script src="popup.js"></script>
 </body>
