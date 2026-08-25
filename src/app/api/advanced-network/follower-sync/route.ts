@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { syncFollowAutomation } from "@/lib/bluesky-follow-automation";
+import { syncFollowerAttribution } from "@/lib/bluesky-follower-attribution";
 import { syncIazmaGuardReciprocity } from "@/lib/iazma-guard-server";
 
 export const runtime = "nodejs";
@@ -9,6 +10,13 @@ export const maxDuration = 60;
 export async function GET() {
   try {
     const result = await syncFollowAutomation();
+    let attribution: object = { skipped: true };
+    try {
+      attribution = await syncFollowerAttribution();
+    } catch (error) {
+      console.error("IAZMA follower attribution sync failed", error);
+      attribution = { ok: false };
+    }
     let guard: Record<string, unknown> = { skipped: true };
     try {
       guard = await syncIazmaGuardReciprocity({ automatic: true, force: false });
@@ -17,7 +25,7 @@ export async function GET() {
       guard = { ok: false };
     }
     return NextResponse.json(
-      { ok: result.ok, skipped: result.skipped ?? false, guard },
+      { ok: result.ok, skipped: result.skipped ?? false, attribution, guard },
       {
         status: result.ok ? 200 : 503,
         headers: {

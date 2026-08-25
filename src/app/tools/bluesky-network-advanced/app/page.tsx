@@ -77,21 +77,40 @@ export default async function AdvancedNetworkAppPage() {
             id="iazma-pro-workspace"
             className="grid min-w-0 max-w-full gap-6 [&>*]:min-w-0 [&>*]:max-w-full"
           >
-            <div className="flex flex-col gap-4 rounded-2xl border border-[#16c8ff]/20 bg-[#16c8ff]/[0.035] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
-                  Daily Boosts
-                </p>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/56">
-                  Review one strong mutual, one target, and one bridge repost before anything goes live.
-                </p>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[#16c8ff]/20 bg-[#16c8ff]/[0.035] p-5 sm:p-6">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
+                    Daily Boosts
+                  </p>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-white/56">
+                    Review one strong mutual, one target, and one bridge repost before anything goes live.
+                  </p>
+                </div>
+                <Link
+                  href="/tools/bluesky-network-advanced/app/daily-boosts"
+                  className={buttonStyles({ variant: "glass", size: "sm", className: "w-fit shrink-0" })}
+                >
+                  Open Daily Boosts
+                </Link>
               </div>
-              <Link
-                href="/tools/bluesky-network-advanced/app/daily-boosts"
-                className={buttonStyles({ variant: "glass", size: "sm", className: "shrink-0" })}
-              >
-                Open Daily Boosts
-              </Link>
+
+              <div className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[#e6bd73]/20 bg-[#e6bd73]/[0.03] p-5 sm:p-6">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#f1d49a]">
+                    Follower Sources
+                  </p>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-white/56">
+                    See which Starter Packs, account amplifiers, posts, and conversations are actually producing new followers.
+                  </p>
+                </div>
+                <Link
+                  href="/tools/bluesky-network-advanced/app/follower-sources"
+                  className={buttonStyles({ variant: "glass", size: "sm", className: "w-fit shrink-0" })}
+                >
+                  Open Follower Sources
+                </Link>
+              </div>
             </div>
             <AdvancedNetworkUsabilityEnhancer />
             <AdvancedNetworkLearningSystem />
