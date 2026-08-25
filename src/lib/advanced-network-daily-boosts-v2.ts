@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHmac } from "node:crypto";
 import { neon } from "@neondatabase/serverless";
 import { getAutomationBlueskyActor } from "@/lib/bluesky-repost-automation";
 
@@ -6,9 +6,11 @@ const XRPC = "https://public.api.bsky.app/xrpc";
 const SLOT_ORDER = ["mutual", "target", "bridge"] as const;
 const TIME_ZONE = "America/Denver";
 const DEFAULT_HOUR = 8;
+const CANDIDATE_LIMIT = 8;
 
 type Slot = (typeof SLOT_ORDER)[number];
 type Profile = { did: string; handle: string; displayName?: string };
+type Relationship = { did: string; following?: string; followedBy?: string };
 type Candidate = {
   did: string;
   handle: string;
@@ -16,7 +18,7 @@ type Candidate = {
   signal: number;
   reason: string;
 };
-type Relationship = { did: string; following?: string; followedBy?: string };
+type Usage = { lastDate: string; uses: number };
 type FeedItem = {
   reason?: unknown;
   post: {
@@ -36,7 +38,6 @@ type FeedItem = {
     labels?: unknown[];
   };
 };
-type Usage = { lastDate: string | null; uses: number };
 type Pick = {
   slot: Slot;
   subjectDid: string;
@@ -54,7 +55,6 @@ type Pick = {
   reason: string;
 };
 type StoredItem = Pick & { status: string };
-type Evaluated = { candidate: Candidate; item: FeedItem; score: number };
 type RunSummary = {
   actorDid: string;
   actorHandle: string;
@@ -63,38 +63,32 @@ type RunSummary = {
   notificationSentAt: string | null;
 };
 
-function db() {
+function getSql() {
   const url = process.env.DATABASE_URL?.trim();
   if (!url) throw new Error("DATABASE_URL is not configured.");
   return neon(url);
 }
 
-type Sql = ReturnType<typeof db>;
+type Sql = ReturnType<typeof getSql>;
 
-function secret() {
+function signingSecret() {
   const value = process.env.ADVANCED_NETWORK_ACCESS_SECRET?.trim();
   if (!value) throw new Error("ADVANCED_NETWORK_ACCESS_SECRET is not configured.");
   return value;
 }
 
-function sign(body: string) {
-  return createHmac("sha256", secret())
-    .update(`iazma-daily-boosts:v1:${body}`)
-    .digest("base64url");
-}
-
-function safeEqual(a: string, b: string) {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
-}
-
 function makeToken(actor: string, date: string) {
   const body = Buffer.from(
-    JSON.stringify({ v: 1, actor, date, exp: Date.now() + 16 * 60 * 60 * 1000 }),
+    JSON.stringify({
+      v: 1,
+      actor,
+      date,
+      exp: Date.now() + 16 * 60 * 60 * 1000,
+    }),
   ).toString("base64url");
-  const signature = sign(body);
-  if (!safeEqual(signature, sign(body))) throw new Error("Daily Boost token signing failed.");
+  const signature = createHmac("sha256", signingSecret())
+    .update(`iazma-daily-boosts:v1:${body}`)
+    .digest("base64url");
   return `${body}.${signature}`;
 }
 
@@ -130,13 +124,10 @@ async function xrpc<T>(method: string, params: URLSearchParams) {
 }
 
 async function profile(actor: string) {
-  return xrpc<Profile>(
-    "app.bsky.actor.getProfile",
-    new URLSearchParams({ actor }),
-  );
+  return xrpc<Profile>("app.bsky.actor.getProfile", new URLSearchParams({ actor }));
 }
 
-async function ensureSchema(sql: Sql = db()) {
+async function ensureSchema(sql: Sql = getSql()) {
   await sql`
     create table if not exists advanced_network_daily_boost_runs (
       actor_did text not null,
@@ -202,10 +193,10 @@ async function candidates(sql: Sql, actorDid: string, slot: Slot): Promise<Candi
     const rows = await sql`
       select s.peer_did, p.handle, p.display_name, s.interaction_score
       from advanced_network_interaction_scores s
-      join advanced_network_profiles p on p.did = s.peer_did
-      where s.actor_did = ${actorDid}
+      join advanced_network_profiles p on p.did=s.peer_did
+      where s.actor_did=${actorDid}
       order by s.interaction_score desc, s.window_end desc nulls last
-      limit 30
+      limit ${CANDIDATE_LIMIT}
     `;
     const relation = await relationships(
       actorDid,
@@ -240,7 +231,7 @@ async function candidates(sql: Sql, actorDid: string, slot: Slot): Promise<Candi
         order by t.target_did, c.updated_at desc
       ) latest
       order by priority_score desc nulls last, updated_at desc
-      limit 30
+      limit ${CANDIDATE_LIMIT}
     `;
     return rows
       .filter((row) => row.handle)
@@ -269,7 +260,7 @@ async function candidates(sql: Sql, actorDid: string, slot: Slot): Promise<Candi
       order by r.target_did, r.updated_at desc
     ) latest
     order by bridge_value desc, importance_score desc nulls last
-    limit 30
+    limit ${CANDIDATE_LIMIT}
   `;
   return rows
     .filter((row) => row.handle)
@@ -282,7 +273,7 @@ async function candidates(sql: Sql, actorDid: string, slot: Slot): Promise<Candi
     }));
 }
 
-async function authorUsage(sql: Sql, actorDid: string, beforeDate: string) {
+async function usageMap(sql: Sql, actorDid: string, beforeDate: string) {
   const rows = await sql`
     select subject_did, max(local_date)::text as last_date, count(*)::int as uses
     from advanced_network_daily_boost_items
@@ -293,39 +284,38 @@ async function authorUsage(sql: Sql, actorDid: string, beforeDate: string) {
     rows.map((row) => [
       String(row.subject_did),
       {
-        lastDate: row.last_date ? String(row.last_date) : null,
+        lastDate: String(row.last_date),
         uses: Number(row.uses ?? 0),
       },
     ]),
   );
 }
 
-function rotationGroups(pool: Candidate[], usage: Map<string, Usage>) {
-  const sorted = [...pool].sort((a, b) => {
-    const aUsage = usage.get(a.did);
-    const bUsage = usage.get(b.did);
-    if (!aUsage && bUsage) return -1;
-    if (aUsage && !bUsage) return 1;
-    if (!aUsage && !bUsage) return b.signal - a.signal;
-    const dateCompare = String(aUsage?.lastDate ?? "").localeCompare(
-      String(bUsage?.lastDate ?? ""),
-    );
-    if (dateCompare !== 0) return dateCompare;
-    const useCompare = (aUsage?.uses ?? 0) - (bUsage?.uses ?? 0);
-    if (useCompare !== 0) return useCompare;
+function usageKey(candidate: Candidate, usage: Map<string, Usage>) {
+  const entry = usage.get(candidate.did);
+  return entry ? `${entry.lastDate}:${entry.uses}` : "never";
+}
+
+function rotatedGroups(pool: Candidate[], usage: Map<string, Usage>) {
+  const ordered = [...pool].sort((a, b) => {
+    const au = usage.get(a.did);
+    const bu = usage.get(b.did);
+    if (!au && bu) return -1;
+    if (au && !bu) return 1;
+    if (!au && !bu) return b.signal - a.signal;
+    const dateOrder = String(au?.lastDate).localeCompare(String(bu?.lastDate));
+    if (dateOrder !== 0) return dateOrder;
+    const useOrder = (au?.uses ?? 0) - (bu?.uses ?? 0);
+    if (useOrder !== 0) return useOrder;
     return b.signal - a.signal;
   });
 
   const groups: Candidate[][] = [];
-  let currentKey = "";
-  for (const candidate of sorted) {
-    const info = usage.get(candidate.did);
-    const key = info ? `used:${info.lastDate ?? "unknown"}:${info.uses}` : "never";
-    if (!groups.length || key !== currentKey) {
-      groups.push([]);
-      currentKey = key;
-    }
-    groups[groups.length - 1].push(candidate);
+  for (const candidate of ordered) {
+    const key = usageKey(candidate, usage);
+    const last = groups.at(-1);
+    if (!last || usageKey(last[0], usage) !== key) groups.push([candidate]);
+    else last.push(candidate);
   }
   return groups;
 }
@@ -353,7 +343,7 @@ async function bestPost(candidate: Candidate, usedUris: Set<string>) {
     "app.bsky.feed.getAuthorFeed",
     new URLSearchParams({
       actor: candidate.did,
-      limit: "30",
+      limit: "20",
       filter: "posts_no_replies",
       includePins: "false",
     }),
@@ -380,31 +370,6 @@ async function bestPost(candidate: Candidate, usedUris: Set<string>) {
   );
 }
 
-async function evaluateGroup(group: Candidate[], usedUris: Set<string>) {
-  const evaluated: Evaluated[] = [];
-
-  for (let start = 0; start < group.length; start += 6) {
-    const batch = group.slice(start, start + 6);
-    const results = await Promise.all(
-      batch.map(async (candidate) => {
-        try {
-          const result = await bestPost(candidate, usedUris);
-          return result ? { candidate, ...result } : null;
-        } catch {
-          return null;
-        }
-      }),
-    );
-    evaluated.push(
-      ...results.filter(
-        (value): value is NonNullable<typeof value> => Boolean(value),
-      ),
-    );
-  }
-
-  return evaluated.sort((a, b) => b.score - a.score)[0] ?? null;
-}
-
 async function pick(
   sql: Sql,
   actorDid: string,
@@ -414,37 +379,47 @@ async function pick(
   usage: Map<string, Usage>,
 ): Promise<Pick | null> {
   const pool = (await candidates(sql, actorDid, slot)).filter(
-    (item) => !usedDids.has(item.did),
+    (candidate) => !usedDids.has(candidate.did),
   );
 
-  let winner: Evaluated | null = null;
-  for (const group of rotationGroups(pool, usage)) {
-    winner = await evaluateGroup(group, usedUris);
-    if (winner) break;
-  }
-  if (!winner) return null;
+  for (const group of rotatedGroups(pool, usage)) {
+    const results = await Promise.all(
+      group.map(async (candidate) => {
+        try {
+          const result = await bestPost(candidate, usedUris);
+          return result ? { candidate, ...result } : null;
+        } catch {
+          return null;
+        }
+      }),
+    );
+    const winner = results
+      .filter((value): value is NonNullable<typeof value> => Boolean(value))
+      .sort((a, b) => b.score - a.score)[0];
+    if (!winner) continue;
 
-  const post = winner.item.post;
-  const previous = usage.get(winner.candidate.did);
-  const rotationNote = previous?.lastDate
-    ? ` · last boosted ${previous.lastDate}`
-    : " · new rotation pick";
-  return {
-    slot,
-    subjectDid: winner.candidate.did,
-    subjectHandle: winner.candidate.handle,
-    displayName: winner.candidate.displayName,
-    postUri: post.uri,
-    postCid: post.cid,
-    postText: post.record.text?.trim() ?? "",
-    postCreatedAt: post.record.createdAt ?? new Date().toISOString(),
-    replyCount: Math.max(0, post.replyCount ?? 0),
-    repostCount: Math.max(0, post.repostCount ?? 0),
-    likeCount: Math.max(0, post.likeCount ?? 0),
-    quoteCount: Math.max(0, post.quoteCount ?? 0),
-    score: Math.round(winner.score * 10) / 10,
-    reason: `${winner.candidate.reason}${rotationNote}`,
-  };
+    const post = winner.item.post;
+    const previous = usage.get(winner.candidate.did);
+    return {
+      slot,
+      subjectDid: winner.candidate.did,
+      subjectHandle: winner.candidate.handle,
+      displayName: winner.candidate.displayName,
+      postUri: post.uri,
+      postCid: post.cid,
+      postText: post.record.text?.trim() ?? "",
+      postCreatedAt: post.record.createdAt ?? new Date().toISOString(),
+      replyCount: Math.max(0, post.replyCount ?? 0),
+      repostCount: Math.max(0, post.repostCount ?? 0),
+      likeCount: Math.max(0, post.likeCount ?? 0),
+      quoteCount: Math.max(0, post.quoteCount ?? 0),
+      score: Math.round(winner.score * 10) / 10,
+      reason: previous
+        ? `${winner.candidate.reason} · last boosted ${previous.lastDate}`
+        : `${winner.candidate.reason} · new rotation pick`,
+    };
+  }
+  return null;
 }
 
 async function loadSummary(sql: Sql, actorDid: string, date: string) {
@@ -522,8 +497,7 @@ async function sendEmail(
   if (!apiKey || !to) return false;
 
   const from = process.env.CONTACT_FROM_EMAIL || "Rukh Labs <hello@rukhlabs.com>";
-  const token = makeToken(run.actorDid, run.localDate);
-  const reviewUrl = `https://rukhlabs.com/tools/bluesky-network-advanced/app/daily-boosts?token=${encodeURIComponent(token)}`;
+  const reviewUrl = `https://rukhlabs.com/tools/bluesky-network-advanced/app/daily-boosts?token=${encodeURIComponent(makeToken(run.actorDid, run.localDate))}`;
   const cards = items
     .map(
       (item) => `<div style="border:1px solid #d9e2ea;border-radius:14px;padding:16px;margin:14px 0">
@@ -536,7 +510,7 @@ async function sendEmail(
     )
     .join("");
 
-  const keySuffix = options.regenerate ? `regen-${Date.now()}` : "rotation-v2";
+  const keySuffix = options.regenerate ? `regen-${Date.now()}` : "rotation-v3";
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -613,7 +587,6 @@ export async function prepareDailyBoosts(
     `;
     run = await loadSummary(sql, actor.did, local.date);
   }
-
   if (!run) throw new Error("Daily Boost run could not be created.");
 
   let items = await loadItems(sql, actor.did, local.date);
@@ -626,17 +599,10 @@ export async function prepareDailyBoosts(
       usedRows.map((row) => String(row.post_uri)),
     );
     const usedDids = new Set<string>();
-    const usage = await authorUsage(sql, actor.did, local.date);
+    const usage = await usageMap(sql, actor.did, local.date);
 
     for (const slot of SLOT_ORDER) {
-      const chosen = await pick(
-        sql,
-        actor.did,
-        slot,
-        usedDids,
-        usedUris,
-        usage,
-      );
+      const chosen = await pick(sql, actor.did, slot, usedDids, usedUris, usage);
       if (!chosen) continue;
       await sql`
         insert into advanced_network_daily_boost_items(
