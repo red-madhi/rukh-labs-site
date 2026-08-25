@@ -77,6 +77,22 @@ export default async function AdvancedNetworkAppPage() {
             id="iazma-pro-workspace"
             className="grid min-w-0 max-w-full gap-6 [&>*]:min-w-0 [&>*]:max-w-full"
           >
+            <div className="flex flex-col gap-4 rounded-2xl border border-[#16c8ff]/20 bg-[#16c8ff]/[0.035] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">
+                  Daily Boosts
+                </p>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-white/56">
+                  Review one strong mutual, one target, and one bridge repost before anything goes live.
+                </p>
+              </div>
+              <Link
+                href="/tools/bluesky-network-advanced/app/daily-boosts"
+                className={buttonStyles({ variant: "glass", size: "sm", className: "shrink-0" })}
+              >
+                Open Daily Boosts
+              </Link>
+            </div>
             <AdvancedNetworkUsabilityEnhancer />
             <AdvancedNetworkLearningSystem />
             <AdvancedNetworkStartingScope />
