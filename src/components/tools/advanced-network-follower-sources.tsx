@@ -25,7 +25,6 @@ type RangeDays = 7 | 30 | 90;
 
 type SyncResponse = {
   result?: {
-    ok?: boolean;
     skipped?: boolean;
     processed?: number;
     notificationsScanned?: number;
@@ -115,14 +114,7 @@ function formatDate(value: string) {
 
 function formatSync(value: string | null) {
   if (!value) return "Not synced yet";
-  const date = new Date(value);
-  if (!Number.isFinite(date.getTime())) return "Last sync unavailable";
-  return `Synced ${new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(date)}`;
+  return `Synced ${formatDate(value)}`;
 }
 
 function StatCard({
@@ -137,7 +129,11 @@ function StatCard({
   tone?: "cyan" | "gold" | "neutral";
 }) {
   const valueClass =
-    tone === "cyan" ? "text-[#a9efff]" : tone === "gold" ? "text-[#f1d49a]" : "text-white";
+    tone === "cyan"
+      ? "text-[#a9efff]"
+      : tone === "gold"
+        ? "text-[#f1d49a]"
+        : "text-white";
   return (
     <Card className="min-w-0 p-5 sm:p-6">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/35">{label}</p>
@@ -155,31 +151,46 @@ export function AdvancedNetworkFollowerSources() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
-  const load = useCallback(async (range: RangeDays) => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch(`/api/advanced-network/follower-sources?days=${range}`, {
-        cache: "no-store",
-      });
-      const result = (await response.json()) as FollowerSourceReport & { error?: string };
-      if (!response.ok) throw new Error(result.error || "Could not load follower sources.");
-      setReport(result);
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Could not load follower sources.");
-    } finally {
-      setLoading(false);
-    }
+  const fetchReport = useCallback(async (range: RangeDays) => {
+    const response = await fetch(`/api/advanced-network/follower-sources?days=${range}`, {
+      cache: "no-store",
+    });
+    const result = (await response.json()) as FollowerSourceReport & { error?: string };
+    if (!response.ok) throw new Error(result.error || "Could not load follower sources.");
+    return result;
   }, []);
 
   useEffect(() => {
-    void load(days);
-  }, [days, load]);
+    let cancelled = false;
+    void fetchReport(days)
+      .then((result) => {
+        if (!cancelled) setReport(result);
+      })
+      .catch((caught: unknown) => {
+        if (!cancelled) {
+          setError(caught instanceof Error ? caught.message : "Could not load follower sources.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [days, fetchReport]);
 
   const maxSourceCount = useMemo(
     () => Math.max(1, ...(report?.sources.map((source) => source.count) ?? [1])),
     [report],
   );
+
+  function changeRange(range: RangeDays) {
+    if (range === days) return;
+    setError("");
+    setNotice("");
+    setLoading(true);
+    setDays(range);
+  }
 
   async function syncNow() {
     setSyncing(true);
@@ -234,7 +245,7 @@ export function AdvancedNetworkFollowerSources() {
                 Where your followers are actually coming from.
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-white/50">
-                Starter Pack attribution is treated as exact only when Bluesky attaches the pack to the follow. Other sources are inferred from public timing and network evidence, never presented as certainty.
+                Starter Pack attribution is exact only when Bluesky attaches the pack to the follow. Other sources are inferred from public timing and network evidence, never presented as certainty.
               </p>
             </div>
             <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center">
@@ -243,7 +254,7 @@ export function AdvancedNetworkFollowerSources() {
                   <button
                     key={range}
                     type="button"
-                    onClick={() => setDays(range)}
+                    onClick={() => changeRange(range)}
                     className={`rounded-lg px-3 py-2 text-xs font-semibold transition ${
                       days === range
                         ? "bg-white/10 text-white"
@@ -255,12 +266,11 @@ export function AdvancedNetworkFollowerSources() {
                 ))}
               </div>
               <Button type="button" variant="glass" size="sm" onClick={syncNow} disabled={syncing}>
-                <RefreshCw className={`size-4 ${syncing ? "animate-spin" : ""}`} aria-hidden />
+                <RefreshCw className={`size-4 ${syncing || loading ? "animate-spin" : ""}`} aria-hidden />
                 {syncing ? "Refreshing…" : "Refresh attribution"}
               </Button>
             </div>
           </div>
-
           <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/35">
             <span>{report?.actorHandle ? `@${report.actorHandle}` : "Bluesky account not configured"}</span>
             <span className="hidden size-1 rounded-full bg-white/20 sm:block" />
@@ -273,13 +283,11 @@ export function AdvancedNetworkFollowerSources() {
             Exact Starter Pack attribution needs the saved Bluesky app password already used by IAZMA&apos;s follower automation. Configure that account in Auto DM, then refresh this page.
           </div>
         ) : null}
-
         {report?.lastSyncError ? (
           <div className="border-b border-red-300/15 bg-red-300/[0.035] px-5 py-4 text-sm text-red-100/75 sm:px-7">
             Last attribution sync: {report.lastSyncError}
           </div>
         ) : null}
-
         {error ? (
           <div className="border-b border-red-300/15 bg-red-300/[0.035] px-5 py-4 text-sm text-red-100/80 sm:px-7">
             {error}
@@ -323,14 +331,11 @@ export function AdvancedNetworkFollowerSources() {
         <Card className="min-w-0 p-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/36">
-                Source mix
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/36">Source mix</p>
               <h3 className="mt-2 text-xl font-semibold text-white">What is driving growth</h3>
             </div>
             <Radar className="size-5 text-[#8ce8ff]" aria-hidden />
           </div>
-
           {!report?.sources.length ? (
             <div className="mt-6 rounded-xl border border-dashed border-white/10 p-5 text-sm leading-6 text-white/42">
               No attributed follows in this range yet. Refresh attribution to pull the latest Bluesky notifications.
@@ -395,7 +400,7 @@ export function AdvancedNetworkFollowerSources() {
             <div className="rounded-xl border border-[#e6bd73]/18 bg-[#e6bd73]/[0.04] p-4">
               <p className="text-xs font-semibold text-[#f1d49a]">INFERRED</p>
               <p className="mt-2 text-sm font-medium text-white">Interaction or promoter evidence</p>
-              <p className="mt-2 text-xs leading-5 text-white/40">Timing and public graph signals are shown with a score.</p>
+              <p className="mt-2 text-xs leading-5 text-white/40">Timing and public graph signals get a visible score.</p>
             </div>
             <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
               <p className="text-xs font-semibold text-white/45">UNKNOWN</p>
@@ -410,9 +415,7 @@ export function AdvancedNetworkFollowerSources() {
         <div className="border-b border-white/10 px-5 py-5 sm:px-6">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/36">
-                Follower history
-              </p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/36">Follower history</p>
               <h3 className="mt-2 text-xl font-semibold text-white">Latest acquisitions</h3>
               <p className="mt-2 text-xs leading-5 text-white/38">
                 Open any row to see the evidence behind IAZMA&apos;s attribution.
@@ -421,7 +424,6 @@ export function AdvancedNetworkFollowerSources() {
             <UserPlus className="size-5 text-[#8ce8ff]" aria-hidden />
           </div>
         </div>
-
         {!report?.followers.length ? (
           <div className="p-6 text-sm leading-6 text-white/42">
             No captured follower events in the selected range yet.
@@ -438,15 +440,9 @@ export function AdvancedNetworkFollowerSources() {
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <a
-                          href={`https://bsky.app/profile/${encodeURIComponent(follower.handle)}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(event) => event.stopPropagation()}
-                          className="truncate text-sm font-semibold text-white hover:text-[#8ce8ff]"
-                        >
+                        <span className="truncate text-sm font-semibold text-white">
                           {follower.displayName || `@${follower.handle}`}
-                        </a>
+                        </span>
                         {follower.displayName ? (
                           <span className="truncate text-xs text-white/32">@{follower.handle}</span>
                         ) : null}
@@ -467,7 +463,6 @@ export function AdvancedNetworkFollowerSources() {
                     </div>
                     <ChevronDown className="size-4 shrink-0 text-white/28 transition group-open:rotate-180" aria-hidden />
                   </summary>
-
                   <div className="ml-0 mt-4 rounded-xl border border-white/8 bg-black/20 p-4 sm:ml-14">
                     <div className="flex flex-wrap items-center gap-2 sm:hidden">
                       <span className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${methodClasses(follower.method)}`}>
@@ -477,7 +472,7 @@ export function AdvancedNetworkFollowerSources() {
                         <span className="text-xs font-semibold text-white/60">{follower.confidence}% confidence</span>
                       ) : null}
                     </div>
-                    <div className="mt-1 grid gap-2 sm:mt-0">
+                    <div className="mt-2 grid gap-2 sm:mt-0">
                       {follower.evidence.map((item, index) => (
                         <p key={`${item.kind}:${index}`} className="text-xs leading-5 text-white/52">
                           {item.text}
