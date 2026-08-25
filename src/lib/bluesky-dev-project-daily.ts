@@ -12,7 +12,7 @@ const CANDIDATE_LIMIT = 24;
 const POST_AGE_DAYS = 21;
 
 const DEV_BIO_PATTERN =
-  "(developer|software engineer|software dev|web dev|game dev|app dev|programmer|coder|indie hacker|open[- ]source developer|full[- ]?stack|front[- ]?end|back[- ]?end|android dev|ios dev)";
+  "(\\mdeveloper\\M|software engineer\\M|software dev\\M|software developer\\M|web dev\\M|web developer\\M|game dev\\M|game developer\\M|game development\\M|app dev\\M|app developer\\M|app development\\M|\\mprogrammer\\M|\\mcoder\\M|indie hacker\\M|open[- ]source developer\\M|full[- ]?stack\\M|front[- ]?end\\M|back[- ]?end\\M|android dev\\M|ios dev\\M)";
 
 type Profile = {
   did: string;
