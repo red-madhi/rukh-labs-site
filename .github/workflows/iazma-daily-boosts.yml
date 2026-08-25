@@ -1,0 +1,32 @@
+name: IAZMA Daily Boosts
+
+on:
+  schedule:
+    # 08:10 America/Denver across daylight-saving changes. The endpoint checks
+    # Denver local time, so only one of these two UTC runs sends the email.
+    - cron: "10 14,15 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: iazma-daily-boosts
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Prepare picks and send approval email
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          URL="https://rukhlabs.com/api/advanced-network/daily-boosts/prepare"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            URL="$URL?force=1"
+          fi
+          curl --fail --silent --show-error --retry 2 --retry-delay 3 \
+            -H "Authorization: Bearer $TOKEN" "$URL"
