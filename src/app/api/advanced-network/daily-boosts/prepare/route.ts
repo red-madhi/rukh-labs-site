@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prepareDailyBoosts } from "@/lib/advanced-network-daily-boosts";
+import { prepareDailyBoosts } from "@/lib/advanced-network-daily-boosts-v2";
 import { verifyGithubActionsToken } from "@/lib/leads/github-oidc";
 
 export const runtime = "nodejs";
@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     }
     const result = await prepareDailyBoosts({
       force: request.nextUrl.searchParams.get("force") === "1",
+      regenerate: request.nextUrl.searchParams.get("regenerate") === "1",
     });
     return NextResponse.json(result, {
       headers: {
@@ -40,7 +41,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Daily Boost preparation failed", error);
     return NextResponse.json(
-      { ok: false, error: error instanceof Error ? error.message : "Daily Boost preparation failed." },
+      {
+        ok: false,
+        error:
+          error instanceof Error ? error.message : "Daily Boost preparation failed.",
+      },
       {
         status: 500,
         headers: {
