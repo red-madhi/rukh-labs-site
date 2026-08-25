@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const ALLOWED_WORKFLOWS = ["bluesky-follow-automation.yml"];
-const ALLOWED_EVENTS = ["schedule", "workflow_dispatch"];
+const ALLOWED_EVENTS = ["schedule", "workflow_dispatch", "push"];
 
 export async function GET(request: NextRequest) {
   const authorization = request.headers.get("authorization");
