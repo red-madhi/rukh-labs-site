@@ -54,6 +54,7 @@ type Pick = {
   reason: string;
 };
 type StoredItem = Pick & { status: string };
+type Evaluated = { candidate: Candidate; item: FeedItem; score: number };
 type RunSummary = {
   actorDid: string;
   actorHandle: string;
@@ -380,11 +381,7 @@ async function bestPost(candidate: Candidate, usedUris: Set<string>) {
 }
 
 async function evaluateGroup(group: Candidate[], usedUris: Set<string>) {
-  const evaluated: Array<{
-    candidate: Candidate;
-    item: FeedItem;
-    score: number;
-  }> = [];
+  const evaluated: Evaluated[] = [];
 
   for (let start = 0; start < group.length; start += 6) {
     const batch = group.slice(start, start + 6);
@@ -411,7 +408,6 @@ async function evaluateGroup(group: Candidate[], usedUris: Set<string>) {
 async function pick(
   sql: Sql,
   actorDid: string,
-  localDate: string,
   slot: Slot,
   usedDids: Set<string>,
   usedUris: Set<string>,
@@ -421,7 +417,7 @@ async function pick(
     (item) => !usedDids.has(item.did),
   );
 
-  let winner: Awaited<ReturnType<typeof evaluateGroup>> = null;
+  let winner: Evaluated | null = null;
   for (const group of rotationGroups(pool, usage)) {
     winner = await evaluateGroup(group, usedUris);
     if (winner) break;
@@ -636,7 +632,6 @@ export async function prepareDailyBoosts(
       const chosen = await pick(
         sql,
         actor.did,
-        local.date,
         slot,
         usedDids,
         usedUris,
