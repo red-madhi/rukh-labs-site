@@ -1,6 +1,9 @@
 name: IAZMA Daily Boosts
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # 08:10 America/Denver across daylight-saving changes. The endpoint checks
     # Denver local time, so only one of these two UTC runs sends the email.
@@ -25,7 +28,7 @@ jobs:
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
           URL="https://rukhlabs.com/api/advanced-network/daily-boosts/prepare"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "push" ]; then
             URL="$URL?force=1"
           fi
           curl --fail --silent --show-error --retry 2 --retry-delay 3 \
