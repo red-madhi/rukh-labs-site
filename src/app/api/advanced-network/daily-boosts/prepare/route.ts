@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const ALLOWED_WORKFLOWS = ["iazma-daily-boosts.yml"];
+const ALLOWED_EVENTS = ["schedule", "workflow_dispatch", "push"];
 
 export async function GET(request: NextRequest) {
   const authorization = request.headers.get("authorization");
@@ -15,7 +16,10 @@ export async function GET(request: NextRequest) {
     : "";
 
   try {
-    if (!token || !(await verifyGithubActionsToken(token, ALLOWED_WORKFLOWS))) {
+    if (
+      !token ||
+      !(await verifyGithubActionsToken(token, ALLOWED_WORKFLOWS, ALLOWED_EVENTS))
+    ) {
       return NextResponse.json(
         { error: "GitHub Actions OIDC authentication failed." },
         { status: 401 },
