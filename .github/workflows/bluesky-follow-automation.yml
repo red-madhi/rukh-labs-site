@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: bluesky-follow-automation
@@ -26,3 +27,11 @@ jobs:
         run: |
           curl --fail --silent --show-error --retry 2 --retry-delay 3 \
             https://rukhlabs.com/api/advanced-network/weekly-thanks >/dev/null
+
+      - name: Retry Daily Boosts during the morning window
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl --fail --silent --show-error --retry 2 --retry-delay 3 \
+            -H "Authorization: Bearer $TOKEN" \
+            https://rukhlabs.com/api/advanced-network/daily-boosts/prepare >/dev/null
