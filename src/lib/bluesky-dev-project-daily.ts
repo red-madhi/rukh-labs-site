@@ -344,7 +344,7 @@ export async function runDailyDevProjectReposts(
     }),
   );
   const winners = evaluated
-    .filter((value): value is ProjectPost => Boolean(value))
+    .filter((value): value is NonNullable<(typeof evaluated)[number]> => value !== null)
     .sort(rotationCompare)
     .slice(0, DAILY_COUNT - alreadyPosted.length);
 
