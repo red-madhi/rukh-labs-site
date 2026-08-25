@@ -40,26 +40,43 @@ jobs:
             -H "Authorization: Bearer $TOKEN" \
             https://rukhlabs.com/api/advanced-network/daily-boosts/prepare >/dev/null
 
-      - name: Repost latest Drop Site News post
+      - name: Repost Drop Site News around 8:30 AM Denver
         run: |
-          HOUR=$(date -u +%H)
-          if [ "$HOUR" != "14" ] && [ "$HOUR" != "15" ]; then
+          HOUR=$(TZ=America/Denver date +%H)
+          MINUTE=$(TZ=America/Denver date +%M)
+          if [ "$HOUR" != "08" ]; then
             exit 0
           fi
+          case "$MINUTE" in
+            30|35|40|45|50|55) ;;
+            *) exit 0 ;;
+          esac
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl --fail --silent --show-error --retry 2 --retry-delay 3 \
             -H "Authorization: Bearer $TOKEN" \
             https://rukhlabs.com/api/advanced-network/dropsite-daily >/dev/null
 
-      - name: Repost two dev project posts
+      - name: Repost first dev project around 1 PM Denver
         run: |
-          HOUR=$(date -u +%H)
-          if [ "$HOUR" != "14" ] && [ "$HOUR" != "15" ]; then
+          HOUR=$(TZ=America/Denver date +%H)
+          if [ "$HOUR" != "13" ]; then
             exit 0
           fi
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl --fail --silent --show-error --retry 2 --retry-delay 3 \
             -H "Authorization: Bearer $TOKEN" \
-            https://rukhlabs.com/api/advanced-network/dev-project-daily >/dev/null
+            "https://rukhlabs.com/api/advanced-network/dev-project-daily?force=1&target=1" >/dev/null
+
+      - name: Repost second dev project around 6 PM Denver
+        run: |
+          HOUR=$(TZ=America/Denver date +%H)
+          if [ "$HOUR" != "18" ]; then
+            exit 0
+          fi
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl --fail --silent --show-error --retry 2 --retry-delay 3 \
+            -H "Authorization: Bearer $TOKEN" \
+            "https://rukhlabs.com/api/advanced-network/dev-project-daily?force=1&target=2" >/dev/null
