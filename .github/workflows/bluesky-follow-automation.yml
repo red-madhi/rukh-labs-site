@@ -1,9 +1,6 @@
 name: Bluesky follow automation
 
 on:
-  push:
-    branches:
-      - main
   schedule:
     - cron: "*/5 * * * *"
   workflow_dispatch:
@@ -46,15 +43,11 @@ jobs:
       - name: Repost latest Drop Site News post
         run: |
           HOUR=$(date -u +%H)
-          if [ "${{ github.event_name }}" != "push" ] && [ "$HOUR" != "14" ] && [ "$HOUR" != "15" ]; then
+          if [ "$HOUR" != "14" ] && [ "$HOUR" != "15" ]; then
             exit 0
           fi
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
-          URL="https://rukhlabs.com/api/advanced-network/dropsite-daily"
-          if [ "${{ github.event_name }}" = "push" ]; then
-            URL="$URL?force=1"
-          fi
           curl --fail --silent --show-error --retry 2 --retry-delay 3 \
             -H "Authorization: Bearer $TOKEN" \
-            "$URL" >/dev/null
+            https://rukhlabs.com/api/advanced-network/dropsite-daily >/dev/null
