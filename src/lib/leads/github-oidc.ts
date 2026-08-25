@@ -46,7 +46,11 @@ async function getKeys() {
   return cachedKeys;
 }
 
-export async function verifyGithubActionsToken(token: string, allowedWorkflowFiles: string[]) {
+export async function verifyGithubActionsToken(
+  token: string,
+  allowedWorkflowFiles: string[],
+  allowedEventNames: string[] = ["schedule", "workflow_dispatch"],
+) {
   const parts = token.split(".");
   if (parts.length !== 3) return false;
   const header = decodePart<JwtHeader>(parts[0]);
@@ -58,7 +62,7 @@ export async function verifyGithubActionsToken(token: string, allowedWorkflowFil
   if (payload.iss !== ISSUER || !audiences.includes(AUDIENCE)) return false;
   if (payload.repository !== REPOSITORY || payload.ref !== REF) return false;
   if (!payload.exp || payload.exp < now - 30 || (payload.nbf && payload.nbf > now + 30)) return false;
-  if (!new Set(["schedule", "workflow_dispatch"]).has(payload.event_name || "")) return false;
+  if (!new Set(allowedEventNames).has(payload.event_name || "")) return false;
   const expectedRefs = allowedWorkflowFiles.map((file) => `${REPOSITORY}/.github/workflows/${file}@${REF}`);
   if (!payload.workflow_ref || !expectedRefs.includes(payload.workflow_ref)) return false;
 
