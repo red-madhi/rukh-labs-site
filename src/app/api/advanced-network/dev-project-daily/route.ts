@@ -26,8 +26,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const targetValue = Number(request.nextUrl.searchParams.get("target"));
+    const targetCount = targetValue === 1 || targetValue === 2 ? targetValue : undefined;
     const result = await runDailyDevProjectReposts({
       force: request.nextUrl.searchParams.get("force") === "1",
+      targetCount,
     });
     return NextResponse.json(result, {
       status: result.ok ? 200 : 500,
