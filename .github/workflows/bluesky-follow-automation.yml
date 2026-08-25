@@ -39,3 +39,15 @@ jobs:
           curl --fail --silent --show-error --retry 2 --retry-delay 3 \
             -H "Authorization: Bearer $TOKEN" \
             https://rukhlabs.com/api/advanced-network/daily-boosts/prepare >/dev/null
+
+      - name: Repost latest Drop Site News post
+        run: |
+          HOUR=$(date -u +%H)
+          if [ "$HOUR" != "14" ] && [ "$HOUR" != "15" ]; then
+            exit 0
+          fi
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl --fail --silent --show-error --retry 2 --retry-delay 3 \
+            -H "Authorization: Bearer $TOKEN" \
+            https://rukhlabs.com/api/advanced-network/dropsite-daily >/dev/null
