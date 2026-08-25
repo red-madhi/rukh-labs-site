@@ -293,12 +293,16 @@ function rotationCompare(a: ProjectPost, b: ProjectPost) {
 }
 
 export async function runDailyDevProjectReposts(
-  options: { force?: boolean } = {},
+  options: { force?: boolean; targetCount?: number } = {},
 ) {
   const local = localParts();
   if (!options.force && local.hour !== notificationHour()) {
     return { ok: true, skipped: true, message: "Outside dev project repost hour." };
   }
+
+  const targetCount = Number.isInteger(options.targetCount)
+    ? Math.max(1, Math.min(DAILY_COUNT, Number(options.targetCount)))
+    : DAILY_COUNT;
 
   const automation = await getAutomationBlueskyActor();
   if (!automation.configured) {
@@ -314,11 +318,11 @@ export async function runDailyDevProjectReposts(
     order by slot
   `;
   const alreadyPosted = existing.filter((row) => row.status === "posted");
-  if (alreadyPosted.length >= DAILY_COUNT) {
+  if (alreadyPosted.length >= targetCount) {
     return {
       ok: true,
       skipped: true,
-      message: "Two dev project posts were already reposted today.",
+      message: `${targetCount} dev project repost${targetCount === 1 ? " was" : "s were"} already completed today.`,
       authors: alreadyPosted.map((row) => String(row.source_handle)),
     };
   }
@@ -343,10 +347,12 @@ export async function runDailyDevProjectReposts(
       }
     }),
   );
+  const remaining = Math.max(0, targetCount - alreadyPosted.length);
+  const maxThisRun = options.targetCount ? Math.min(1, remaining) : remaining;
   const winners = evaluated
     .filter((value): value is NonNullable<(typeof evaluated)[number]> => value !== null)
     .sort(rotationCompare)
-    .slice(0, DAILY_COUNT - alreadyPosted.length);
+    .slice(0, maxThisRun);
 
   if (!winners.length) {
     return { ok: false, skipped: true, message: "No eligible dev project posts were found." };
@@ -401,6 +407,7 @@ export async function runDailyDevProjectReposts(
     ok: failures === 0,
     skipped: false,
     reposted: results.length - failures,
+    targetCount,
     results,
   };
 }
