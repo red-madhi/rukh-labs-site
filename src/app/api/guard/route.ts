@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   try {
     switch (body.action) {
       case "scan_start": return NextResponse.json(await startGuardScan(String(body.scope ?? "all")));
-      case "scan_batch": return NextResponse.json(await processGuardBatch(String(body.scanId ?? ""), body.limit ?? 2));
+      case "scan_batch": return NextResponse.json(await processGuardBatch(String(body.scanId ?? ""), Number(body.limit ?? 2)));
       case "sync": return NextResponse.json(await syncIazmaGuardReciprocity({ automatic: true, force: true }));
       case "block": return NextResponse.json(await blockGuardDid(String(body.did ?? "")));
       case "unfollow": return NextResponse.json(await unfollowGuardDid(String(body.did ?? "")));
