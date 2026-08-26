@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
 function daysAgo(iso) {
   if (!iso) return null;
@@ -122,13 +123,13 @@ function botSpamScore(profile, posts) {
   const bioLower = bio.toLowerCase();
 
   if (/\b(?:bot|automated|rss bot|feed bot)\b/i.test(bio)) {
-    score += 45;
+    score += 75;
     reasons.push("Profile explicitly identifies as automated/bot");
   }
 
   const spamBioTerms = ["crypto signals", "forex signals", "dm for promo", "paid promotion", "followers for sale", "airdrop", "guaranteed returns"];
   if (spamBioTerms.some((term) => bioLower.includes(term))) {
-    score += 35;
+    score += 55;
     reasons.push("Profile contains common promotion/spam language");
   }
 
@@ -136,11 +137,14 @@ function botSpamScore(profile, posts) {
   const follows = Number(profile.follows_count ?? 0);
   const postCount = Number(profile.posts_count ?? 0);
   if (follows >= 1500 && followers < 100 && follows / Math.max(followers, 1) >= 20) {
-    score += 25;
+    score += 45;
     reasons.push("Extreme following-to-follower ratio");
+  } else if (follows >= 500 && followers < 120 && follows / Math.max(followers, 1) >= 8) {
+    score += 30;
+    reasons.push("High following-to-follower ratio");
   }
-  if (follows >= 1000 && postCount === 0) {
-    score += 20;
+  if (follows >= 500 && postCount === 0) {
+    score += 35;
     reasons.push("Mass-following account with no public posts");
   }
 
@@ -151,16 +155,16 @@ function botSpamScore(profile, posts) {
     const maxDuplicate = Math.max(...counts.values());
     const duplicateRatio = maxDuplicate / normalized.length;
     if (duplicateRatio >= 0.5) {
-      score += 35;
+      score += 45;
       reasons.push("Recent posts are heavily duplicated");
     } else if (duplicateRatio >= 0.3) {
-      score += 20;
+      score += 30;
       reasons.push("Recent posts show substantial duplication");
     }
 
     const linkRatio = posts.filter((text) => /https?:\/\//i.test(text)).length / posts.length;
     if (linkRatio >= 0.8) {
-      score += 15;
+      score += 25;
       reasons.push("Nearly every recent post contains an external link");
     }
   }
@@ -168,7 +172,7 @@ function botSpamScore(profile, posts) {
   if (posts.length >= 10) {
     const promoHits = posts.filter((text) => /\b(?:buy now|limited offer|promo|airdrop|free money|guaranteed return|dm me)\b/i.test(text)).length;
     if (promoHits / posts.length >= 0.5) {
-      score += 25;
+      score += 35;
       reasons.push("Recent posts are dominated by solicitation/promotion language");
     }
   }

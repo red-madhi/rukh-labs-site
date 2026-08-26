@@ -9,6 +9,7 @@ import {
   saveGuardSettings,
   startGuardScan,
   syncIazmaGuardReciprocity,
+  unfollowGuardDid,
 } from "@/lib/iazma-guard-server";
 
 export const runtime = "nodejs";
@@ -30,13 +31,14 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   if (!(await hasAdvancedNetworkAccess())) return unauthorized();
-  const body = (await request.json().catch(() => ({}))) as Record<string, any>;
+  const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
   try {
     switch (body.action) {
-      case "scan_start": return NextResponse.json(await startGuardScan());
-      case "scan_batch": return NextResponse.json(await processGuardBatch(String(body.scanId ?? ""), body.limit ?? 8));
+      case "scan_start": return NextResponse.json(await startGuardScan(String(body.scope ?? "all")));
+      case "scan_batch": return NextResponse.json(await processGuardBatch(String(body.scanId ?? ""), Number(body.limit ?? 2)));
       case "sync": return NextResponse.json(await syncIazmaGuardReciprocity({ automatic: true, force: true }));
       case "block": return NextResponse.json(await blockGuardDid(String(body.did ?? "")));
+      case "unfollow": return NextResponse.json(await unfollowGuardDid(String(body.did ?? "")));
       case "ignore": await ignoreGuardDid(String(body.did ?? "")); return NextResponse.json({ ok: true });
       case "restore": await restoreGuardDid(String(body.did ?? "")); return NextResponse.json({ ok: true });
       case "settings": return NextResponse.json(await saveGuardSettings(body));
