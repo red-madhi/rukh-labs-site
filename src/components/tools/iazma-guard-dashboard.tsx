@@ -23,7 +23,7 @@ type QueueItem = {
 type Scan = {
   id?: string;
   scanId?: string;
-  status?: "running" | "complete";
+  status?: "running" | "paused" | "complete";
   scope?: string;
   total?: number;
   processed?: number;
@@ -32,6 +32,8 @@ type Scan = {
   remaining?: number;
   started_at?: string;
   completed_at?: string;
+  retry_after_at?: string | null;
+  retry_after_ms?: number;
 };
 type GuardUser = { last_graph_sync_at?: string };
 type GuardFilters = { rightWing?: boolean; antiPalestine?: boolean; islamophobia?: boolean; xenophobia?: boolean };
@@ -99,6 +101,14 @@ function pause(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function retryLabel(value?: string | null) {
+  if (!value) return "in a couple of minutes";
+  const remaining = new Date(value).getTime() - Date.now();
+  if (!Number.isFinite(remaining) || remaining <= 0) return "now";
+  const minutes = Math.ceil(remaining / 60_000);
+  return minutes <= 1 ? "in about a minute" : `in about ${minutes} minutes`;
+}
+
 export function IazmaGuardDashboard() {
   const [data, setData] = useState<Dashboard>({});
   const [loading, setLoading] = useState(true);
@@ -153,9 +163,9 @@ export function IazmaGuardDashboard() {
       let state = await api<Scan>("POST", { action: "scan_start", scope: "all" });
       saveScanState(state);
       while (state.status === "running") {
-        state = await api<Scan>("POST", { action: "scan_batch", scanId: state.id ?? state.scanId ?? "", limit: 2 });
+        state = await api<Scan>("POST", { action: "scan_batch", scanId: state.id ?? state.scanId ?? "", limit: 4 });
         saveScanState(state);
-        if (state.status === "running") await pause(150);
+        if (state.status === "running") await pause(750);
       }
       await refresh();
     } catch (issue) {
@@ -224,7 +234,7 @@ export function IazmaGuardDashboard() {
     : "No scan has started yet.";
   const scanLabel = working === "scan"
     ? `Scanning ${scan?.processed ?? 0}/${scan?.total ?? "…"}`
-    : scan?.status === "running"
+    : scan?.status === "running" || scan?.status === "paused"
       ? "Resume scan"
       : "Scan cleanup candidates";
 
@@ -250,7 +260,11 @@ export function IazmaGuardDashboard() {
         <div className="ml-auto text-xs text-white/35">Last graph sync: {fmtDate(data.user?.last_graph_sync_at)}</div>
       </div>
       <div role="status" className="mt-3 text-sm text-white/55">
-        {scan?.status === "running" ? `Cleanup scan in progress · ${progress}` : `Scans followers and accounts you follow · ${progress}`}
+        {scan?.status === "running"
+          ? `Cleanup scan in progress · ${progress}`
+          : scan?.status === "paused"
+            ? `Bluesky asked Guard to slow down · ${progress}. Progress is saved; resume ${retryLabel(scan.retry_after_at)}.`
+            : `Scans followers and accounts you follow · ${progress}`}
       </div>
       <p className="mt-1 text-xs leading-5 text-white/35">Guard saves progress after every short batch. You can leave and resume later without restarting.</p>
     </div>

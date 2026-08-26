@@ -7,8 +7,60 @@ import { assessProfile } from "@/lib/iazma-guard-classify";
 const PUBLIC_API = "https://public.api.bsky.app/xrpc";
 const FOLLOW = "app.bsky.graph.follow";
 const BLOCK = "app.bsky.graph.block";
-const MAX_SCAN_BATCH_SIZE = 2;
+const MAX_SCAN_BATCH_SIZE = 4;
 const BLUESKY_REQUEST_TIMEOUT_MS = 15_000;
+const SCAN_REQUEST_SPACING_MS = 750;
+const RATE_LIMIT_FALLBACK_MS = 120_000;
+const RATE_LIMIT_MINIMUM_MS = 30_000;
+const RATE_LIMIT_MAXIMUM_MS = 15 * 60_000;
+
+class BlueskyRateLimitError extends Error {
+  retryAfterMs: number;
+
+  constructor(message: string, retryAfterMs: number) {
+    super(message);
+    this.name = "BlueskyRateLimitError";
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
+function boundedRetryAfter(value: number) {
+  return Math.max(RATE_LIMIT_MINIMUM_MS, Math.min(RATE_LIMIT_MAXIMUM_MS, Math.ceil(value)));
+}
+
+function retryAfterMs(response: Response) {
+  const retryAfter = response.headers.get("retry-after");
+  if (retryAfter) {
+    const seconds = Number(retryAfter);
+    if (Number.isFinite(seconds) && seconds >= 0) return boundedRetryAfter(seconds * 1000);
+    const retryDate = Date.parse(retryAfter);
+    if (Number.isFinite(retryDate)) return boundedRetryAfter(Math.max(0, retryDate - Date.now()));
+  }
+
+  const reset = response.headers.get("ratelimit-reset") ?? response.headers.get("x-ratelimit-reset");
+  if (reset) {
+    const value = Number(reset);
+    if (Number.isFinite(value)) {
+      const asTimestamp = value > 1_000_000_000 ? value * 1000 - Date.now() : value * 1000;
+      return boundedRetryAfter(Math.max(0, asTimestamp));
+    }
+  }
+
+  return RATE_LIMIT_FALLBACK_MS;
+}
+
+function errorMessage(body: Record<string, unknown>, fallback: string) {
+  const message = body.message ?? body.error;
+  return typeof message === "string" && message ? message : fallback;
+}
+
+function isRateLimitError(error: unknown): error is BlueskyRateLimitError {
+  return error instanceof BlueskyRateLimitError;
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function getSql() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is not configured.");
@@ -36,17 +88,24 @@ async function fetchJson(url: string | URL, init?: RequestInit, timeoutMs = BLUE
 
   const text = await response.text();
   let body: Record<string, unknown> = {};
+  let unreadableMessage = "";
   if (text) {
     try {
       body = JSON.parse(text);
     } catch {
-      throw new Error("Bluesky returned an unreadable response.");
+      unreadableMessage = text.trim();
     }
   }
 
   if (!response.ok) {
-    throw new Error(body.message || body.error || `Bluesky returned ${response.status}.`);
+    const message = unreadableMessage || errorMessage(body, `Bluesky returned ${response.status}.`);
+    if (response.status === 429 || /rate limit|too many requests/i.test(message)) {
+      throw new BlueskyRateLimitError(message, retryAfterMs(response));
+    }
+    if (unreadableMessage) throw new Error("Bluesky returned an unreadable error response.");
+    throw new Error(message);
   }
+  if (unreadableMessage) throw new Error("Bluesky returned an unreadable response.");
   return body;
 }
 
@@ -183,6 +242,7 @@ export async function ensureGuardSchema() {
   await sql`CREATE TABLE IF NOT EXISTS suppressions (owner_did text NOT NULL REFERENCES users(did) ON DELETE CASCADE, did text NOT NULL, handle text, reason text NOT NULL, source text NOT NULL, evidence jsonb NOT NULL DEFAULT '{}'::jsonb, active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now(), PRIMARY KEY(owner_did,did))`;
   await sql`CREATE TABLE IF NOT EXISTS actions (id bigserial PRIMARY KEY, owner_did text NOT NULL REFERENCES users(did) ON DELETE CASCADE, target_did text NOT NULL, action text NOT NULL, reason text, metadata jsonb NOT NULL DEFAULT '{}'::jsonb, created_at timestamptz NOT NULL DEFAULT now())`;
   await sql`ALTER TABLE scans ADD COLUMN IF NOT EXISTS scope text NOT NULL DEFAULT 'legacy'`;
+  await sql`ALTER TABLE scans ADD COLUMN IF NOT EXISTS retry_after_at timestamptz`;
   await sql`ALTER TABLE assessments ADD COLUMN IF NOT EXISTS resolved_at timestamptz`;
   return sql;
 }
@@ -343,6 +403,13 @@ async function profile(did: string) {
   return fetchJson(`${PUBLIC_API}/app.bsky.actor.getProfile?actor=${encodeURIComponent(did)}`);
 }
 
+async function profiles(dids: string[]) {
+  if (!dids.length) return [];
+  const url = new URL(`${PUBLIC_API}/app.bsky.actor.getProfiles`);
+  for (const did of dids) url.searchParams.append("actors", did);
+  return (await fetchJson(url)).profiles ?? [];
+}
+
 async function scanStats(sql, scanId: string, ownerDid: string) {
   const stat = (await sql`
     SELECT
@@ -354,7 +421,7 @@ async function scanStats(sql, scanId: string, ownerDid: string) {
     WHERE owner_did=${ownerDid} AND scan_id=${scanId}
   `)[0] ?? { processed: 0, flagged: 0, errors: 0, remaining: 0 };
   const scan = (await sql`
-    SELECT total,scope,status,started_at,completed_at
+    SELECT total,scope,status,started_at,completed_at,retry_after_at
     FROM scans
     WHERE id=${scanId} AND owner_did=${ownerDid}
   `)[0];
@@ -365,44 +432,66 @@ async function scanStats(sql, scanId: string, ownerDid: string) {
   const errors = Number(stat.errors ?? 0);
   const remaining = Number(stat.remaining ?? 0);
   const complete = remaining === 0;
+  const retryAfterAt = scan.retry_after_at ? new Date(scan.retry_after_at) : null;
+  const paused = !complete
+    && scan.status === "paused"
+    && retryAfterAt
+    && Number.isFinite(retryAfterAt.getTime())
+    && retryAfterAt.getTime() > Date.now();
+  const status = complete ? "complete" : paused ? "paused" : "running";
+  const completedAt = complete ? (scan.completed_at ?? new Date().toISOString()) : null;
   await sql`
     UPDATE scans
     SET processed=${processed},
         flagged=${flagged},
-        status=${complete ? "complete" : "running"},
-        completed_at=${complete ? new Date().toISOString() : null}::timestamptz
+        status=${status},
+        completed_at=${completedAt}::timestamptz,
+        retry_after_at=${status === "paused" ? retryAfterAt?.toISOString() ?? null : null}::timestamptz
     WHERE id=${scanId}
   `;
 
   return {
     id: scanId,
     scope: scan.scope,
-    status: complete ? "complete" : "running",
+    status,
     total: Number(scan.total ?? 0),
     processed,
     flagged,
     errors,
     remaining,
     started_at: scan.started_at,
-    completed_at: complete ? new Date().toISOString() : scan.completed_at,
+    completed_at: completedAt,
+    retry_after_at: status === "paused" ? retryAfterAt?.toISOString() : null,
+    retry_after_ms: status === "paused" && retryAfterAt ? Math.max(0, retryAfterAt.getTime() - Date.now()) : 0,
   };
 }
 
 export async function startGuardScan(requestedScope = "all") {
   const scope = scanScope(requestedScope);
-  const graph = await syncIazmaGuardReciprocity({ automatic: true, force: true });
-  const sql = getSql();
+  const sql = await ensureGuardSchema();
+  const session = await configuredSession();
+  const ownerDid = session.did;
   const existing = (await sql`
     SELECT id
     FROM scans
-    WHERE owner_did=${graph.ownerDid} AND status='running' AND scope=${scope}
+    WHERE owner_did=${ownerDid} AND status IN ('running','paused') AND scope=${scope}
     ORDER BY started_at DESC
     LIMIT 1
   `)[0];
 
   if (existing?.id) {
-    return { scanId: existing.id, resumed: true, graph, ...(await scanStats(sql, existing.id, graph.ownerDid)) };
+    await sql`
+      UPDATE assessments
+      SET status='pending',evidence='[]'::jsonb,assessed_at=null
+      WHERE owner_did=${ownerDid}
+        AND scan_id=${existing.id}
+        AND status='error'
+        AND evidence::text ~* 'rate limit|too many requests'
+    `;
+    return { scanId: existing.id, resumed: true, ...(await scanStats(sql, existing.id, ownerDid)) };
   }
+
+  const graph = await syncIazmaGuardReciprocity({ automatic: true, force: true });
 
   const id = randomUUID();
   await sql`
@@ -440,7 +529,7 @@ export async function startGuardScan(requestedScope = "all") {
   return { scanId: id, resumed: false, graph, ...(await scanStats(sql, id, graph.ownerDid)) };
 }
 
-async function assessGuardAccount(sql, ownerDid: string, scanId: string, did: string, settings) {
+async function assessGuardAccount(sql, ownerDid: string, scanId: string, did: string, settings, fresh = {}) {
   await sql`
     UPDATE assessments
     SET status='processing'
@@ -453,7 +542,7 @@ async function assessGuardAccount(sql, ownerDid: string, scanId: string, did: st
     `)[0];
     if (!relationship) throw new Error("Account is no longer in your Guard graph.");
 
-    const [fresh, feed] = await Promise.all([profile(did), authorFeed(did)]);
+    const feed = await authorFeed(did);
     const candidate = {
       ...relationship,
       handle: fresh.handle ?? relationship.handle,
@@ -488,7 +577,16 @@ async function assessGuardAccount(sql, ownerDid: string, scanId: string, did: st
           assessed_at=now()
       WHERE owner_did=${ownerDid} AND did=${did} AND scan_id=${scanId}
     `;
+    return { rateLimited: false };
   } catch (error) {
+    if (isRateLimitError(error)) {
+      await sql`
+        UPDATE assessments
+        SET status='pending',evidence='[]'::jsonb,assessed_at=null
+        WHERE owner_did=${ownerDid} AND did=${did} AND scan_id=${scanId}
+      `;
+      return { rateLimited: true, retryAfterMs: error.retryAfterMs };
+    }
     await sql`
       UPDATE assessments
       SET status='error',
@@ -496,19 +594,41 @@ async function assessGuardAccount(sql, ownerDid: string, scanId: string, did: st
           assessed_at=now()
       WHERE owner_did=${ownerDid} AND did=${did} AND scan_id=${scanId}
     `;
+    return { rateLimited: false };
   }
+}
+
+async function pauseGuardScan(sql, scanId: string, ownerDid: string, retryAfter: number) {
+  const until = new Date(Date.now() + boundedRetryAfter(retryAfter)).toISOString();
+  await sql`
+    UPDATE scans
+    SET status='paused',retry_after_at=${until}::timestamptz,completed_at=null
+    WHERE id=${scanId} AND owner_did=${ownerDid}
+  `;
 }
 
 export async function processGuardBatch(scanId: string, requested = MAX_SCAN_BATCH_SIZE) {
   const sql = getSql();
   const scan = (await sql`
-    SELECT owner_did,status
+    SELECT owner_did,status,retry_after_at
     FROM scans
     WHERE id=${scanId}
   `)[0];
   if (!scan) throw new Error("Scan not found.");
   const ownerDid = scan.owner_did;
   if (scan.status === "complete") return scanStats(sql, scanId, ownerDid);
+
+  if (scan.status === "paused") {
+    const retryAfterAt = scan.retry_after_at ? new Date(scan.retry_after_at) : null;
+    if (retryAfterAt && Number.isFinite(retryAfterAt.getTime()) && retryAfterAt.getTime() > Date.now()) {
+      return scanStats(sql, scanId, ownerDid);
+    }
+    await sql`
+      UPDATE scans
+      SET status='running',retry_after_at=null
+      WHERE id=${scanId} AND owner_did=${ownerDid}
+    `;
+  }
 
   await sql`
     UPDATE assessments
@@ -529,7 +649,30 @@ export async function processGuardBatch(scanId: string, requested = MAX_SCAN_BAT
     ORDER BY did
     LIMIT ${limit}
   `;
-  await Promise.all(rows.map((row) => assessGuardAccount(sql, ownerDid, scanId, String(row.did), settings)));
+  if (!rows.length) return scanStats(sql, scanId, ownerDid);
+
+  let freshProfiles = new Map<string, Record<string, unknown>>();
+  try {
+    freshProfiles = new Map((await profiles(rows.map((row) => String(row.did))))
+      .filter((item) => typeof item?.did === "string")
+      .map((item) => [item.did, item]));
+  } catch (error) {
+    if (isRateLimitError(error)) {
+      await pauseGuardScan(sql, scanId, ownerDid, error.retryAfterMs);
+      return scanStats(sql, scanId, ownerDid);
+    }
+    throw error;
+  }
+
+  for (let index = 0; index < rows.length; index += 1) {
+    const did = String(rows[index].did);
+    const outcome = await assessGuardAccount(sql, ownerDid, scanId, did, settings, freshProfiles.get(did));
+    if (outcome.rateLimited) {
+      await pauseGuardScan(sql, scanId, ownerDid, outcome.retryAfterMs);
+      break;
+    }
+    if (index < rows.length - 1) await delay(SCAN_REQUEST_SPACING_MS);
+  }
   return scanStats(sql, scanId, ownerDid);
 }
 
@@ -553,7 +696,7 @@ export async function guardDashboard() {
     `,
     sql`SELECT did,handle,reason,source,evidence,created_at,updated_at FROM suppressions WHERE owner_did=${ownerDid} AND active=true ORDER BY updated_at DESC LIMIT 500`,
     sql`SELECT a.id,a.target_did,a.action,a.reason,a.metadata,a.created_at,r.handle,r.display_name,r.avatar FROM actions a LEFT JOIN relationships r ON r.owner_did=a.owner_did AND r.did=a.target_did WHERE a.owner_did=${ownerDid} ORDER BY a.created_at DESC LIMIT 100`,
-    sql`SELECT id,status,total,processed,flagged,scope,started_at,completed_at FROM scans WHERE owner_did=${ownerDid} AND scope <> 'legacy' ORDER BY started_at DESC LIMIT 1`,
+    sql`SELECT id,status,total,processed,flagged,scope,started_at,completed_at,retry_after_at FROM scans WHERE owner_did=${ownerDid} AND scope <> 'legacy' ORDER BY started_at DESC LIMIT 1`,
     sql`SELECT count(*) FILTER(WHERE is_follower=true)::int followers,count(*) FILTER(WHERE is_following=true)::int following,count(*) FILTER(WHERE unfollowed_me_at IS NOT NULL)::int observed_unfollowers FROM relationships WHERE owner_did=${ownerDid}`,
   ]);
   return {
