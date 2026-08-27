@@ -140,7 +140,10 @@ export async function runDailyDropSiteRepost(
       repostUri: existing[0].repost_uri ? String(existing[0].repost_uri) : null,
     };
   }
-  if (existing[0]?.status === "no-new-post") {
+  if (
+    existing[0]?.status === "no-new-post" &&
+    String(existing[0].post_uri) === post.uri
+  ) {
     return {
       ok: true,
       skipped: true,
