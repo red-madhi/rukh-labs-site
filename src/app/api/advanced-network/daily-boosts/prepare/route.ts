@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
       regenerate: request.nextUrl.searchParams.get("regenerate") === "1",
     });
     return NextResponse.json(result, {
+      status: result.ok ? 200 : 500,
       headers: {
         "Cache-Control": "no-store, max-age=0",
         "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",

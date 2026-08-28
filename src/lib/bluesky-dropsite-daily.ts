@@ -7,6 +7,7 @@ import {
 const PUBLIC_API = "https://public.api.bsky.app/xrpc";
 const TIME_ZONE = "America/Denver";
 const DEFAULT_HOUR = 8;
+const DEFAULT_MINUTE = 30;
 const DROP_SITE_HANDLE = "dropsitenews.com";
 const DROP_SITE_DID = "did:plc:avtgggryiqtjlg5wwsufccua";
 
@@ -35,6 +36,7 @@ function localParts(date = new Date()) {
     month: "2-digit",
     day: "2-digit",
     hour: "2-digit",
+    minute: "2-digit",
     hourCycle: "h23",
   }).formatToParts(date);
   const value = (type: Intl.DateTimeFormatPartTypes) =>
@@ -42,12 +44,26 @@ function localParts(date = new Date()) {
   return {
     date: `${value("year")}-${value("month")}-${value("day")}`,
     hour: Number(value("hour")),
+    minute: Number(value("minute")),
   };
 }
 
-function notificationHour() {
-  const value = Number(process.env.DAILY_BOOST_NOTIFICATION_HOUR ?? DEFAULT_HOUR);
-  return Number.isInteger(value) && value >= 0 && value <= 23 ? value : DEFAULT_HOUR;
+function scheduledTime() {
+  const hour = Number(
+    process.env.DROP_SITE_REPOST_HOUR ??
+      process.env.DAILY_BOOST_NOTIFICATION_HOUR ??
+      DEFAULT_HOUR,
+  );
+  const minute = Number(process.env.DROP_SITE_REPOST_MINUTE ?? DEFAULT_MINUTE);
+  return {
+    hour: Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : DEFAULT_HOUR,
+    minute: Number.isInteger(minute) && minute >= 0 && minute <= 59 ? minute : DEFAULT_MINUTE,
+  };
+}
+
+function isDue(local: ReturnType<typeof localParts>) {
+  const due = scheduledTime();
+  return local.hour > due.hour || (local.hour === due.hour && local.minute >= due.minute);
 }
 
 async function ensureSchema(sql: Sql = db()) {
@@ -107,8 +123,8 @@ export async function runDailyDropSiteRepost(
   options: { force?: boolean } = {},
 ) {
   const local = localParts();
-  if (!options.force && local.hour !== notificationHour()) {
-    return { ok: true, skipped: true, message: "Outside Drop Site repost hour." };
+  if (!options.force && !isDue(local)) {
+    return { ok: true, skipped: true, message: "Before Drop Site repost time." };
   }
 
   const automation = await getAutomationBlueskyActor();

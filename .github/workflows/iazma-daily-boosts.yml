@@ -2,9 +2,9 @@ name: IAZMA Daily Boosts
 
 on:
   schedule:
-    # 08:10 America/Denver across daylight-saving changes. The endpoint checks
-    # Denver local time, so only one of these two UTC runs sends the email.
-    - cron: "10 14,15 * * *"
+    # Start at 8:10 AM Denver and retry through the afternoon. GitHub's
+    # scheduler may start a run late; the endpoint catches up only once.
+    - cron: "10 14-23 * * *"
   workflow_dispatch:
 
 permissions:

@@ -494,7 +494,12 @@ async function sendEmail(
     process.env.CONTACT_NOTIFICATION_EMAIL ??
     ""
   ).trim();
-  if (!apiKey || !to) return false;
+  if (!apiKey || !to) {
+    return {
+      sent: false,
+      error: "Daily Boost email is not configured.",
+    };
+  }
 
   const from = process.env.CONTACT_FROM_EMAIL || "Rukh Labs <hello@rukhlabs.com>";
   const reviewUrl = `https://rukhlabs.com/tools/bluesky-network-advanced/app/daily-boosts?token=${encodeURIComponent(makeToken(run.actorDid, run.localDate))}`;
@@ -533,15 +538,21 @@ async function sendEmail(
     }),
     cache: "no-store",
   });
-  return response.ok;
+  if (response.ok) return { sent: true };
+
+  const detail = (await response.text()).replace(/\s+/g, " ").slice(0, 300);
+  return {
+    sent: false,
+    error: `Daily Boost email service returned ${response.status}${detail ? `: ${detail}` : "."}`,
+  };
 }
 
 export async function prepareDailyBoosts(
   options: { force?: boolean; regenerate?: boolean } = {},
 ) {
   const local = localParts();
-  if (!options.force && local.hour !== notificationHour()) {
-    return { ok: true, skipped: true, message: "Outside notification hour." };
+  if (!options.force && local.hour < notificationHour()) {
+    return { ok: true, skipped: true, message: "Before notification hour." };
   }
 
   const automation = await getAutomationBlueskyActor();
@@ -630,23 +641,24 @@ export async function prepareDailyBoosts(
     };
   }
 
-  const emailed = await sendEmail(run, items, {
+  const email = await sendEmail(run, items, {
     regenerate: options.regenerate,
   });
   await sql`
     update advanced_network_daily_boost_runs
-    set notification_sent_at=case when ${emailed} then now() else notification_sent_at end,
-        last_error=case when ${emailed} then null else 'Daily Boost email could not be sent.' end,
+    set notification_sent_at=case when ${email.sent} then now() else notification_sent_at end,
+        last_error=case when ${email.sent} then null else ${email.error} end,
         updated_at=now()
     where actor_did=${actor.did} and local_date=${local.date}::date
   `;
 
   return {
-    ok: emailed,
+    ok: email.sent,
     skipped: false,
-    emailed,
+    emailed: email.sent,
     picks: items.length,
     authors: items.map((item) => item.subjectHandle),
     rotated: true,
+    ...(email.sent ? {} : { message: email.error }),
   };
 }

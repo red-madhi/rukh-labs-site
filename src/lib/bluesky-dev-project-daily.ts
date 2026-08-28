@@ -6,10 +6,11 @@ import {
 
 const PUBLIC_API = "https://public.api.bsky.app/xrpc";
 const TIME_ZONE = "America/Denver";
-const DEFAULT_HOUR = 8;
 const DAILY_COUNT = 2;
 const CANDIDATE_LIMIT = 24;
 const POST_AGE_DAYS = 21;
+const DEFAULT_FIRST_REPOST_HOUR = 13;
+const DEFAULT_SECOND_REPOST_HOUR = 18;
 
 const DEV_BIO_PATTERN =
   "(\\mdeveloper\\M|software engineer\\M|software dev\\M|software developer\\M|web dev\\M|web developer\\M|game dev\\M|game developer\\M|game development\\M|app dev\\M|app developer\\M|app development\\M|\\mprogrammer\\M|\\mcoder\\M|indie hacker\\M|open[- ]source developer\\M|full[- ]?stack\\M|front[- ]?end\\M|back[- ]?end\\M|android dev\\M|ios dev\\M)";
@@ -95,9 +96,23 @@ function localParts(date = new Date()) {
   };
 }
 
-function notificationHour() {
-  const value = Number(process.env.DAILY_BOOST_NOTIFICATION_HOUR ?? DEFAULT_HOUR);
-  return Number.isInteger(value) && value >= 0 && value <= 23 ? value : DEFAULT_HOUR;
+function validHour(value: unknown, fallback: number) {
+  const hour = Number(value);
+  return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : fallback;
+}
+
+function scheduledTargetCount(hour: number) {
+  const firstHour = validHour(
+    process.env.DEV_PROJECT_FIRST_REPOST_HOUR,
+    DEFAULT_FIRST_REPOST_HOUR,
+  );
+  const secondHour = Math.max(
+    firstHour + 1,
+    validHour(process.env.DEV_PROJECT_SECOND_REPOST_HOUR, DEFAULT_SECOND_REPOST_HOUR),
+  );
+  if (hour >= secondHour) return DAILY_COUNT;
+  if (hour >= firstHour) return 1;
+  return 0;
 }
 
 async function xrpc<T>(method: string, params: URLSearchParams) {
@@ -293,16 +308,20 @@ function rotationCompare(a: ProjectPost, b: ProjectPost) {
 }
 
 export async function runDailyDevProjectReposts(
-  options: { force?: boolean; targetCount?: number } = {},
+  options: { force?: boolean; scheduled?: boolean; targetCount?: number } = {},
 ) {
   const local = localParts();
-  if (!options.force && local.hour !== notificationHour()) {
-    return { ok: true, skipped: true, message: "Outside dev project repost hour." };
+  const dueTarget = options.scheduled ? scheduledTargetCount(local.hour) : undefined;
+  if (options.scheduled && !dueTarget) {
+    return { ok: true, skipped: true, message: "Before first dev project repost time." };
+  }
+  if (!options.force && !options.scheduled) {
+    return { ok: true, skipped: true, message: "Use the scheduled dev-project repost runner." };
   }
 
   const targetCount = Number.isInteger(options.targetCount)
     ? Math.max(1, Math.min(DAILY_COUNT, Number(options.targetCount)))
-    : DAILY_COUNT;
+    : dueTarget ?? DAILY_COUNT;
 
   const automation = await getAutomationBlueskyActor();
   if (!automation.configured) {
@@ -348,7 +367,8 @@ export async function runDailyDevProjectReposts(
     }),
   );
   const remaining = Math.max(0, targetCount - alreadyPosted.length);
-  const maxThisRun = options.targetCount ? Math.min(1, remaining) : remaining;
+  // A delayed scheduler must never post both staggered picks back-to-back.
+  const maxThisRun = options.scheduled || options.targetCount ? Math.min(1, remaining) : remaining;
   const winners = evaluated
     .filter((value): value is NonNullable<(typeof evaluated)[number]> => value !== null)
     .sort(rotationCompare)

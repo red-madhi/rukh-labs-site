@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
     const targetCount = targetValue === 1 || targetValue === 2 ? targetValue : undefined;
     const result = await runDailyDevProjectReposts({
       force: request.nextUrl.searchParams.get("force") === "1",
+      scheduled: request.nextUrl.searchParams.get("catchup") === "1",
       targetCount,
     });
     return NextResponse.json(result, {
