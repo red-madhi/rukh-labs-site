@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Ban, Check, Clock3, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, UserMinus, Users } from "lucide-react";
+import { Ban, Check, Clock3, ExternalLink, RefreshCw, Search, ShieldAlert, ShieldCheck, Undo2, UserMinus, Users } from "lucide-react";
 
 type Evidence = { category?: string; source?: string; label?: string; excerpt?: string };
 type QueueItem = {
@@ -49,6 +49,15 @@ type Dashboard = {
   actions?: ActionHistory[];
   scan?: Scan | null;
   counts?: Counts;
+};
+type BulkUnfollowResult = {
+  requested?: number;
+  unfollowed?: string[];
+  skipped?: string[];
+  failed?: Array<{ did: string; error: string }>;
+  remaining?: string[];
+  rateLimited?: boolean;
+  retry_after_ms?: number;
 };
 
 const labels: Record<string, string> = {
@@ -109,11 +118,26 @@ function retryLabel(value?: string | null) {
   return minutes <= 1 ? "in about a minute" : `in about ${minutes} minutes`;
 }
 
+function cooldownLabel(ms?: number) {
+  if (!ms || !Number.isFinite(ms)) return "a little while";
+  const seconds = Math.max(1, Math.ceil(ms / 1000));
+  if (seconds < 60) return `about ${seconds} seconds`;
+  const minutes = Math.ceil(seconds / 60);
+  return minutes === 1 ? "about a minute" : `about ${minutes} minutes`;
+}
+
+function profileHref(item: Pick<QueueItem, "did" | "handle">) {
+  const actor = item.handle || item.did;
+  return `https://bsky.app/profile/${encodeURIComponent(actor)}`;
+}
+
 export function IazmaGuardDashboard() {
   const [data, setData] = useState<Dashboard>({});
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [tab, setTab] = useState<"review" | "suppression" | "history" | "settings">("review");
 
   const refresh = async () => {
@@ -138,6 +162,9 @@ export function IazmaGuardDashboard() {
   }, []);
 
   const queue = data.queue ?? [];
+  const followingQueue = useMemo(() => queue.filter((item) => item.is_following), [queue]);
+  const selectedFollowing = useMemo(() => followingQueue.filter((item) => selected.has(item.did)), [followingQueue, selected]);
+  const allFollowingSelected = followingQueue.length > 0 && selectedFollowing.length === followingQueue.length;
   const scan = data.scan ?? null;
   const stats = useMemo(
     () => [
@@ -156,9 +183,32 @@ export function IazmaGuardDashboard() {
     }));
   };
 
+  const removeQueueItems = (dids: Iterable<string>, actualUnfollows: Iterable<string> = []) => {
+    const resolved = new Set(dids);
+    const unfollowed = new Set(actualUnfollows);
+    setData((current) => {
+      const currentQueue = current.queue ?? [];
+      const followingDelta = currentQueue.filter((item) => unfollowed.has(item.did) && item.is_following).length;
+      return {
+        ...current,
+        queue: currentQueue.filter((item) => !resolved.has(item.did)),
+        counts: {
+          ...current.counts,
+          following: Math.max(0, (current.counts?.following ?? 0) - followingDelta),
+        },
+      };
+    });
+    setSelected((current) => {
+      const next = new Set(current);
+      resolved.forEach((did) => next.delete(did));
+      return next;
+    });
+  };
+
   const runScan = async () => {
     setWorking("scan");
     setError("");
+    setNotice("");
     try {
       let state = await api<Scan>("POST", { action: "scan_start", scope: "all" });
       saveScanState(state);
@@ -168,6 +218,7 @@ export function IazmaGuardDashboard() {
         if (state.status === "running") await pause(750);
       }
       await refresh();
+      setSelected(new Set());
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : "Scan paused before it could finish.");
     } finally {
@@ -178,11 +229,81 @@ export function IazmaGuardDashboard() {
   const action = async (kind: string, did: string) => {
     setWorking(`${kind}:${did}`);
     setError("");
+    setNotice("");
     try {
-      await api("POST", { action: kind, did });
-      await refresh();
+      const result = await api<{ unfollowed?: boolean; alreadyUnfollowed?: boolean }>("POST", { action: kind, did });
+      if (kind === "restore") {
+        setData((current) => ({
+          ...current,
+          suppressions: (current.suppressions ?? []).filter((item) => item.did !== did),
+        }));
+      } else if (kind === "ignore") {
+        removeQueueItems([did]);
+      } else if (kind === "unfollow") {
+        removeQueueItems([did], result.unfollowed === false ? [] : [did]);
+        setNotice(result.alreadyUnfollowed ? "That account was already unfollowed; Guard cleared the stale review item." : "Unfollowed. Guard did not reload the whole dashboard afterward.");
+      } else if (kind === "block") {
+        const target = queue.find((item) => item.did === did);
+        setData((current) => ({
+          ...current,
+          queue: (current.queue ?? []).filter((item) => item.did !== did),
+          counts: {
+            ...current.counts,
+            following: Math.max(0, (current.counts?.following ?? 0) - (target?.is_following ? 1 : 0)),
+            followers: Math.max(0, (current.counts?.followers ?? 0) - (target?.is_follower ? 1 : 0)),
+          },
+        }));
+        setSelected((current) => {
+          const next = new Set(current);
+          next.delete(did);
+          return next;
+        });
+      }
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : "Action failed.");
+    } finally {
+      setWorking("");
+    }
+  };
+
+  const bulkUnfollow = async () => {
+    const pending = selectedFollowing.map((item) => item.did);
+    if (!pending.length) return;
+    if (!window.confirm(`Unfollow ${pending.length} selected account${pending.length === 1 ? "" : "s"}? Guard will do them sequentially rather than all at once.`)) return;
+
+    setWorking("bulk-unfollow");
+    setError("");
+    setNotice("");
+    let completedCount = 0;
+    let alreadyCount = 0;
+    let failedCount = 0;
+    try {
+      for (let offset = 0; offset < pending.length; offset += 40) {
+        const batch = pending.slice(offset, offset + 40);
+        const result = await api<BulkUnfollowResult>("POST", { action: "bulk_unfollow", dids: batch });
+        const unfollowed = result.unfollowed ?? [];
+        const skipped = result.skipped ?? [];
+        const failed = result.failed ?? [];
+        removeQueueItems([...unfollowed, ...skipped], unfollowed);
+        completedCount += unfollowed.length;
+        alreadyCount += skipped.length;
+        failedCount += failed.length;
+
+        if (result.rateLimited) {
+          setError(`Bluesky paused the bulk run after ${completedCount} unfollow${completedCount === 1 ? "" : "s"}. The remaining selections are still checked. Try again in ${cooldownLabel(result.retry_after_ms)}.`);
+          break;
+        }
+        if (failed.length) {
+          setError(`${failed.length} selected account${failed.length === 1 ? "" : "s"} could not be unfollowed. They remain selected so you can retry or open them manually.`);
+        }
+        if (offset + 40 < pending.length) await pause(1_000);
+      }
+      const pieces = [`${completedCount} unfollowed`];
+      if (alreadyCount) pieces.push(`${alreadyCount} already unfollowed`);
+      if (failedCount) pieces.push(`${failedCount} failed`);
+      setNotice(`Bulk cleanup: ${pieces.join(" · ")}.`);
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : "Bulk unfollow failed.");
     } finally {
       setWorking("");
     }
@@ -191,9 +312,11 @@ export function IazmaGuardDashboard() {
   const sync = async () => {
     setWorking("sync");
     setError("");
+    setNotice("");
     try {
       await api("POST", { action: "sync" });
       await refresh();
+      setSelected(new Set());
     } catch (issue) {
       setError(issue instanceof Error ? issue.message : "Sync failed.");
     } finally {
@@ -204,6 +327,7 @@ export function IazmaGuardDashboard() {
   const saveSettings = async (form: FormData) => {
     setWorking("settings");
     setError("");
+    setNotice("");
     try {
       await api("POST", {
         action: "settings",
@@ -270,19 +394,56 @@ export function IazmaGuardDashboard() {
     </div>
 
     {error ? <div className="rounded-xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-100">{error}</div> : null}
+    {notice ? <div className="rounded-xl border border-emerald-300/20 bg-emerald-300/10 p-4 text-sm text-emerald-50">{notice}</div> : null}
 
     <div className="flex gap-1 overflow-x-auto rounded-xl border border-white/10 bg-black/25 p-1">
       {(["review", "suppression", "history", "settings"] as const).map((value) => <button key={value} onClick={() => setTab(value)} className={`rounded-lg px-4 py-2 text-sm capitalize ${tab === value ? "bg-white/10 text-white" : "text-white/45"}`}>{value}</button>)}
     </div>
 
     {tab === "review" ? <div className="space-y-4">
+      {followingQueue.length > 0 ? <div className="flex flex-col gap-3 rounded-2xl border border-[#16c8ff]/20 bg-[#16c8ff]/[0.045] p-4 sm:flex-row sm:items-center">
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-white/70">
+          <input
+            type="checkbox"
+            checked={allFollowingSelected}
+            onChange={(event) => setSelected(event.target.checked ? new Set(followingQueue.map((item) => item.did)) : new Set())}
+            disabled={!!working}
+            className="size-4 accent-[#16c8ff]"
+          />
+          Select all accounts you follow
+        </label>
+        <div className="text-xs text-white/40 sm:ml-auto">{selectedFollowing.length} selected · bulk runs sequentially</div>
+        <button
+          onClick={() => void bulkUnfollow()}
+          disabled={!!working || selectedFollowing.length === 0}
+          className="rounded-xl bg-[#16c8ff] px-4 py-2.5 text-sm font-semibold text-black disabled:opacity-40"
+        >
+          <UserMinus className="mr-1.5 inline size-4" />
+          {working === "bulk-unfollow" ? "Unfollowing…" : `Unfollow selected (${selectedFollowing.length})`}
+        </button>
+      </div> : null}
+
       {queue.length === 0 ? <Empty text="No current cleanup candidates. Run a scan to review followers and accounts you follow." /> : queue.map((item) => <article key={item.did} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 sm:p-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
           <div className="flex min-w-0 flex-1 gap-4">
+            {item.is_following ? <input
+              aria-label={`Select @${item.handle || item.did} for bulk unfollow`}
+              type="checkbox"
+              checked={selected.has(item.did)}
+              onChange={(event) => setSelected((current) => {
+                const next = new Set(current);
+                if (event.target.checked) next.add(item.did); else next.delete(item.did);
+                return next;
+              })}
+              disabled={!!working}
+              className="mt-4 size-4 shrink-0 accent-[#16c8ff]"
+            /> : null}
             {item.avatar ? <img src={item.avatar} alt="" className="size-12 rounded-full object-cover" /> : <div className="grid size-12 shrink-0 place-items-center rounded-full bg-white/10 text-lg">?</div>}
             <div className="min-w-0">
-              <h2 className="truncate text-lg font-semibold">{item.display_name || `@${item.handle}`}</h2>
-              <p className="truncate text-sm text-white/45">@{item.handle}</p>
+              <a href={profileHref(item)} target="_blank" rel="noopener noreferrer" className="group inline-block max-w-full">
+                <h2 className="truncate text-lg font-semibold group-hover:text-[#9be9ff]">{item.display_name || `@${item.handle || item.did}`} <ExternalLink className="ml-1 inline size-3.5 opacity-45" /></h2>
+                <p className="truncate text-sm text-white/45 group-hover:text-white/65">@{item.handle || item.did}</p>
+              </a>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(item.categories ?? []).map((category) => <span key={category} className="rounded-full border border-[#16c8ff]/20 bg-[#16c8ff]/8 px-2.5 py-1 text-xs text-[#9be9ff]">{labels[category] || category}</span>)}
                 <span className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-white/45">score {item.score ?? 0}</span>
@@ -292,6 +453,7 @@ export function IazmaGuardDashboard() {
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
+            <a href={profileHref(item)} target="_blank" rel="noopener noreferrer" className="rounded-xl border border-white/12 px-3 py-2 text-sm text-white/65 hover:text-white"><ExternalLink className="mr-1.5 inline size-4" />Open profile</a>
             <button onClick={() => void action("ignore", item.did)} disabled={!!working} className="rounded-xl border border-white/12 px-3 py-2 text-sm text-white/65 disabled:opacity-50"><Check className="mr-1.5 inline size-4" />Keep</button>
             {item.is_following ? <button onClick={() => void action("unfollow", item.did)} disabled={!!working} className="rounded-xl border border-[#16c8ff]/30 bg-[#16c8ff]/10 px-3 py-2 text-sm text-[#b5efff] disabled:opacity-50"><UserMinus className="mr-1.5 inline size-4" />Unfollow</button> : null}
             <button onClick={() => void action("block", item.did)} disabled={!!working} className="rounded-xl bg-red-500/85 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50"><Ban className="mr-1.5 inline size-4" />{item.is_following ? "Unfollow + Block" : "Block"}</button>
