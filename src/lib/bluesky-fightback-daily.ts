@@ -8,6 +8,7 @@ const PUBLIC_API = "https://public.api.bsky.app/xrpc";
 const TIME_ZONE = "America/Denver";
 const DEFAULT_HOUR = 8;
 const DEFAULT_MINUTE = 45;
+const DEFAULT_CUTOFF_HOUR = 12;
 const FIGHTBACK_HANDLE = "fightbacknews.bsky.social";
 const FIGHTBACK_DID = "did:plc:t4cmpj5m5pyplz4m5tsmjdlz";
 
@@ -48,22 +49,36 @@ function localParts(date = new Date()) {
   };
 }
 
+function validHour(value: unknown, fallback: number) {
+  const hour = Number(value);
+  return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : fallback;
+}
+
 function scheduledTime() {
-  const hour = Number(
+  const hour = validHour(
     process.env.FIGHTBACK_REPOST_HOUR ??
-      process.env.DAILY_BOOST_NOTIFICATION_HOUR ??
-      DEFAULT_HOUR,
+      process.env.DAILY_BOOST_NOTIFICATION_HOUR,
+    DEFAULT_HOUR,
   );
   const minute = Number(process.env.FIGHTBACK_REPOST_MINUTE ?? DEFAULT_MINUTE);
+  const cutoffHour = Math.max(
+    hour + 1,
+    validHour(process.env.FIGHTBACK_REPOST_CUTOFF_HOUR, DEFAULT_CUTOFF_HOUR),
+  );
   return {
-    hour: Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : DEFAULT_HOUR,
+    hour,
     minute: Number.isInteger(minute) && minute >= 0 && minute <= 59 ? minute : DEFAULT_MINUTE,
+    cutoffHour,
   };
 }
 
-function isDue(local: ReturnType<typeof localParts>) {
+function scheduleState(local: ReturnType<typeof localParts>) {
   const due = scheduledTime();
-  return local.hour > due.hour || (local.hour === due.hour && local.minute >= due.minute);
+  if (local.hour < due.hour || (local.hour === due.hour && local.minute < due.minute)) {
+    return "before" as const;
+  }
+  if (local.hour >= due.cutoffHour) return "after" as const;
+  return "due" as const;
 }
 
 async function ensureSchema(sql: Sql = db()) {
@@ -123,8 +138,12 @@ export async function runDailyFightBackRepost(
   options: { force?: boolean } = {},
 ) {
   const local = localParts();
-  if (!options.force && !isDue(local)) {
+  const timing = scheduleState(local);
+  if (!options.force && timing === "before") {
     return { ok: true, skipped: true, message: "Before Fight Back News repost time." };
+  }
+  if (!options.force && timing === "after") {
+    return { ok: true, skipped: true, message: "Outside Fight Back News morning repost window." };
   }
 
   const automation = await getAutomationBlueskyActor();
