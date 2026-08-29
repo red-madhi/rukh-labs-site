@@ -47,6 +47,14 @@ jobs:
             -H "Authorization: Bearer $TOKEN" \
             https://rukhlabs.com/api/advanced-network/dropsite-daily >/dev/null
 
+      - name: Catch up Fight Back News repost
+        run: |
+          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          curl --fail --silent --show-error --retry 2 --retry-delay 3 \
+            -H "Authorization: Bearer $TOKEN" \
+            https://rukhlabs.com/api/advanced-network/fightback-daily >/dev/null
+
       - name: Catch up staggered dev-project reposts
         run: |
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
