@@ -8,6 +8,7 @@ const PUBLIC_API = "https://public.api.bsky.app/xrpc";
 const TIME_ZONE = "America/Denver";
 const FEED_PAGE_LIMIT = 100;
 const FEED_MAX_PAGES = 5;
+const REFRESHABLE_STATUSES = new Set(["no-new-post", "failed", "missing"]);
 
 type Sql = ReturnType<typeof db>;
 
@@ -179,9 +180,6 @@ export async function refreshDailySourceCandidate(
 
   const sql = db();
   await ensureSchema(sql, config);
-  const latest = await latestEligibleOriginal(config);
-  if (!latest) return;
-
   const t = table(sql, config);
   const rows = await sql`
     select status,post_uri,post_cid
@@ -189,6 +187,14 @@ export async function refreshDailySourceCandidate(
     where local_date=${local.date}::date
   `;
   const existing = rows[0];
+  const status = existing ? String(existing.status ?? "") : null;
+
+  // A completed or actively publishing day never needs another source-feed scan.
+  // Only an empty day or a retryable/no-new state can accept a newer candidate.
+  if (existing && !REFRESHABLE_STATUSES.has(status ?? "")) return;
+
+  const latest = await latestEligibleOriginal(config);
+  if (!latest) return;
 
   if (!existing) {
     await sql`
@@ -205,8 +211,6 @@ export async function refreshDailySourceCandidate(
     return;
   }
 
-  const status = String(existing.status ?? "");
-  if (!new Set(["no-new-post", "failed", "missing"]).has(status)) return;
   if (
     String(existing.post_uri ?? "") === latest.uri &&
     String(existing.post_cid ?? "") === latest.cid
