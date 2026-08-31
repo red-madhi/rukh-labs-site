@@ -9,6 +9,7 @@ export const maxDuration = 60;
 const ALLOWED_WORKFLOWS = [
   "iazma-daily-boosts.yml",
   "bluesky-follow-automation.yml",
+  "iazma-social-automation-v2.yml",
 ];
 const ALLOWED_EVENTS = ["schedule", "workflow_dispatch", "push"];
 
