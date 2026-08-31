@@ -2,6 +2,7 @@ import {
   runDailySourceRepost,
   type DailySourceRepostOptions,
 } from "@/lib/bluesky-daily-source-repost";
+import { refreshDailySourceCandidate } from "@/lib/bluesky-daily-source-refresh";
 
 const CONFIG = {
   key: "dropsite",
@@ -14,6 +15,9 @@ const CONFIG = {
   defaultMinute: 30,
 } as const;
 
-export function runDailyDropSiteRepost(options: DailySourceRepostOptions = {}) {
+export async function runDailyDropSiteRepost(
+  options: DailySourceRepostOptions = {},
+) {
+  await refreshDailySourceCandidate(CONFIG, options);
   return runDailySourceRepost(CONFIG, options);
 }
