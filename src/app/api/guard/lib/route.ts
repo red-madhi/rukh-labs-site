@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hasAdvancedNetworkAccess } from "@/lib/advanced-network-access";
 import {
-  bulkMuteLibGuardDids,
   bulkUnfollowLibGuardDids,
-  bulkUnmuteLibGuardDids,
   dismissLibGuardDid,
   libGuardDashboard,
   processLibGuardBatch,
   saveLibGuardSettings,
   startLibGuardScan,
 } from "@/lib/iazma-lib-guard-server";
+import {
+  bulkMuteLibGuardDids,
+  bulkUnmuteLibGuardDids,
+} from "@/lib/iazma-lib-guard-mute-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
