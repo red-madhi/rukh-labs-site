@@ -2,10 +2,15 @@ name: IAZMA Daily Boosts
 
 on:
   schedule:
-    # Start at 8:10 AM Denver and retry through the afternoon. GitHub's
-    # scheduler may start a run late; the endpoint catches up only once.
-    - cron: "10 14-23 * * *"
+    # Offset from the busiest part of the hour. The endpoint owns its Denver-
+    # time due check and daily idempotency, so hourly retries are safe.
+    - cron: "17 14-23 * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/iazma-daily-boosts.yml"
 
 permissions:
   contents: read
@@ -28,5 +33,6 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             URL="$URL?force=1"
           fi
-          curl --fail --silent --show-error --retry 2 --retry-delay 3 \
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+            --max-time 90 \
             -H "Authorization: Bearer $TOKEN" "$URL"
