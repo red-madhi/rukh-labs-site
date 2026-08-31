@@ -93,6 +93,8 @@ jobs:
           OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
           TARGET_URL: ${{ matrix.url }}
         run: |
+          # The protected endpoints are independently idempotent and return a
+          # JSON result describing whether work posted, skipped, or was already done.
           set -euo pipefail
           for attempt in 1 2 3 4 5 6; do
             if RESPONSE=$(curl --fail --silent --show-error \
