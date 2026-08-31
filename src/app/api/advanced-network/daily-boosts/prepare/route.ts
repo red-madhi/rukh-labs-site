@@ -10,6 +10,7 @@ const ALLOWED_WORKFLOWS = [
   "iazma-daily-boosts.yml",
   "bluesky-follow-automation.yml",
   "iazma-social-automation-v2.yml",
+  "rukh-leads-contact-enrichment.yml",
 ];
 const ALLOWED_EVENTS = ["schedule", "workflow_dispatch", "push"];
 
