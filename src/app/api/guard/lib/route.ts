@@ -12,6 +12,7 @@ import {
   bulkMuteLibGuardDids,
   bulkUnmuteLibGuardDids,
 } from "@/lib/iazma-lib-guard-mute-server";
+import { libGuardResultsOverlay } from "@/lib/iazma-lib-guard-results-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,7 +36,16 @@ function failureResponse(error: unknown) {
 export async function GET() {
   if (!(await hasAdvancedNetworkAccess())) return unauthorized();
   try {
-    return NextResponse.json(await libGuardDashboard());
+    const dashboard = await libGuardDashboard();
+    const overlay = await libGuardResultsOverlay();
+    return NextResponse.json({
+      ...dashboard,
+      queue: overlay.queue,
+      counts: {
+        ...dashboard.counts,
+        ...overlay.counts,
+      },
+    });
   } catch (error) {
     console.error(JSON.stringify({ event: "lib_guard_dashboard_failed", failure: error instanceof Error ? error.name : "UnknownError" }));
     return failureResponse(error);
@@ -50,7 +60,14 @@ export async function POST(request: NextRequest) {
   try {
     switch (action) {
       case "scan_start": return NextResponse.json(await startLibGuardScan());
-      case "scan_batch": return NextResponse.json(await processLibGuardBatch(String(body.scanId ?? ""), Number(body.limit ?? 4)));
+      case "scan_batch": {
+        const state = await processLibGuardBatch(String(body.scanId ?? ""), Number(body.limit ?? 4));
+        if (state.status === "complete") {
+          const overlay = await libGuardResultsOverlay();
+          return NextResponse.json({ ...state, flagged: Number(overlay.counts?.candidates ?? state.flagged ?? 0) });
+        }
+        return NextResponse.json(state);
+      }
       case "settings": return NextResponse.json(await saveLibGuardSettings(body));
       case "bulk_mute": return NextResponse.json(await bulkMuteLibGuardDids(Array.isArray(body.dids) ? body.dids : []));
       case "bulk_unmute": return NextResponse.json(await bulkUnmuteLibGuardDids(Array.isArray(body.dids) ? body.dids : []));
