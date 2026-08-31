@@ -12,6 +12,7 @@ import {
   bulkMuteLibGuardDids,
   bulkUnmuteLibGuardDids,
 } from "@/lib/iazma-lib-guard-mute-server";
+import { libGuardResultsOverlay } from "@/lib/iazma-lib-guard-results-server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,7 +36,16 @@ function failureResponse(error: unknown) {
 export async function GET() {
   if (!(await hasAdvancedNetworkAccess())) return unauthorized();
   try {
-    return NextResponse.json(await libGuardDashboard());
+    const dashboard = await libGuardDashboard();
+    const overlay = await libGuardResultsOverlay();
+    return NextResponse.json({
+      ...dashboard,
+      queue: overlay.queue,
+      counts: {
+        ...dashboard.counts,
+        ...overlay.counts,
+      },
+    });
   } catch (error) {
     console.error(JSON.stringify({ event: "lib_guard_dashboard_failed", failure: error instanceof Error ? error.name : "UnknownError" }));
     return failureResponse(error);
