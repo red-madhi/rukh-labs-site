@@ -12,6 +12,13 @@ on:
       - main
     paths:
       - ".github/workflows/rukh-leads-contact-enrichment.yml"
+      - "src/lib/bluesky-repost-automation.ts"
+      - "src/lib/bluesky-daily-source-repost.ts"
+      - "src/lib/bluesky-daily-source-refresh.ts"
+      - "src/lib/bluesky-dropsite-daily.ts"
+      - "src/lib/bluesky-fightback-daily.ts"
+      - "src/app/api/advanced-network/dropsite-daily/route.ts"
+      - "src/app/api/advanced-network/fightback-daily/route.ts"
 
 permissions:
   contents: read
@@ -65,52 +72,44 @@ jobs:
       github.event_name == 'schedule' && github.event.schedule == '7,17,27,37,47,57 * * * *'
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: IAZMA daily boost preparation
             url: https://rukhlabs.com/api/advanced-network/daily-boosts/prepare
-            force_on_push: false
+            force_on_demand: false
             verify_repost: false
           - name: IAZMA Drop Site repost
             url: https://rukhlabs.com/api/advanced-network/dropsite-daily
-            force_on_push: true
+            force_on_demand: true
             verify_repost: true
           - name: IAZMA Fight Back News repost
             url: https://rukhlabs.com/api/advanced-network/fightback-daily
-            force_on_push: true
+            force_on_demand: true
             verify_repost: true
           - name: IAZMA dev project reposts
             url: https://rukhlabs.com/api/advanced-network/dev-project-daily?catchup=1
-            force_on_push: false
+            force_on_demand: false
             verify_repost: false
     steps:
-      - name: Request GitHub OIDC token
-        id: oidc
-        run: |
-          TOKEN=$(curl -fsS \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
-          test -n "$TOKEN" -a "$TOKEN" != "null"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
-
-      - name: Run ${{ matrix.name }}
+      - name: Run and verify ${{ matrix.name }}
         env:
-          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
           TARGET_URL: ${{ matrix.url }}
-          FORCE_ON_PUSH: ${{ matrix.force_on_push }}
+          FORCE_ON_DEMAND: ${{ matrix.force_on_demand }}
           VERIFY_REPOST: ${{ matrix.verify_repost }}
         run: |
           # Protected repost endpoints do not count a database flag as success.
           # They read the repost back from the configured account repository and
           # require Bluesky's public AppView to expose it before returning 200.
-          set -euo pipefail
+          # Push/manual checks retry through the production-deployment window.
+          set -uo pipefail
 
           RUN_URL="$TARGET_URL"
           FORCED_RUN=false
-          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$FORCE_ON_PUSH" = "true" ]; then
+          if [ "$FORCE_ON_DEMAND" = "true" ] && \
+             { [ "$GITHUB_EVENT_NAME" = "push" ] || [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; }; then
             FORCED_RUN=true
             if [[ "$RUN_URL" == *"?"* ]]; then
               RUN_URL="${RUN_URL}&force=1"
@@ -119,47 +118,80 @@ jobs:
             fi
           fi
 
-          for attempt in 1 2 3 4 5 6; do
-            if RESPONSE=$(curl --fail --silent --show-error \
-              --max-time 90 \
-              -H "Authorization: Bearer $OIDC_TOKEN" \
-              "$RUN_URL"); then
+          for attempt in 1 2 3 4 5 6 7 8; do
+            echo "Attempt $attempt of 8"
+
+            if ! OIDC_TOKEN=$(curl -fsS \
+              -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value); then
+              OIDC_TOKEN=""
+            fi
+
+            if [ -z "$OIDC_TOKEN" ] || [ "$OIDC_TOKEN" = "null" ]; then
+              echo "Could not obtain a fresh GitHub OIDC token."
+            else
+              RESPONSE_FILE=$(mktemp)
+              HTTP_CODE=$(curl --silent --show-error \
+                --max-time 55 \
+                --output "$RESPONSE_FILE" \
+                --write-out "%{http_code}" \
+                -H "Authorization: Bearer $OIDC_TOKEN" \
+                "$RUN_URL" || true)
+              RESPONSE=$(cat "$RESPONSE_FILE")
+              rm -f "$RESPONSE_FILE"
+
               printf '%s\n' "$RESPONSE"
 
-              if [ "$VERIFY_REPOST" = "true" ]; then
-                if [ "$FORCED_RUN" = "true" ]; then
-                  printf '%s' "$RESPONSE" | jq -e '
-                    .ok == true and
-                    .verification.repositoryVerified == true and
-                    .verification.publicVisible == true and
-                    (.actor.did | type == "string" and length > 0) and
-                    (.actor.handle | type == "string" and length > 0) and
-                    (.postUri | type == "string" and startswith("at://")) and
-                    (.repostUri | type == "string" and startswith("at://"))
-                  ' >/dev/null
-                else
-                  printf '%s' "$RESPONSE" | jq -e '
-                    .ok == true and (
-                      (
-                        .verification.repositoryVerified == true and
-                        .verification.publicVisible == true and
-                        (.actor.did | type == "string" and length > 0) and
-                        (.actor.handle | type == "string" and length > 0) and
-                        (.postUri | type == "string" and startswith("at://")) and
-                        (.repostUri | type == "string" and startswith("at://"))
-                      ) or
-                      (.message | type == "string" and (
-                        startswith("Before ") or startswith("Outside ")
-                      ))
-                    )
-                  ' >/dev/null
+              VALID_RESPONSE=false
+              if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]]; then
+                VALID_RESPONSE=true
+
+                if [ "$VERIFY_REPOST" = "true" ]; then
+                  if [ "$FORCED_RUN" = "true" ]; then
+                    if ! printf '%s' "$RESPONSE" | jq -e '
+                      .ok == true and
+                      .verification.repositoryVerified == true and
+                      .verification.publicVisible == true and
+                      (.actor.did | type == "string" and length > 0) and
+                      (.actor.handle | type == "string" and length > 0) and
+                      (.postUri | type == "string" and startswith("at://")) and
+                      (.repostUri | type == "string" and startswith("at://"))
+                    ' >/dev/null; then
+                      VALID_RESPONSE=false
+                    fi
+                  else
+                    if ! printf '%s' "$RESPONSE" | jq -e '
+                      .ok == true and (
+                        (
+                          .verification.repositoryVerified == true and
+                          .verification.publicVisible == true and
+                          (.actor.did | type == "string" and length > 0) and
+                          (.actor.handle | type == "string" and length > 0) and
+                          (.postUri | type == "string" and startswith("at://")) and
+                          (.repostUri | type == "string" and startswith("at://"))
+                        ) or
+                        (.message | type == "string" and (
+                          startswith("Before ") or startswith("Outside ")
+                        ))
+                      )
+                    ' >/dev/null; then
+                      VALID_RESPONSE=false
+                    fi
+                  fi
                 fi
               fi
-              exit 0
+
+              if [ "$VALID_RESPONSE" = "true" ]; then
+                exit 0
+              fi
+
+              echo "Response was not yet a verified success (HTTP $HTTP_CODE)."
             fi
 
-            if [ "$attempt" -lt 6 ]; then
-              sleep 15
+            if [ "$attempt" -lt 8 ]; then
+              sleep 20
             fi
           done
+
+          echo "Automation never reached a verified success state."
           exit 1
