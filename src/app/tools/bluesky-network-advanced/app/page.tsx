@@ -9,6 +9,7 @@ import { AdvancedNetworkFitPanel } from "@/components/tools/advanced-network-fit
 import { AdvancedNetworkGoal } from "@/components/tools/advanced-network-goal";
 import { AdvancedNetworkLearningSystem } from "@/components/tools/advanced-network-learning-system";
 import { AdvancedNetworkProgress } from "@/components/tools/advanced-network-progress";
+import { AdvancedNetworkSocialAutomationStatus } from "@/components/tools/advanced-network-social-automation-status";
 import { AdvancedNetworkStrategyPanel } from "@/components/tools/advanced-network-strategy-panel";
 import { AdvancedNetworkUsabilityEnhancer } from "@/components/tools/advanced-network-usability-enhancer";
 import { AdvancedBlueskyOAuthProvider } from "@/components/tools/advanced-network-oauth";
@@ -89,7 +90,11 @@ export default async function AdvancedNetworkAppPage() {
                 </div>
                 <Link
                   href="/tools/bluesky-network-advanced/app/daily-boosts"
-                  className={buttonStyles({ variant: "glass", size: "sm", className: "w-fit shrink-0" })}
+                  className={buttonStyles({
+                    variant: "glass",
+                    size: "sm",
+                    className: "w-fit shrink-0",
+                  })}
                 >
                   Open Daily Boosts
                 </Link>
@@ -106,12 +111,17 @@ export default async function AdvancedNetworkAppPage() {
                 </div>
                 <Link
                   href="/tools/bluesky-network-advanced/app/follower-sources"
-                  className={buttonStyles({ variant: "glass", size: "sm", className: "w-fit shrink-0" })}
+                  className={buttonStyles({
+                    variant: "glass",
+                    size: "sm",
+                    className: "w-fit shrink-0",
+                  })}
                 >
                   Open Follower Sources
                 </Link>
               </div>
             </div>
+            <AdvancedNetworkSocialAutomationStatus />
             <AdvancedNetworkUsabilityEnhancer />
             <AdvancedNetworkLearningSystem />
             <AdvancedNetworkStartingScope />
