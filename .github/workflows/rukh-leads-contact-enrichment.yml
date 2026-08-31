@@ -72,12 +72,20 @@ jobs:
         include:
           - name: IAZMA daily boost preparation
             url: https://rukhlabs.com/api/advanced-network/daily-boosts/prepare
+            force_on_push: false
+            verify_repost: false
           - name: IAZMA Drop Site repost
             url: https://rukhlabs.com/api/advanced-network/dropsite-daily
+            force_on_push: true
+            verify_repost: true
           - name: IAZMA Fight Back News repost
             url: https://rukhlabs.com/api/advanced-network/fightback-daily
+            force_on_push: true
+            verify_repost: true
           - name: IAZMA dev project reposts
             url: https://rukhlabs.com/api/advanced-network/dev-project-daily?catchup=1
+            force_on_push: false
+            verify_repost: false
     steps:
       - name: Request GitHub OIDC token
         id: oidc
@@ -92,18 +100,64 @@ jobs:
         env:
           OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
           TARGET_URL: ${{ matrix.url }}
+          FORCE_ON_PUSH: ${{ matrix.force_on_push }}
+          VERIFY_REPOST: ${{ matrix.verify_repost }}
         run: |
-          # The protected endpoints are independently idempotent and return a
-          # JSON result describing whether work posted, skipped, or was already done.
+          # Protected repost endpoints do not count a database flag as success.
+          # They read the repost back from the configured account repository and
+          # require Bluesky's public AppView to expose it before returning 200.
           set -euo pipefail
+
+          RUN_URL="$TARGET_URL"
+          FORCED_RUN=false
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$FORCE_ON_PUSH" = "true" ]; then
+            FORCED_RUN=true
+            if [[ "$RUN_URL" == *"?"* ]]; then
+              RUN_URL="${RUN_URL}&force=1"
+            else
+              RUN_URL="${RUN_URL}?force=1"
+            fi
+          fi
+
           for attempt in 1 2 3 4 5 6; do
             if RESPONSE=$(curl --fail --silent --show-error \
               --max-time 90 \
               -H "Authorization: Bearer $OIDC_TOKEN" \
-              "$TARGET_URL"); then
+              "$RUN_URL"); then
               printf '%s\n' "$RESPONSE"
+
+              if [ "$VERIFY_REPOST" = "true" ]; then
+                if [ "$FORCED_RUN" = "true" ]; then
+                  printf '%s' "$RESPONSE" | jq -e '
+                    .ok == true and
+                    .verification.repositoryVerified == true and
+                    .verification.publicVisible == true and
+                    (.actor.did | type == "string" and length > 0) and
+                    (.actor.handle | type == "string" and length > 0) and
+                    (.postUri | type == "string" and startswith("at://")) and
+                    (.repostUri | type == "string" and startswith("at://"))
+                  ' >/dev/null
+                else
+                  printf '%s' "$RESPONSE" | jq -e '
+                    .ok == true and (
+                      (
+                        .verification.repositoryVerified == true and
+                        .verification.publicVisible == true and
+                        (.actor.did | type == "string" and length > 0) and
+                        (.actor.handle | type == "string" and length > 0) and
+                        (.postUri | type == "string" and startswith("at://")) and
+                        (.repostUri | type == "string" and startswith("at://"))
+                      ) or
+                      (.message | type == "string" and (
+                        startswith("Before ") or startswith("Outside ")
+                      ))
+                    )
+                  ' >/dev/null
+                fi
+              fi
               exit 0
             fi
+
             if [ "$attempt" -lt 6 ]; then
               sleep 15
             fi
