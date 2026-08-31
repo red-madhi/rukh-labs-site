@@ -60,7 +60,14 @@ export async function POST(request: NextRequest) {
   try {
     switch (action) {
       case "scan_start": return NextResponse.json(await startLibGuardScan());
-      case "scan_batch": return NextResponse.json(await processLibGuardBatch(String(body.scanId ?? ""), Number(body.limit ?? 4)));
+      case "scan_batch": {
+        const state = await processLibGuardBatch(String(body.scanId ?? ""), Number(body.limit ?? 4));
+        if (state.status === "complete") {
+          const overlay = await libGuardResultsOverlay();
+          return NextResponse.json({ ...state, flagged: Number(overlay.counts?.candidates ?? state.flagged ?? 0) });
+        }
+        return NextResponse.json(state);
+      }
       case "settings": return NextResponse.json(await saveLibGuardSettings(body));
       case "bulk_mute": return NextResponse.json(await bulkMuteLibGuardDids(Array.isArray(body.dids) ? body.dids : []));
       case "bulk_unmute": return NextResponse.json(await bulkUnmuteLibGuardDids(Array.isArray(body.dids) ? body.dids : []));
