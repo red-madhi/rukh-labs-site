@@ -3,7 +3,15 @@ name: Rukh Leads Contact Enrichment
 on:
   schedule:
     - cron: "37 9,21 * * *"
+    # IAZMA catch-up tick. This workflow already has a proven GitHub schedule
+    # history, so social automation does not depend on a newly registered cron.
+    - cron: "7,17,27,37,47,57 * * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/rukh-leads-contact-enrichment.yml"
 
 permissions:
   contents: read
@@ -14,6 +22,9 @@ env:
 
 jobs:
   contact-email:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' && github.event.schedule == '37 9,21 * * *'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -22,3 +33,77 @@ jobs:
           TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
           test -n "$TOKEN" -a "$TOKEN" != "null"
           curl -fsS --retry 2 --retry-delay 2 --max-time 55 -H "Authorization: Bearer $TOKEN" "$GATEWAY_URL?stage=email"
+
+  iazma-public:
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' && github.event.schedule == '7,17,27,37,47,57 * * * *'
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: IAZMA follower sync
+            url: https://rukhlabs.com/api/advanced-network/follower-sync
+          - name: IAZMA weekly thanks
+            url: https://rukhlabs.com/api/advanced-network/weekly-thanks
+    steps:
+      - name: Run ${{ matrix.name }}
+        env:
+          TARGET_URL: ${{ matrix.url }}
+        run: |
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 \
+            --max-time 90 "$TARGET_URL" >/dev/null
+
+  iazma-social:
+    if: >-
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'schedule' && github.event.schedule == '7,17,27,37,47,57 * * * *'
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: IAZMA daily boost preparation
+            url: https://rukhlabs.com/api/advanced-network/daily-boosts/prepare
+          - name: IAZMA Drop Site repost
+            url: https://rukhlabs.com/api/advanced-network/dropsite-daily
+          - name: IAZMA Fight Back News repost
+            url: https://rukhlabs.com/api/advanced-network/fightback-daily
+          - name: IAZMA dev project reposts
+            url: https://rukhlabs.com/api/advanced-network/dev-project-daily?catchup=1
+    steps:
+      - name: Request GitHub OIDC token
+        id: oidc
+        run: |
+          TOKEN=$(curl -fsS \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
+      - name: Run ${{ matrix.name }}
+        env:
+          OIDC_TOKEN: ${{ steps.oidc.outputs.token }}
+          TARGET_URL: ${{ matrix.url }}
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5 6; do
+            if RESPONSE=$(curl --fail --silent --show-error \
+              --max-time 90 \
+              -H "Authorization: Bearer $OIDC_TOKEN" \
+              "$TARGET_URL"); then
+              printf '%s\n' "$RESPONSE"
+              exit 0
+            fi
+            if [ "$attempt" -lt 6 ]; then
+              sleep 15
+            fi
+          done
+          exit 1
