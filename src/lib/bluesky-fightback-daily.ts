@@ -2,6 +2,7 @@ import {
   runDailySourceRepost,
   type DailySourceRepostOptions,
 } from "@/lib/bluesky-daily-source-repost";
+import { refreshDailySourceCandidate } from "@/lib/bluesky-daily-source-refresh";
 
 const CONFIG = {
   key: "fightback",
@@ -15,6 +16,9 @@ const CONFIG = {
   defaultCutoffHour: 12,
 } as const;
 
-export function runDailyFightBackRepost(options: DailySourceRepostOptions = {}) {
+export async function runDailyFightBackRepost(
+  options: DailySourceRepostOptions = {},
+) {
+  await refreshDailySourceCandidate(CONFIG, options);
   return runDailySourceRepost(CONFIG, options);
 }
