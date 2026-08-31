@@ -6,11 +6,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const ALLOWED_WORKFLOWS = [
-  "bluesky-follow-automation.yml",
-  "iazma-social-automation-v2.yml",
-  "rukh-leads-contact-enrichment.yml",
-];
+const ALLOWED_WORKFLOWS = ["rukh-leads-contact-enrichment.yml"];
 const ALLOWED_EVENTS = ["schedule", "workflow_dispatch", "push"];
 
 export async function GET(request: NextRequest) {
@@ -34,7 +30,7 @@ export async function GET(request: NextRequest) {
       force: request.nextUrl.searchParams.get("force") === "1",
     });
     return NextResponse.json(result, {
-      status: result.ok ? 200 : 500,
+      status: result.ok ? 200 : 503,
       headers: {
         "Cache-Control": "no-store, max-age=0",
         "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
