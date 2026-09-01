@@ -26,16 +26,16 @@ function excerpt(text, max = 180) {
 }
 
 function deepText(value, depth = 0) {
-  if (!value || depth > 4) return [];
+  if (!value || depth > 5) return [];
   if (typeof value === "string") return [value];
   if (Array.isArray(value)) return value.flatMap((item) => deepText(item, depth + 1));
   if (typeof value !== "object") return [];
   const object = value as Record<string, unknown>;
   const output = [];
-  for (const key of ["text", "title", "description", "alt"]) {
+  for (const key of ["text", "title", "description", "alt", "uri", "url", "href"]) {
     if (typeof object[key] === "string") output.push(String(object[key]));
   }
-  for (const key of ["external", "media", "record", "embed", "value"]) {
+  for (const key of ["external", "media", "record", "embed", "value", "images"]) {
     if (key in object) output.push(...deepText(object[key], depth + 1));
   }
   return output;
@@ -54,21 +54,46 @@ const UKRAINE_PATTERNS = [
   /\bzelensk(?:y|yy)\b/i,
   /\bkyiv\b|\bkiev\b/i,
   /\bcrimea\b|\bdonbas\b|\bdonetsk\b|\bluhansk\b/i,
-  /\brussia(?:n)?\b.{0,45}\bukrain(?:e|ian)\b/i,
-  /\bukrain(?:e|ian)\b.{0,45}\brussia(?:n)?\b/i,
-  /\bnato\b.{0,45}\bukrain(?:e|ian)\b/i,
-  /\bukrain(?:e|ian)\b.{0,45}\bnato\b/i,
+  /\bslava\s+ukraini\b/i,
+  /\bstand\s+with\s+ukraine\b/i,
+  /\barm\s+ukraine\b/i,
+  /\baid\s+to\s+ukraine\b|\bukraine\s+aid\b/i,
+  /\brussian\s+(?:invasion|aggression)\b/i,
+  /🇺🇦/u,
+  /\brussia(?:n)?\b.{0,60}\bukrain(?:e|ian)\b/i,
+  /\bukrain(?:e|ian)\b.{0,60}\brussia(?:n)?\b/i,
+  /\bnato\b.{0,60}\bukrain(?:e|ian)\b/i,
+  /\bukrain(?:e|ian)\b.{0,60}\bnato\b/i,
+  /\bputin\b.{0,60}\b(?:ukrain(?:e|ian)|kyiv|nato)\b/i,
+  /\b(?:ukrain(?:e|ian)|kyiv|nato)\b.{0,60}\bputin\b/i,
 ];
 
 const LIB_MEDIA_PATTERNS = [
-  /\bmsnbc\b/i,
-  /\bcnn\b/i,
+  /\bmsnbc\b|msnbc\.com/i,
+  /\bcnn\b|cnn\.com/i,
+  /\bnbc\s+news\b|nbcnews\.com/i,
+  /\babc\s+news\b|abcnews\.go\.com/i,
+  /\bcbs\s+news\b|cbsnews\.com/i,
+  /\bpbs\s+newshour\b|pbs\.org\/newshour/i,
   /\brachel\s+maddow\b|\bmaddow\b/i,
   /\bmorning\s+joe\b/i,
   /\bnicolle\s+wallace\b/i,
   /\blawrence\s+o['’]?donnell\b/i,
   /\bchris\s+hayes\b/i,
-  /\bpod\s+save\s+america\b|\bcrooked\s+media\b/i,
+  /\bjoy\s+reid\b/i,
+  /\banderson\s+cooper\b/i,
+  /\bjake\s+tapper\b/i,
+  /\bpod\s+save\s+america\b|\bcrooked\s+media\b|crooked\.com/i,
+  /\bthe\s+bulwark\b|thebulwark\.com/i,
+  /\bmeidas(?:touch)?\b|meidastouch\.com/i,
+  /\blincoln\s+project\b|lincolnproject\.us/i,
+  /\bbrian\s+tyler\s+cohen\b|briantylercohen/i,
+  /\boccupy\s+democrats\b|occupydemocrats/i,
+  /\bpalmer\s+report\b|palmerreport/i,
+  /\bdaily\s+kos\b|dailykos\.com/i,
+  /\braw\s+story\b|rawstory\.com/i,
+  /\baaron\s+rupar\b|atrupar/i,
+  /\bmueller,?\s+she\s+wrote\b|muellershewrote/i,
   /\bthe\s+view\b/i,
   /\bstephen\s+colbert\b|\bcolbert\b/i,
   /\bjimmy\s+kimmel\b|\bkimmel\b/i,
@@ -192,16 +217,20 @@ export function assessLibGuardProfile(profile, feed, rawSettings, signals = {}, 
     });
   }
 
-  const flagged = score >= settings.min_score;
+  const hasDirectTopicMatch =
+    ukraine.percentage >= settings.ukraine_threshold ||
+    libMedia.percentage >= settings.lib_media_threshold;
+  const hasAnyTopicEvidence = ukraine.hits > 0 || libMedia.hits > 0;
+  const flagged = hasDirectTopicMatch || (hasAnyTopicEvidence && score >= settings.min_score);
   if (flagged) categories.unshift("lib_guard_candidate");
 
   const mutedMs = mutedAt ? Date.now() - new Date(mutedAt).getTime() : 0;
   const mutedDays = Number.isFinite(mutedMs) && mutedMs > 0 ? Math.floor(mutedMs / 86_400_000) : 0;
   let recommendation = "keep";
   if (flagged) {
-    if (mutedAt && mutedDays >= settings.quarantine_days && network.value < 58 && score >= Math.max(62, settings.min_score)) {
+    if (mutedAt && mutedDays >= settings.quarantine_days && network.value < 58 && score >= Math.max(55, settings.min_score)) {
       recommendation = "unfollow";
-    } else if (score >= 72 && network.value <= 45) {
+    } else if (network.value <= 30 && score >= settings.min_score) {
       recommendation = "unfollow";
     } else if (network.value >= 65) {
       recommendation = "mute_keep";

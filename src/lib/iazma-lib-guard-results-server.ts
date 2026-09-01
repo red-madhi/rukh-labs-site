@@ -87,27 +87,23 @@ export async function libGuardResultsOverlay() {
       SELECT
         r.*,
         (
-          r.recalculated_score >= ${minScore}
-          OR r.low_network_value >= 60
-          OR r.ukraine_saturation >= ${ukraineThreshold}
+          r.ukraine_saturation >= ${ukraineThreshold}
           OR r.lib_media_saturation >= ${libMediaThreshold}
-          OR r.repost_ratio >= 80
+          OR (
+            (r.ukraine_saturation > 0 OR r.lib_media_saturation > 0)
+            AND r.recalculated_score >= ${minScore}
+          )
         ) AS candidate,
         CASE
           WHEN r.muted_at IS NOT NULL
             AND floor(extract(epoch FROM (now()-r.muted_at))/86400) >= ${quarantineDays}
             AND r.network_value < 58
-            AND (r.recalculated_score >= GREATEST(55, ${minScore}) OR r.low_network_value >= 68)
+            AND r.recalculated_score >= GREATEST(55, ${minScore})
             THEN 'unfollow'
-          WHEN r.network_value <= 30 AND r.low_network_value >= 70
+          WHEN r.network_value <= 30
+            AND r.recalculated_score >= ${minScore}
             THEN 'unfollow'
           WHEN r.network_value >= 65
-            AND (
-              r.ukraine_saturation >= ${ukraineThreshold}
-              OR r.lib_media_saturation >= ${libMediaThreshold}
-              OR r.repost_ratio >= 80
-              OR r.recalculated_score >= ${minScore}
-            )
             THEN 'mute_keep'
           ELSE 'mute'
         END AS candidate_recommendation
@@ -141,7 +137,7 @@ export async function libGuardResultsOverlay() {
       WHERE l.owner_did=${owner}
         AND l.status='flagged'
         AND r.is_following=true
-      ORDER BY l.score DESC,l.network_value ASC,l.assessed_at DESC NULLS LAST
+      ORDER BY GREATEST(l.ukraine_saturation,l.lib_media_saturation) DESC,l.score DESC,l.network_value ASC,l.assessed_at DESC NULLS LAST
       LIMIT 500
     `,
     sql`
