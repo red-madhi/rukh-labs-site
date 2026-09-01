@@ -106,14 +106,14 @@ export async function libGuardResultsOverlay() {
         r.did,r.handle,r.display_name,r.avatar,r.description,r.followers_count,r.follows_count,
         r.is_follower,r.is_following,l.score,l.recommendation,l.network_value,l.low_network_value,
         l.ukraine_saturation,l.lib_media_saturation,l.repost_ratio,l.metrics,l.categories,l.evidence,
-        l.muted_at,l.assessed_at,(l.status='flagged') AS is_candidate,
+        l.muted_at,l.assessed_at,true AS is_candidate,
         CASE WHEN l.muted_at IS NULL THEN 0 ELSE floor(extract(epoch FROM (now()-l.muted_at))/86400)::int END AS muted_days
       FROM lib_guard_assessments l
       JOIN relationships r ON r.owner_did=l.owner_did AND r.did=l.did
       WHERE l.owner_did=${owner}
-        AND l.status IN ('clear','flagged')
+        AND l.status='flagged'
         AND r.is_following=true
-      ORDER BY (l.status='flagged') DESC,l.score DESC,l.network_value ASC,l.assessed_at DESC NULLS LAST
+      ORDER BY l.score DESC,l.network_value ASC,l.assessed_at DESC NULLS LAST
       LIMIT 500
     `,
     sql`
