@@ -38,9 +38,11 @@ export async function GET() {
   try {
     const dashboard = await libGuardDashboard();
     const overlay = await libGuardResultsOverlay();
+    const candidateCount = Number(overlay.counts?.candidates ?? dashboard.scan?.flagged ?? 0);
     return NextResponse.json({
       ...dashboard,
       queue: overlay.queue,
+      scan: dashboard.scan ? { ...dashboard.scan, flagged: candidateCount } : dashboard.scan,
       counts: {
         ...dashboard.counts,
         ...overlay.counts,
