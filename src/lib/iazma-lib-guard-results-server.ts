@@ -37,57 +37,85 @@ export async function libGuardResultsOverlay() {
   const sql = getSql();
   const owner = await ownerDid(sql);
   const settings = (await sql`
-    SELECT min_score,ukraine_threshold,lib_media_threshold,quarantine_days
+    SELECT min_score,low_value_weight,ukraine_weight,lib_media_weight,repost_weight,
+           ukraine_threshold,lib_media_threshold,quarantine_days
     FROM lib_guard_settings
     WHERE owner_did=${owner}
   `)[0] ?? {
     min_score: 55,
+    low_value_weight: 50,
+    ukraine_weight: 25,
+    lib_media_weight: 20,
+    repost_weight: 5,
     ukraine_threshold: 20,
     lib_media_threshold: 18,
     quarantine_days: 30,
   };
 
   const minScore = Number(settings.min_score ?? 55);
+  const lowValueWeight = Math.max(0, Number(settings.low_value_weight ?? 50));
+  const ukraineWeight = Math.max(0, Number(settings.ukraine_weight ?? 25));
+  const libMediaWeight = Math.max(0, Number(settings.lib_media_weight ?? 20));
+  const repostWeight = Math.max(0, Number(settings.repost_weight ?? 5));
+  const totalWeight = Math.max(1, lowValueWeight + ukraineWeight + libMediaWeight + repostWeight);
   const ukraineThreshold = Number(settings.ukraine_threshold ?? 20);
   const libMediaThreshold = Number(settings.lib_media_threshold ?? 18);
   const quarantineDays = Number(settings.quarantine_days ?? 30);
 
   await sql`
-    WITH scored AS (
+    WITH rescored AS (
       SELECT
         l.owner_did,
         l.did,
+        ROUND((
+          l.low_network_value * ${lowValueWeight}
+          + l.ukraine_saturation * ${ukraineWeight}
+          + l.lib_media_saturation * ${libMediaWeight}
+          + l.repost_ratio * ${repostWeight}
+        ) / ${totalWeight})::int AS recalculated_score,
+        l.low_network_value,
+        l.ukraine_saturation,
+        l.lib_media_saturation,
+        l.repost_ratio,
+        l.network_value,
+        l.muted_at
+      FROM lib_guard_assessments l
+      WHERE l.owner_did=${owner}
+        AND l.status IN ('clear','flagged')
+    ),
+    scored AS (
+      SELECT
+        r.*,
         (
-          l.score >= ${minScore}
-          OR l.low_network_value >= 60
-          OR l.ukraine_saturation >= ${ukraineThreshold}
-          OR l.lib_media_saturation >= ${libMediaThreshold}
-          OR l.repost_ratio >= 80
+          r.recalculated_score >= ${minScore}
+          OR r.low_network_value >= 60
+          OR r.ukraine_saturation >= ${ukraineThreshold}
+          OR r.lib_media_saturation >= ${libMediaThreshold}
+          OR r.repost_ratio >= 80
         ) AS candidate,
         CASE
-          WHEN l.muted_at IS NOT NULL
-            AND floor(extract(epoch FROM (now()-l.muted_at))/86400) >= ${quarantineDays}
-            AND l.network_value < 58
-            AND (l.score >= GREATEST(55, ${minScore}) OR l.low_network_value >= 68)
+          WHEN r.muted_at IS NOT NULL
+            AND floor(extract(epoch FROM (now()-r.muted_at))/86400) >= ${quarantineDays}
+            AND r.network_value < 58
+            AND (r.recalculated_score >= GREATEST(55, ${minScore}) OR r.low_network_value >= 68)
             THEN 'unfollow'
-          WHEN l.network_value <= 30 AND l.low_network_value >= 70
+          WHEN r.network_value <= 30 AND r.low_network_value >= 70
             THEN 'unfollow'
-          WHEN l.network_value >= 65
+          WHEN r.network_value >= 65
             AND (
-              l.ukraine_saturation >= ${ukraineThreshold}
-              OR l.lib_media_saturation >= ${libMediaThreshold}
-              OR l.repost_ratio >= 80
-              OR l.score >= ${minScore}
+              r.ukraine_saturation >= ${ukraineThreshold}
+              OR r.lib_media_saturation >= ${libMediaThreshold}
+              OR r.repost_ratio >= 80
+              OR r.recalculated_score >= ${minScore}
             )
             THEN 'mute_keep'
           ELSE 'mute'
         END AS candidate_recommendation
-      FROM lib_guard_assessments l
-      WHERE l.owner_did=${owner}
-        AND l.status IN ('clear','flagged')
+      FROM rescored r
     )
     UPDATE lib_guard_assessments l
-    SET status=CASE WHEN scored.candidate THEN 'flagged' ELSE 'clear' END,
+    SET score=scored.recalculated_score,
+        status=CASE WHEN scored.candidate THEN 'flagged' ELSE 'clear' END,
         recommendation=CASE WHEN scored.candidate THEN scored.candidate_recommendation ELSE 'keep' END,
         categories=CASE
           WHEN scored.candidate AND NOT ('lib_guard_candidate'=ANY(l.categories))
@@ -106,14 +134,14 @@ export async function libGuardResultsOverlay() {
         r.did,r.handle,r.display_name,r.avatar,r.description,r.followers_count,r.follows_count,
         r.is_follower,r.is_following,l.score,l.recommendation,l.network_value,l.low_network_value,
         l.ukraine_saturation,l.lib_media_saturation,l.repost_ratio,l.metrics,l.categories,l.evidence,
-        l.muted_at,l.assessed_at,(l.status='flagged') AS is_candidate,
+        l.muted_at,l.assessed_at,true AS is_candidate,
         CASE WHEN l.muted_at IS NULL THEN 0 ELSE floor(extract(epoch FROM (now()-l.muted_at))/86400)::int END AS muted_days
       FROM lib_guard_assessments l
       JOIN relationships r ON r.owner_did=l.owner_did AND r.did=l.did
       WHERE l.owner_did=${owner}
-        AND l.status IN ('clear','flagged')
+        AND l.status='flagged'
         AND r.is_following=true
-      ORDER BY (l.status='flagged') DESC,l.score DESC,l.network_value ASC,l.assessed_at DESC NULLS LAST
+      ORDER BY l.score DESC,l.network_value ASC,l.assessed_at DESC NULLS LAST
       LIMIT 500
     `,
     sql`
