@@ -85,11 +85,17 @@ const sections = [
   },
   {
     title: "IAZMA tools",
-    description: "Private Bluesky network tools. These also use IAZMA's own access check.",
+    description: "Private Bluesky and X network intelligence workspaces.",
     items: [
       {
+        title: "IAZMA X",
+        description: "Local-first X archive analysis, campaigns, candidate scoring, and paced follow queue.",
+        href: "/admin/iazma-x",
+        icon: Network,
+      },
+      {
         title: "IAZMA PRO",
-        description: "Private network strategy and growth workspace.",
+        description: "Private Bluesky network strategy and growth workspace.",
         href: "/tools/bluesky-network-advanced/app",
         icon: Network,
       },
