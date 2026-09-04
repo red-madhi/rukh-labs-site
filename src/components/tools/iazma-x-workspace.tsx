@@ -460,7 +460,7 @@ export function IazmaXWorkspace() {
       return {
         ...current,
         accounts: nextAccounts,
-        history: [{ id: uid("event"), at: importedAt, type: "import", detail: `Imported X archive snapshot from ${filename}.` }, ...nextHistory].slice(0, 1500),
+        history: [{ id: uid("event"), at: importedAt, type: "import" as const, detail: `Imported X archive snapshot from ${filename}.` }, ...nextHistory].slice(0, 1500),
         snapshots: [{ id: uid("snapshot"), at: importedAt, followers: followers.size, following: following.size, mutuals: mutualCount, archiveAccounts: archiveAccounts.length }, ...current.snapshots].slice(0, 100),
       };
     });
@@ -521,7 +521,7 @@ export function IazmaXWorkspace() {
       return {
         ...current,
         queue: [...current.queue, ...additions],
-        history: [{ id: uid("event"), at, type: "queued", detail: `Added ${additions.length} account${additions.length === 1 ? "" : "s"} to the follow queue.` }, ...current.history],
+        history: [{ id: uid("event"), at, type: "queued" as const, detail: `Added ${additions.length} account${additions.length === 1 ? "" : "s"} to the follow queue.` }, ...current.history],
       };
     });
     setSelected(new Set());
@@ -536,9 +536,9 @@ export function IazmaXWorkspace() {
     updateState((current) => ({
       ...current,
       accounts: { ...current.accounts, [account.key]: { ...current.accounts[account.key], youFollow: true, followedAt: at, lastSeen: at } },
-      queue: current.queue.map((item) => (item.id === entry.id ? { ...item, status: "followed", completedAt: at } : item)),
+      queue: current.queue.map((item) => (item.id === entry.id ? { ...item, status: "followed" as const, completedAt: at } : item)),
       nextFollowAt: nextAllowed,
-      history: [{ id: uid("event"), at, type: "followed", accountKey: account.key, detail: `Marked ${accountLabel(account)} as followed.` }, ...current.history],
+      history: [{ id: uid("event"), at, type: "followed" as const, accountKey: account.key, detail: `Marked ${accountLabel(account)} as followed.` }, ...current.history],
     }));
   }
 
@@ -546,8 +546,8 @@ export function IazmaXWorkspace() {
     const at = nowIso();
     updateState((current) => ({
       ...current,
-      queue: current.queue.map((item) => (item.id === entry.id ? { ...item, status: "skipped", completedAt: at } : item)),
-      history: [{ id: uid("event"), at, type: "skipped", accountKey: account.key, detail: `Skipped ${accountLabel(account)}.` }, ...current.history],
+      queue: current.queue.map((item) => (item.id === entry.id ? { ...item, status: "skipped" as const, completedAt: at } : item)),
+      history: [{ id: uid("event"), at, type: "skipped" as const, accountKey: account.key, detail: `Skipped ${accountLabel(account)}.` }, ...current.history],
     }));
   }
 
@@ -575,7 +575,7 @@ export function IazmaXWorkspace() {
     try {
       const parsed = JSON.parse(await file.text()) as IazmaState;
       if (parsed?.version !== VERSION || !parsed.accounts || !Array.isArray(parsed.queue)) throw new Error("That is not a compatible IAZMA X backup.");
-      setState({ ...parsed, history: [{ id: uid("event"), at: nowIso(), type: "restore", detail: `Restored backup ${file.name}.` }, ...parsed.history] });
+      setState({ ...parsed, history: [{ id: uid("event"), at: nowIso(), type: "restore" as const, detail: `Restored backup ${file.name}.` }, ...parsed.history] });
       setStatus(`Restored ${file.name}.`);
       setTab("overview");
     } catch (error) {
