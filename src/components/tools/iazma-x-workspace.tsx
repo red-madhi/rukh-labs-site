@@ -21,7 +21,7 @@ import {
   Upload,
   UsersRound,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ComponentType, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/ui/container";
 import { Section } from "@/components/ui/section";
@@ -30,18 +30,7 @@ const DB_NAME = "rukh-iazma-x";
 const STORE_NAME = "workspace";
 const STATE_KEY = "state-v1";
 const VERSION = 1;
-const RESERVED_X_PATHS = new Set([
-  "home",
-  "i",
-  "intent",
-  "search",
-  "hashtag",
-  "settings",
-  "messages",
-  "compose",
-  "explore",
-  "notifications",
-]);
+const RESERVED_X_PATHS = new Set(["home", "i", "intent", "search", "hashtag", "settings", "messages", "compose", "explore", "notifications"]);
 
 type Relationship = "mutual" | "following" | "follower" | "candidate";
 type QueueStatus = "pending" | "followed" | "skipped";
@@ -62,20 +51,8 @@ type Account = {
   followedAt?: string;
 };
 
-type Campaign = {
-  id: string;
-  name: string;
-  createdAt: string;
-};
-
-type QueueEntry = {
-  id: string;
-  accountKey: string;
-  addedAt: string;
-  status: QueueStatus;
-  completedAt?: string;
-};
-
+type Campaign = { id: string; name: string; createdAt: string };
+type QueueEntry = { id: string; accountKey: string; addedAt: string; status: QueueStatus; completedAt?: string };
 type HistoryEvent = {
   id: string;
   at: string;
@@ -83,16 +60,7 @@ type HistoryEvent = {
   accountKey?: string;
   detail: string;
 };
-
-type Snapshot = {
-  id: string;
-  at: string;
-  followers: number;
-  following: number;
-  mutuals: number;
-  archiveAccounts: number;
-};
-
+type Snapshot = { id: string; at: string; followers: number; following: number; mutuals: number; archiveAccounts: number };
 type IazmaState = {
   version: number;
   accounts: Record<string, Account>;
@@ -103,28 +71,13 @@ type IazmaState = {
   paceMinutes: number;
   nextFollowAt?: string;
 };
-
-type Score = {
-  total: number;
-  confidence: number;
-  path: number;
-  reciprocity: number;
-  influence: number;
-  bridge: number;
-};
-
-type ArchiveObservation = {
-  accountId: string;
-  profileUrl: string;
-  relation: "follower" | "following";
-};
+type Score = { total: number; confidence: number; path: number; reciprocity: number; influence: number; bridge: number };
+type ArchiveObservation = { accountId: string; profileUrl: string; relation: "follower" | "following" };
 
 const emptyState = (): IazmaState => ({
   version: VERSION,
   accounts: {},
-  campaigns: [
-    { id: "general", name: "General network", createdAt: new Date().toISOString() },
-  ],
+  campaigns: [{ id: "general", name: "General network", createdAt: new Date().toISOString() }],
   queue: [],
   history: [],
   snapshots: [],
@@ -160,11 +113,7 @@ function scoreAccount(account: Account): Score {
   const bridge = clamp(24 + Math.max(0, sourceCount - 1) * 28 + campaignCount * 16);
   const total = clamp(path * 0.35 + reciprocity * 0.25 + influence * 0.2 + bridge * 0.2);
   const confidence = clamp(
-    18 +
-      (account.accountId ? 28 : 0) +
-      (account.handle ? 22 : 0) +
-      (account.archiveKnown ? 22 : 0) +
-      Math.min(10, sourceCount * 3),
+    18 + (account.accountId ? 28 : 0) + (account.handle ? 22 : 0) + (account.archiveKnown ? 22 : 0) + Math.min(10, sourceCount * 3),
   );
   return { total, confidence, path, reciprocity, influence, bridge };
 }
@@ -183,13 +132,11 @@ function extractHandles(text: string) {
   const atRegex = /(?:^|[^A-Za-z0-9_])@([A-Za-z0-9_]{1,15})\b/g;
   const urlRegex = /https?:\/\/(?:www\.)?(?:x|twitter)\.com\/([A-Za-z0-9_]{1,15})(?=[/?#\s]|$)/gi;
   let match: RegExpExecArray | null;
-
   while ((match = atRegex.exec(text))) handles.add(match[1]);
   while ((match = urlRegex.exec(text))) {
     const handle = match[1];
     if (!RESERVED_X_PATHS.has(handle.toLowerCase())) handles.add(handle);
   }
-
   return [...handles];
 }
 
@@ -207,13 +154,8 @@ function parseWrappedArray(text: string): unknown[] {
 
 function archiveObservations(name: string, text: string): ArchiveObservation[] {
   const lower = name.toLowerCase();
-  const relation = lower.includes("following")
-    ? "following"
-    : lower.includes("follower")
-      ? "follower"
-      : null;
+  const relation = lower.includes("following") ? "following" : lower.includes("follower") ? "follower" : null;
   if (!relation) return [];
-
   const records = parseWrappedArray(text);
   const out: ArchiveObservation[] = [];
   for (const raw of records) {
@@ -231,7 +173,8 @@ function archiveObservations(name: string, text: string): ArchiveObservation[] {
 }
 
 async function decompressRaw(bytes: Uint8Array) {
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  const data = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+  const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
   return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
@@ -278,7 +221,6 @@ async function readArchiveZip(file: File) {
       else throw new Error(`${name} uses an unsupported ZIP compression method.`);
       files.push({ name, text: decoder.decode(uncompressed) });
     }
-
     cursor += 46 + nameLength + extraLength + commentLength;
   }
 
@@ -342,11 +284,11 @@ function formatCountdown(target: string | undefined, now: number) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
-function Panel({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
   return <div className={`rounded-2xl border border-white/10 bg-white/[0.025] ${className}`}>{children}</div>;
 }
 
-function Kpi({ label, value, detail, icon: Icon }: { label: string; value: string | number; detail: string; icon: React.ComponentType<{ className?: string }> }) {
+function Kpi({ label, value, detail, icon: Icon }: { label: string; value: string | number; detail: string; icon: ComponentType<{ className?: string }> }) {
   return (
     <Panel className="p-5">
       <div className="flex items-start justify-between gap-4">
@@ -384,8 +326,7 @@ export function IazmaXWorkspace() {
     let active = true;
     loadWorkspace()
       .then((saved) => {
-        if (!active) return;
-        if (saved?.version === VERSION) setState(saved);
+        if (active && saved?.version === VERSION) setState(saved);
       })
       .catch(() => setStatus("IndexedDB was unavailable; this session will still work, but persistence may not."))
       .finally(() => active && setHydrated(true));
@@ -424,22 +365,17 @@ export function IazmaXWorkspace() {
       const rel = relationship(account);
       if (relationshipFilter !== "all" && rel !== relationshipFilter) return false;
       if (!needle) return true;
-      return (
-        accountLabel(account).toLowerCase().includes(needle) ||
-        account.sources.some((item) => item.toLowerCase().includes(needle)) ||
-        account.campaigns.some((item) => item.toLowerCase().includes(needle))
-      );
+      return accountLabel(account).toLowerCase().includes(needle) || account.sources.some((item) => item.toLowerCase().includes(needle));
     });
   }, [relationshipFilter, scoredAccounts, search]);
 
   const sourceStats = useMemo(() => {
-    const map = new Map<string, { source: string; accounts: number; mutuals: number; followers: number }>();
+    const map = new Map<string, { source: string; accounts: number; mutuals: number }>();
     for (const account of accounts) {
       for (const sourceName of account.sources) {
-        const row = map.get(sourceName) ?? { source: sourceName, accounts: 0, mutuals: 0, followers: 0 };
+        const row = map.get(sourceName) ?? { source: sourceName, accounts: 0, mutuals: 0 };
         row.accounts += 1;
         if (relationship(account) === "mutual") row.mutuals += 1;
-        if (account.followsYou) row.followers += 1;
         map.set(sourceName, row);
       }
     }
@@ -473,12 +409,7 @@ export function IazmaXWorkspace() {
           followedAt: existing?.followedAt,
         };
       }
-      next.history.unshift({
-        id: uid("event"),
-        at: importedAt,
-        type: "import",
-        detail: `Imported ${handles.length} handle${handles.length === 1 ? "" : "s"} from ${cleanSource}.`,
-      });
+      next.history.unshift({ id: uid("event"), at: importedAt, type: "import", detail: `Imported ${handles.length} handle${handles.length === 1 ? "" : "s"} from ${cleanSource}.` });
       return next;
     });
   }
@@ -492,26 +423,14 @@ export function IazmaXWorkspace() {
     updateState((current) => {
       const nextAccounts = { ...current.accounts };
       const nextHistory = [...current.history];
-
       for (const account of Object.values(nextAccounts)) {
         if (!account.archiveKnown || !account.accountId) continue;
         const previousFollower = account.followsYou;
         const isFollower = followers.has(account.accountId);
         const isFollowing = following.has(account.accountId);
-        nextAccounts[account.key] = {
-          ...account,
-          followsYou: isFollower,
-          youFollow: isFollowing,
-          lastSeen: isFollower || isFollowing ? importedAt : account.lastSeen,
-        };
+        nextAccounts[account.key] = { ...account, followsYou: isFollower, youFollow: isFollowing, lastSeen: isFollower || isFollowing ? importedAt : account.lastSeen };
         if (!previousFollower && isFollower && account.youFollow) {
-          nextHistory.unshift({
-            id: uid("event"),
-            at: importedAt,
-            type: "follow-back",
-            accountKey: account.key,
-            detail: `${accountLabel(account)} appeared as a new follower in this archive snapshot.`,
-          });
+          nextHistory.unshift({ id: uid("event"), at: importedAt, type: "follow-back", accountKey: account.key, detail: `${accountLabel(account)} appeared as a new follower in this archive snapshot.` });
         }
       }
 
@@ -520,11 +439,10 @@ export function IazmaXWorkspace() {
         const followingRow = following.get(accountId);
         const key = `id:${accountId}`;
         const existing = nextAccounts[key];
-        const profileUrl = followerRow?.profileUrl ?? followingRow?.profileUrl ?? existing?.profileUrl ?? `https://x.com/i/user/${accountId}`;
         nextAccounts[key] = {
           key,
           accountId,
-          profileUrl,
+          profileUrl: followerRow?.profileUrl ?? followingRow?.profileUrl ?? existing?.profileUrl ?? `https://x.com/i/user/${accountId}`,
           followsYou: Boolean(followerRow),
           youFollow: Boolean(followingRow),
           archiveKnown: true,
@@ -542,26 +460,8 @@ export function IazmaXWorkspace() {
       return {
         ...current,
         accounts: nextAccounts,
-        history: [
-          {
-            id: uid("event"),
-            at: importedAt,
-            type: "import",
-            detail: `Imported X archive snapshot from ${filename}.`,
-          },
-          ...nextHistory,
-        ].slice(0, 1500),
-        snapshots: [
-          {
-            id: uid("snapshot"),
-            at: importedAt,
-            followers: followers.size,
-            following: following.size,
-            mutuals: mutualCount,
-            archiveAccounts: archiveAccounts.length,
-          },
-          ...current.snapshots,
-        ].slice(0, 100),
+        history: [{ id: uid("event"), at: importedAt, type: "import", detail: `Imported X archive snapshot from ${filename}.` }, ...nextHistory].slice(0, 1500),
+        snapshots: [{ id: uid("snapshot"), at: importedAt, followers: followers.size, following: following.size, mutuals: mutualCount, archiveAccounts: archiveAccounts.length }, ...current.snapshots].slice(0, 100),
       };
     });
   }
@@ -574,7 +474,6 @@ export function IazmaXWorkspace() {
       let observations: ArchiveObservation[] = [];
       let handles: string[] = [];
       const names: string[] = [];
-
       for (const file of list) {
         names.push(file.name);
         if (file.name.toLowerCase().endsWith(".zip")) {
@@ -587,12 +486,9 @@ export function IazmaXWorkspace() {
         if (archiveRows.length) observations.push(...archiveRows);
         else handles = handles.concat(extractHandles(text));
       }
-
       if (observations.length) applyArchive(observations, names.join(", "));
       if (handles.length) addHandles([...new Set(handles)], source, campaignId);
-      setStatus(
-        `Imported ${observations.length ? `${observations.length.toLocaleString()} archive relationship records` : "no archive relationships"}${handles.length ? ` and ${new Set(handles).size.toLocaleString()} handles` : ""}.`,
-      );
+      setStatus(`Imported ${observations.length ? `${observations.length.toLocaleString()} archive relationship records` : "no archive relationships"}${handles.length ? ` and ${new Set(handles).size.toLocaleString()} handles` : ""}.`);
       setTab("overview");
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "The import failed.");
@@ -625,14 +521,11 @@ export function IazmaXWorkspace() {
       return {
         ...current,
         queue: [...current.queue, ...additions],
-        history: [
-          { id: uid("event"), at, type: "queued", detail: `Added ${additions.length} account${additions.length === 1 ? "" : "s"} to the follow queue.` },
-          ...current.history,
-        ],
+        history: [{ id: uid("event"), at, type: "queued", detail: `Added ${additions.length} account${additions.length === 1 ? "" : "s"} to the follow queue.` }, ...current.history],
       };
     });
-    setStatus(`Queued selected candidates. IAZMA will pace the manual workflow at ${state.paceMinutes} minute${state.paceMinutes === 1 ? "" : "s"} between completed follows.`);
     setSelected(new Set());
+    setStatus(`Queued selected candidates. Manual follow pacing is ${state.paceMinutes} minute${state.paceMinutes === 1 ? "" : "s"}.`);
     setTab("queue");
   }
 
@@ -642,16 +535,10 @@ export function IazmaXWorkspace() {
     const nextAllowed = new Date(Date.now() + state.paceMinutes * 60_000).toISOString();
     updateState((current) => ({
       ...current,
-      accounts: {
-        ...current.accounts,
-        [account.key]: { ...current.accounts[account.key], youFollow: true, followedAt: at, lastSeen: at },
-      },
+      accounts: { ...current.accounts, [account.key]: { ...current.accounts[account.key], youFollow: true, followedAt: at, lastSeen: at } },
       queue: current.queue.map((item) => (item.id === entry.id ? { ...item, status: "followed", completedAt: at } : item)),
       nextFollowAt: nextAllowed,
-      history: [
-        { id: uid("event"), at, type: "followed", accountKey: account.key, detail: `Marked ${accountLabel(account)} as followed.` },
-        ...current.history,
-      ],
+      history: [{ id: uid("event"), at, type: "followed", accountKey: account.key, detail: `Marked ${accountLabel(account)} as followed.` }, ...current.history],
     }));
   }
 
@@ -660,17 +547,15 @@ export function IazmaXWorkspace() {
     updateState((current) => ({
       ...current,
       queue: current.queue.map((item) => (item.id === entry.id ? { ...item, status: "skipped", completedAt: at } : item)),
-      history: [
-        { id: uid("event"), at, type: "skipped", accountKey: account.key, detail: `Skipped ${accountLabel(account)}.` },
-        ...current.history,
-      ],
+      history: [{ id: uid("event"), at, type: "skipped", accountKey: account.key, detail: `Skipped ${accountLabel(account)}.` }, ...current.history],
     }));
   }
 
   function createCampaign() {
     const name = campaignName.trim();
     if (!name) return;
-    const id = `campaign-${name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${Date.now()}`;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "campaign";
+    const id = `campaign-${slug}-${Date.now()}`;
     updateState((current) => ({ ...current, campaigns: [...current.campaigns, { id, name, createdAt: nowIso() }] }));
     setCampaignId(id);
     setCampaignName("");
@@ -690,10 +575,7 @@ export function IazmaXWorkspace() {
     try {
       const parsed = JSON.parse(await file.text()) as IazmaState;
       if (parsed?.version !== VERSION || !parsed.accounts || !Array.isArray(parsed.queue)) throw new Error("That is not a compatible IAZMA X backup.");
-      setState({
-        ...parsed,
-        history: [{ id: uid("event"), at: nowIso(), type: "restore", detail: `Restored backup ${file.name}.` }, ...parsed.history],
-      });
+      setState({ ...parsed, history: [{ id: uid("event"), at: nowIso(), type: "restore", detail: `Restored backup ${file.name}.` }, ...parsed.history] });
       setStatus(`Restored ${file.name}.`);
       setTab("overview");
     } catch (error) {
@@ -710,7 +592,7 @@ export function IazmaXWorkspace() {
     setStatus("Local IAZMA X database cleared.");
   }
 
-  const tabs: Array<{ key: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+  const tabs: Array<{ key: TabKey; label: string; icon: ComponentType<{ className?: string }> }> = [
     { key: "overview", label: "Overview", icon: Gauge },
     { key: "import", label: "Import", icon: FileUp },
     { key: "candidates", label: "Candidates", icon: UsersRound },
@@ -732,9 +614,7 @@ export function IazmaXWorkspace() {
                 <span className="rounded-full border border-emerald-300/20 bg-emerald-300/[0.05] px-3 py-1 text-emerald-200">Local-first</span>
               </div>
               <h1 className="mt-5 text-4xl font-semibold tracking-[-0.045em] text-white sm:text-6xl">Twitter/X network intelligence without an API bill.</h1>
-              <p className="mt-4 max-w-3xl text-base leading-7 text-white/54 sm:text-lg">
-                Import archive snapshots and handle lists, score the network you actually know, organize campaigns, and run a paced manual follow queue. The database stays in this browser unless you export it.
-              </p>
+              <p className="mt-4 max-w-3xl text-base leading-7 text-white/54 sm:text-lg">Import archive snapshots and handle lists, score the network you actually know, organize campaigns, and run a paced manual follow queue. The database stays in this browser unless you export it.</p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-black/20 px-5 py-4 text-sm text-white/48 lg:max-w-sm">
               <div className="flex items-center gap-2 font-medium text-white/76"><ShieldCheck className="size-4 text-[#8ce8ff]" /> Safe execution boundary</div>
@@ -748,7 +628,7 @@ export function IazmaXWorkspace() {
         <Container>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <Kpi label="Known accounts" value={accounts.length.toLocaleString()} detail="Archive IDs plus imported handles." icon={UsersRound} />
-            <Kpi label="Mutuals" value={mutuals.toLocaleString()} detail="Accounts currently known as two-way relationships." icon={Network} />
+            <Kpi label="Mutuals" value={mutuals.toLocaleString()} detail="Known two-way relationships." icon={Network} />
             <Kpi label="Queue" value={pendingQueue.length.toLocaleString()} detail={`Manual follows paced every ${state.paceMinutes} min.`} icon={Clock3} />
             <Kpi label="Snapshots" value={state.snapshots.length.toLocaleString()} detail="Archive imports retained for comparison." icon={Archive} />
           </div>
@@ -756,12 +636,7 @@ export function IazmaXWorkspace() {
           <div className="mt-6 overflow-x-auto rounded-2xl border border-white/10 bg-black/20 p-1.5">
             <div className="flex min-w-max gap-1">
               {tabs.map(({ key, label, icon: Icon }) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => setTab(key)}
-                  className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-medium transition ${tab === key ? "bg-white/[0.09] text-white" : "text-white/46 hover:bg-white/[0.045] hover:text-white/76"}`}
-                >
+                <button key={key} type="button" onClick={() => setTab(key)} className={`inline-flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-medium transition ${tab === key ? "bg-white/[0.09] text-white" : "text-white/46 hover:bg-white/[0.045] hover:text-white/76"}`}>
                   <Icon className="size-4" /> {label}
                 </button>
               ))}
@@ -774,26 +649,14 @@ export function IazmaXWorkspace() {
             <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
               <Panel className="overflow-hidden">
                 <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 p-5 sm:p-6">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Best next accounts</p>
-                    <h2 className="mt-2 text-2xl font-semibold text-white">Highest-value known candidates</h2>
-                  </div>
+                  <div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Best next accounts</p><h2 className="mt-2 text-2xl font-semibold text-white">Highest-value known candidates</h2></div>
                   <Button variant="glass" size="sm" onClick={() => setTab("candidates")}>Open candidates</Button>
                 </div>
                 <div className="divide-y divide-white/8">
                   {scoredAccounts.filter(({ account }) => !account.youFollow).slice(0, 8).map(({ account, score }) => (
                     <div key={account.key} className="grid gap-4 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:px-6">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="truncate font-semibold text-white">{accountLabel(account)}</span>
-                          <span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${relationshipTone(relationship(account))}`}>{relationship(account)}</span>
-                        </div>
-                        <p className="mt-2 truncate text-sm text-white/42">{account.sources.join(" · ") || "No source label"}</p>
-                      </div>
-                      <div className="flex items-center gap-5 text-right">
-                        <div><p className="text-[11px] uppercase tracking-[0.12em] text-white/32">IAZMA</p><p className="text-xl font-semibold text-white">{score.total}</p></div>
-                        <div><p className="text-[11px] uppercase tracking-[0.12em] text-white/32">Confidence</p><p className="text-xl font-semibold text-[#8ce8ff]">{score.confidence}%</p></div>
-                      </div>
+                      <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="truncate font-semibold text-white">{accountLabel(account)}</span><span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${relationshipTone(relationship(account))}`}>{relationship(account)}</span></div><p className="mt-2 truncate text-sm text-white/42">{account.sources.join(" · ") || "No source label"}</p></div>
+                      <div className="flex items-center gap-5 text-right"><div><p className="text-[11px] uppercase tracking-[0.12em] text-white/32">IAZMA</p><p className="text-xl font-semibold text-white">{score.total}</p></div><div><p className="text-[11px] uppercase tracking-[0.12em] text-white/32">Confidence</p><p className="text-xl font-semibold text-[#8ce8ff]">{score.confidence}%</p></div></div>
                     </div>
                   ))}
                   {!accounts.length && <div className="p-8 text-sm leading-6 text-white/46">Import an X archive or paste handles to build the first graph.</div>}
@@ -803,29 +666,11 @@ export function IazmaXWorkspace() {
               <div className="grid gap-6">
                 <Panel className="p-5 sm:p-6">
                   <div className="flex items-center gap-2 text-sm font-semibold text-white"><Sparkles className="size-4 text-[#f1d49a]" /> Next follow</div>
-                  {nextAccount && nextEntry ? (
-                    <>
-                      <p className="mt-4 text-2xl font-semibold text-white">{accountLabel(nextAccount)}</p>
-                      <p className="mt-2 text-sm text-white/46">Queue position 1 of {pendingQueue.length}</p>
-                      <p className={`mt-5 text-4xl font-semibold tracking-[-0.04em] ${ready ? "text-emerald-200" : "text-[#f1d49a]"}`}>{formatCountdown(state.nextFollowAt, clock)}</p>
-                      <Button variant="glass" className="mt-5 w-full" onClick={() => setTab("queue")}>Open queue</Button>
-                    </>
-                  ) : (
-                    <p className="mt-4 text-sm leading-6 text-white/46">Nothing is queued yet. Select candidates and add them to the paced follow workflow.</p>
-                  )}
+                  {nextAccount && nextEntry ? <><p className="mt-4 text-2xl font-semibold text-white">{accountLabel(nextAccount)}</p><p className="mt-2 text-sm text-white/46">Queue position 1 of {pendingQueue.length}</p><p className={`mt-5 text-4xl font-semibold tracking-[-0.04em] ${ready ? "text-emerald-200" : "text-[#f1d49a]"}`}>{formatCountdown(state.nextFollowAt, clock)}</p><Button variant="glass" className="mt-5 w-full" onClick={() => setTab("queue")}>Open queue</Button></> : <p className="mt-4 text-sm leading-6 text-white/46">Nothing is queued yet. Select candidates and add them to the paced follow workflow.</p>}
                 </Panel>
-
                 <Panel className="p-5 sm:p-6">
                   <div className="flex items-center gap-2 text-sm font-semibold text-white"><BarChart3 className="size-4 text-[#8ce8ff]" /> Strongest sources</div>
-                  <div className="mt-4 grid gap-3">
-                    {sourceStats.slice(0, 5).map((row) => (
-                      <div key={row.source} className="rounded-xl border border-white/8 bg-black/20 p-3">
-                        <div className="flex items-center justify-between gap-3"><span className="truncate text-sm font-medium text-white/78">{row.source}</span><span className="text-xs text-white/38">{row.accounts} accounts</span></div>
-                        <p className="mt-1 text-xs text-white/38">{row.mutuals} mutuals · {Math.round((row.mutuals / Math.max(1, row.accounts)) * 100)}% mutual rate</p>
-                      </div>
-                    ))}
-                    {!sourceStats.length && <p className="text-sm leading-6 text-white/42">Source performance appears after imports.</p>}
-                  </div>
+                  <div className="mt-4 grid gap-3">{sourceStats.slice(0, 5).map((row) => <div key={row.source} className="rounded-xl border border-white/8 bg-black/20 p-3"><div className="flex items-center justify-between gap-3"><span className="truncate text-sm font-medium text-white/78">{row.source}</span><span className="text-xs text-white/38">{row.accounts} accounts</span></div><p className="mt-1 text-xs text-white/38">{row.mutuals} mutuals · {Math.round((row.mutuals / Math.max(1, row.accounts)) * 100)}% mutual rate</p></div>)}{!sourceStats.length && <p className="text-sm leading-6 text-white/42">Source performance appears after imports.</p>}</div>
                 </Panel>
               </div>
             </div>
@@ -834,35 +679,15 @@ export function IazmaXWorkspace() {
           {tab === "import" && (
             <div className="mt-6 grid gap-6 xl:grid-cols-2">
               <Panel className="p-5 sm:p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Archive + files</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">Drop the X archive ZIP</h2>
-                <p className="mt-3 text-sm leading-6 text-white/46">The browser reads follower/following files locally. The ZIP is not uploaded to Rukh Labs. You can also import extracted .js files, CSV, TXT, or JSON containing handles/profile URLs.</p>
-                <button
-                  type="button"
-                  disabled={busy}
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => { event.preventDefault(); void importFiles(event.dataTransfer.files); }}
-                  className="mt-6 grid min-h-56 w-full place-items-center rounded-2xl border border-dashed border-[#16c8ff]/28 bg-[#16c8ff]/[0.025] p-8 text-center transition hover:border-[#16c8ff]/50 hover:bg-[#16c8ff]/[0.045] disabled:opacity-50"
-                >
-                  <span>
-                    <Upload className="mx-auto size-8 text-[#8ce8ff]" />
-                    <span className="mt-4 block font-semibold text-white">Choose files or drop them here</span>
-                    <span className="mt-2 block text-sm text-white/42">.zip · .js · .json · .csv · .txt</span>
-                  </span>
-                </button>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Archive + files</p><h2 className="mt-2 text-2xl font-semibold text-white">Drop the X archive ZIP</h2><p className="mt-3 text-sm leading-6 text-white/46">The browser reads follower/following files locally. The ZIP is not uploaded to Rukh Labs. You can also import extracted .js files, CSV, TXT, or JSON containing handles/profile URLs.</p>
+                <button type="button" disabled={busy} onClick={() => fileInputRef.current?.click()} onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void importFiles(event.dataTransfer.files); }} className="mt-6 grid min-h-56 w-full place-items-center rounded-2xl border border-dashed border-[#16c8ff]/28 bg-[#16c8ff]/[0.025] p-8 text-center transition hover:border-[#16c8ff]/50 hover:bg-[#16c8ff]/[0.045] disabled:opacity-50"><span><Upload className="mx-auto size-8 text-[#8ce8ff]" /><span className="mt-4 block font-semibold text-white">Choose files or drop them here</span><span className="mt-2 block text-sm text-white/42">.zip · .js · .json · .csv · .txt</span></span></button>
                 <input ref={fileInputRef} type="file" multiple accept=".zip,.js,.json,.csv,.txt" className="hidden" onChange={(event) => event.target.files && void importFiles(event.target.files)} />
                 <p className="mt-4 text-xs leading-5 text-white/32">X archives commonly identify followers/following with numeric account IDs rather than current @handles. IAZMA preserves those IDs and archived profile links instead of inventing names.</p>
               </Panel>
-
               <Panel className="p-5 sm:p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#f1d49a]">Universal handle import</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">Paste whatever you collected</h2>
-                <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                  <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/38">Source<input value={source} onChange={(event) => setSource(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-black/25 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none focus:border-[#16c8ff]/45" placeholder="@alice following" /></label>
-                  <label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/38">Campaign<select value={campaignId} onChange={(event) => setCampaignId(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-[#090b11] px-3 text-sm font-normal normal-case tracking-normal text-white outline-none focus:border-[#16c8ff]/45">{state.campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}</select></label>
-                </div>
-                <textarea value={pasteText} onChange={(event) => setPasteText(event.target.value)} className="mt-4 min-h-56 w-full resize-y rounded-2xl border border-white/10 bg-black/25 p-4 font-mono text-sm leading-6 text-white outline-none placeholder:text-white/22 focus:border-[#16c8ff]/45" placeholder={'@alice\nhttps://x.com/bob\nrandom copied text containing @carol'} />
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#f1d49a]">Universal handle import</p><h2 className="mt-2 text-2xl font-semibold text-white">Paste whatever you collected</h2>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2"><label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/38">Source<input value={source} onChange={(event) => setSource(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-black/25 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none focus:border-[#16c8ff]/45" placeholder="@alice following" /></label><label className="grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/38">Campaign<select value={campaignId} onChange={(event) => setCampaignId(event.target.value)} className="h-11 rounded-xl border border-white/10 bg-[#090b11] px-3 text-sm font-normal normal-case tracking-normal text-white outline-none focus:border-[#16c8ff]/45">{state.campaigns.map((campaign) => <option key={campaign.id} value={campaign.id}>{campaign.name}</option>)}</select></label></div>
+                <textarea value={pasteText} onChange={(event) => setPasteText(event.target.value)} className="mt-4 min-h-56 w-full resize-y rounded-2xl border border-white/10 bg-black/25 p-4 font-mono text-sm leading-6 text-white outline-none placeholder:text-white/22 focus:border-[#16c8ff]/45" placeholder={"@alice\nhttps://x.com/bob\nrandom copied text containing @carol"} />
                 <Button variant="gold" className="mt-4 w-full sm:w-auto" onClick={importPaste}>Import handles</Button>
               </Panel>
             </div>
@@ -870,32 +695,10 @@ export function IazmaXWorkspace() {
 
           {tab === "candidates" && (
             <Panel className="mt-6 overflow-hidden">
-              <div className="grid gap-4 border-b border-white/10 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-end">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Candidate engine</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">Rank what IAZMA actually knows</h2>
-                  <p className="mt-2 text-sm leading-6 text-white/44">Scores include source overlap, reciprocity state, campaign reach, and data confidence. Unknown influence stays neutral instead of being fabricated.</p>
-                </div>
-                <Button variant="glass" disabled={!selected.size} onClick={addSelectedToQueue}>Add {selected.size || "selected"} to queue</Button>
-              </div>
-              <div className="grid gap-3 border-b border-white/8 bg-black/15 p-4 md:grid-cols-[1fr_14rem]">
-                <label className="relative"><Search className="pointer-events-none absolute left-3 top-3.5 size-4 text-white/28" /><input value={search} onChange={(event) => setSearch(event.target.value)} className="h-11 w-full rounded-xl border border-white/10 bg-black/25 pl-10 pr-3 text-sm text-white outline-none focus:border-[#16c8ff]/45" placeholder="Search handles or sources" /></label>
-                <select value={relationshipFilter} onChange={(event) => setRelationshipFilter(event.target.value as "all" | Relationship)} className="h-11 rounded-xl border border-white/10 bg-[#090b11] px-3 text-sm text-white outline-none focus:border-[#16c8ff]/45"><option value="all">All relationships</option><option value="candidate">Candidates</option><option value="follower">Follows you</option><option value="following">You follow</option><option value="mutual">Mutual</option></select>
-              </div>
-              <div className="max-h-[46rem] overflow-auto divide-y divide-white/8">
-                {filteredCandidates.slice(0, 500).map(({ account, score }) => {
-                  const checked = selected.has(account.key);
-                  return (
-                    <label key={account.key} className="grid cursor-pointer gap-4 p-4 transition hover:bg-white/[0.02] sm:grid-cols-[auto_1fr_auto] sm:items-center sm:px-6">
-                      <input type="checkbox" checked={checked} disabled={account.youFollow} onChange={() => setSelected((current) => { const next = new Set(current); if (next.has(account.key)) next.delete(account.key); else next.add(account.key); return next; })} className="size-4 accent-[#16c8ff]" />
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2"><span className="truncate font-semibold text-white">{accountLabel(account)}</span><span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${relationshipTone(relationship(account))}`}>{relationship(account)}</span>{account.archiveKnown && <span className="rounded-full border border-white/8 bg-white/[0.025] px-2 py-0.5 text-[11px] text-white/38">archive</span>}</div>
-                        <p className="mt-2 truncate text-sm text-white/40">{account.sources.join(" · ") || "No source"}</p>
-                      </div>
-                      <div className="flex gap-5 sm:text-right"><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/30">Score</p><p className="text-lg font-semibold text-white">{score.total}</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/30">Confidence</p><p className="text-lg font-semibold text-[#8ce8ff]">{score.confidence}%</p></div></div>
-                    </label>
-                  );
-                })}
+              <div className="grid gap-4 border-b border-white/10 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-end"><div><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Candidate engine</p><h2 className="mt-2 text-2xl font-semibold text-white">Rank what IAZMA actually knows</h2><p className="mt-2 text-sm leading-6 text-white/44">Unknown influence stays neutral instead of being fabricated. Confidence is shown separately from score.</p></div><Button variant="glass" disabled={!selected.size} onClick={addSelectedToQueue}>Add {selected.size || "selected"} to queue</Button></div>
+              <div className="grid gap-3 border-b border-white/8 bg-black/15 p-4 md:grid-cols-[1fr_14rem]"><label className="relative"><Search className="pointer-events-none absolute left-3 top-3.5 size-4 text-white/28" /><input value={search} onChange={(event) => setSearch(event.target.value)} className="h-11 w-full rounded-xl border border-white/10 bg-black/25 pl-10 pr-3 text-sm text-white outline-none focus:border-[#16c8ff]/45" placeholder="Search handles or sources" /></label><select value={relationshipFilter} onChange={(event) => setRelationshipFilter(event.target.value as "all" | Relationship)} className="h-11 rounded-xl border border-white/10 bg-[#090b11] px-3 text-sm text-white outline-none focus:border-[#16c8ff]/45"><option value="all">All relationships</option><option value="candidate">Candidates</option><option value="follower">Follows you</option><option value="following">You follow</option><option value="mutual">Mutual</option></select></div>
+              <div className="max-h-[46rem] divide-y divide-white/8 overflow-auto">
+                {filteredCandidates.slice(0, 500).map(({ account, score }) => { const checked = selected.has(account.key); return <label key={account.key} className="grid cursor-pointer gap-4 p-4 transition hover:bg-white/[0.02] sm:grid-cols-[auto_1fr_auto] sm:items-center sm:px-6"><input type="checkbox" checked={checked} disabled={account.youFollow} onChange={() => setSelected((current) => { const next = new Set(current); if (next.has(account.key)) next.delete(account.key); else next.add(account.key); return next; })} className="size-4 accent-[#16c8ff]" /><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="truncate font-semibold text-white">{accountLabel(account)}</span><span className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${relationshipTone(relationship(account))}`}>{relationship(account)}</span>{account.archiveKnown && <span className="rounded-full border border-white/8 bg-white/[0.025] px-2 py-0.5 text-[11px] text-white/38">archive</span>}</div><p className="mt-2 truncate text-sm text-white/40">{account.sources.join(" · ") || "No source"}</p></div><div className="flex gap-5 sm:text-right"><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/30">Score</p><p className="text-lg font-semibold text-white">{score.total}</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/30">Confidence</p><p className="text-lg font-semibold text-[#8ce8ff]">{score.confidence}%</p></div></div></label>; })}
                 {!filteredCandidates.length && <div className="p-8 text-sm text-white/44">No accounts match this filter.</div>}
               </div>
             </Panel>
@@ -903,72 +706,29 @@ export function IazmaXWorkspace() {
 
           {tab === "queue" && (
             <div className="mt-6 grid gap-6 xl:grid-cols-[0.75fr_1.25fr]">
-              <Panel className="p-5 sm:p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#f1d49a]">Paced workflow</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">One manual follow at a time</h2>
-                <label className="mt-5 grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/38">Minutes between completed follows<input type="number" min={1} max={180} value={state.paceMinutes} onChange={(event) => updateState((current) => ({ ...current, paceMinutes: Math.max(1, Math.min(180, Number(event.target.value) || 5)) }))} className="h-11 rounded-xl border border-white/10 bg-black/25 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none focus:border-[#16c8ff]/45" /></label>
-                <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/34">Next slot</p>
-                  <p className={`mt-2 text-4xl font-semibold tracking-[-0.04em] ${ready ? "text-emerald-200" : "text-[#f1d49a]"}`}>{formatCountdown(state.nextFollowAt, clock)}</p>
-                  <p className="mt-2 text-xs leading-5 text-white/34">The timer paces this workflow only. It does not automate X or circumvent X limits.</p>
-                </div>
-              </Panel>
-
+              <Panel className="p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#f1d49a]">Paced workflow</p><h2 className="mt-2 text-2xl font-semibold text-white">One manual follow at a time</h2><label className="mt-5 grid gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-white/38">Minutes between completed follows<input type="number" min={1} max={180} value={state.paceMinutes} onChange={(event) => updateState((current) => ({ ...current, paceMinutes: Math.max(1, Math.min(180, Number(event.target.value) || 5)) }))} className="h-11 rounded-xl border border-white/10 bg-black/25 px-3 text-sm font-normal normal-case tracking-normal text-white outline-none focus:border-[#16c8ff]/45" /></label><div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5"><p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/34">Next slot</p><p className={`mt-2 text-4xl font-semibold tracking-[-0.04em] ${ready ? "text-emerald-200" : "text-[#f1d49a]"}`}>{formatCountdown(state.nextFollowAt, clock)}</p><p className="mt-2 text-xs leading-5 text-white/34">The timer paces this workflow only. It does not automate X or circumvent X limits.</p></div></Panel>
               <Panel className="overflow-hidden">
                 <div className="border-b border-white/10 p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Queue</p><h2 className="mt-2 text-2xl font-semibold text-white">{pendingQueue.length} pending</h2></div>
-                {nextEntry && nextAccount ? (
-                  <div className="border-b border-white/10 bg-[#16c8ff]/[0.025] p-5 sm:p-6">
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                      <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8ce8ff]">Up next</p><h3 className="mt-2 text-2xl font-semibold text-white">{accountLabel(nextAccount)}</h3><p className="mt-2 text-sm text-white/42">IAZMA {scoreAccount(nextAccount).total} · {scoreAccount(nextAccount).confidence}% confidence</p></div>
-                      <a href={nextAccount.profileUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-[#16c8ff]/30 bg-[#16c8ff]/[0.06] px-4 text-sm font-medium text-[#8ce8ff] transition hover:bg-[#16c8ff]/[0.1]">Open on X <ArrowUpRight className="size-4" /></a>
-                    </div>
-                    <div className="mt-5 flex flex-wrap gap-3"><Button variant="glass" disabled={!ready} onClick={() => markFollowed(nextEntry, nextAccount)}><CheckCircle2 className="size-4" /> I followed this account</Button><Button variant="ghost" onClick={() => skipEntry(nextEntry, nextAccount)}>Skip</Button></div>
-                  </div>
-                ) : <div className="p-8 text-sm text-white/44">The queue is empty.</div>}
-                <div className="max-h-[32rem] divide-y divide-white/8 overflow-auto">
-                  {pendingQueue.slice(1).map((entry, index) => {
-                    const account = state.accounts[entry.accountKey];
-                    if (!account) return null;
-                    return <div key={entry.id} className="flex items-center justify-between gap-4 p-4 sm:px-6"><div className="min-w-0"><p className="truncate text-sm font-medium text-white/74">{index + 2}. {accountLabel(account)}</p><p className="mt-1 text-xs text-white/32">IAZMA {scoreAccount(account).total} · added {formatDate(entry.addedAt)}</p></div><a href={account.profileUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-white/40 hover:text-[#8ce8ff]">View</a></div>;
-                  })}
-                </div>
+                {nextEntry && nextAccount ? <div className="border-b border-white/10 bg-[#16c8ff]/[0.025] p-5 sm:p-6"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#8ce8ff]">Up next</p><h3 className="mt-2 text-2xl font-semibold text-white">{accountLabel(nextAccount)}</h3><p className="mt-2 text-sm text-white/42">IAZMA {scoreAccount(nextAccount).total} · {scoreAccount(nextAccount).confidence}% confidence</p></div><a href={nextAccount.profileUrl} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-2 rounded-full border border-[#16c8ff]/30 bg-[#16c8ff]/[0.06] px-4 text-sm font-medium text-[#8ce8ff] transition hover:bg-[#16c8ff]/[0.1]">Open on X <ArrowUpRight className="size-4" /></a></div><div className="mt-5 flex flex-wrap gap-3"><Button variant="glass" disabled={!ready} onClick={() => markFollowed(nextEntry, nextAccount)}><CheckCircle2 className="size-4" /> I followed this account</Button><Button variant="ghost" onClick={() => skipEntry(nextEntry, nextAccount)}>Skip</Button></div></div> : <div className="p-8 text-sm text-white/44">The queue is empty.</div>}
+                <div className="max-h-[32rem] divide-y divide-white/8 overflow-auto">{pendingQueue.slice(1).map((entry, index) => { const account = state.accounts[entry.accountKey]; if (!account) return null; return <div key={entry.id} className="flex items-center justify-between gap-4 p-4 sm:px-6"><div className="min-w-0"><p className="truncate text-sm font-medium text-white/74">{index + 2}. {accountLabel(account)}</p><p className="mt-1 text-xs text-white/32">IAZMA {scoreAccount(account).total} · added {formatDate(entry.addedAt)}</p></div><a href={account.profileUrl} target="_blank" rel="noreferrer" className="text-xs font-medium text-white/40 hover:text-[#8ce8ff]">View</a></div>; })}</div>
               </Panel>
             </div>
           )}
 
           {tab === "campaigns" && (
             <div className="mt-6 grid gap-6 xl:grid-cols-[0.65fr_1.35fr]">
-              <Panel className="p-5 sm:p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#f1d49a]">Campaigns</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">Create a network target</h2>
-                <div className="mt-5 flex gap-2"><input value={campaignName} onChange={(event) => setCampaignName(event.target.value)} onKeyDown={(event) => event.key === "Enter" && createCampaign()} className="h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/25 px-3 text-sm text-white outline-none focus:border-[#16c8ff]/45" placeholder="Leftist developers" /><Button variant="gold" size="sm" onClick={createCampaign}><Plus className="size-4" /> Add</Button></div>
-              </Panel>
-              <Panel className="overflow-hidden">
-                <div className="border-b border-white/10 p-5 sm:p-6"><h2 className="text-2xl font-semibold text-white">Active campaigns</h2></div>
-                <div className="divide-y divide-white/8">{state.campaigns.map((campaign) => { const campaignAccounts = accounts.filter((account) => account.campaigns.includes(campaign.id)); const campaignMutuals = campaignAccounts.filter((account) => relationship(account) === "mutual").length; return <div key={campaign.id} className="grid gap-3 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:px-6"><div><p className="font-semibold text-white">{campaign.name}</p><p className="mt-1 text-sm text-white/38">Created {formatDate(campaign.createdAt)}</p></div><div className="flex gap-6 sm:text-right"><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Accounts</p><p className="text-lg font-semibold text-white">{campaignAccounts.length}</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Mutuals</p><p className="text-lg font-semibold text-[#8ce8ff]">{campaignMutuals}</p></div></div></div>; })}</div>
-              </Panel>
+              <Panel className="p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#f1d49a]">Campaigns</p><h2 className="mt-2 text-2xl font-semibold text-white">Create a network target</h2><div className="mt-5 flex gap-2"><input value={campaignName} onChange={(event) => setCampaignName(event.target.value)} onKeyDown={(event) => event.key === "Enter" && createCampaign()} className="h-11 min-w-0 flex-1 rounded-xl border border-white/10 bg-black/25 px-3 text-sm text-white outline-none focus:border-[#16c8ff]/45" placeholder="Leftist developers" /><Button variant="gold" size="sm" onClick={createCampaign}><Plus className="size-4" /> Add</Button></div></Panel>
+              <Panel className="overflow-hidden"><div className="border-b border-white/10 p-5 sm:p-6"><h2 className="text-2xl font-semibold text-white">Active campaigns</h2></div><div className="divide-y divide-white/8">{state.campaigns.map((campaign) => { const campaignAccounts = accounts.filter((account) => account.campaigns.includes(campaign.id)); const campaignMutuals = campaignAccounts.filter((account) => relationship(account) === "mutual").length; return <div key={campaign.id} className="grid gap-3 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:px-6"><div><p className="font-semibold text-white">{campaign.name}</p><p className="mt-1 text-sm text-white/38">Created {formatDate(campaign.createdAt)}</p></div><div className="flex gap-6 sm:text-right"><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Accounts</p><p className="text-lg font-semibold text-white">{campaignAccounts.length}</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Mutuals</p><p className="text-lg font-semibold text-[#8ce8ff]">{campaignMutuals}</p></div></div></div>; })}</div></Panel>
             </div>
           )}
 
           {tab === "data" && (
             <div className="mt-6 grid gap-6 xl:grid-cols-[0.65fr_1.35fr]">
               <div className="grid gap-6">
-                <Panel className="p-5 sm:p-6">
-                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Portable local database</p>
-                  <h2 className="mt-2 text-2xl font-semibold text-white">Backup / restore</h2>
-                  <p className="mt-3 text-sm leading-6 text-white/44">Your normalized graph lives in IndexedDB on this device. Export a JSON backup before clearing browser data or moving computers.</p>
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2"><Button variant="glass" onClick={exportDatabase}><Download className="size-4" /> Export backup</Button><Button variant="secondary" onClick={() => restoreInputRef.current?.click()}><Upload className="size-4" /> Restore backup</Button></div>
-                  <input ref={restoreInputRef} type="file" accept="application/json,.json" className="hidden" onChange={(event) => event.target.files?.[0] && void restoreDatabase(event.target.files[0])} />
-                </Panel>
-                <Panel className="p-5 sm:p-6">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-white"><Trash2 className="size-4 text-[#ff8792]" /> Destructive</div>
-                  <Button variant="ghost" className="mt-4 w-full border border-[#f0001c]/20 text-[#ff9da6] hover:bg-[#f0001c]/10" onClick={clearDatabase}>Clear local database</Button>
-                </Panel>
+                <Panel className="p-5 sm:p-6"><p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#8ce8ff]">Portable local database</p><h2 className="mt-2 text-2xl font-semibold text-white">Backup / restore</h2><p className="mt-3 text-sm leading-6 text-white/44">Your normalized graph lives in IndexedDB on this device. Export a JSON backup before clearing browser data or moving computers.</p><div className="mt-5 grid gap-3 sm:grid-cols-2"><Button variant="glass" onClick={exportDatabase}><Download className="size-4" /> Export backup</Button><Button variant="secondary" onClick={() => restoreInputRef.current?.click()}><Upload className="size-4" /> Restore backup</Button></div><input ref={restoreInputRef} type="file" accept="application/json,.json" className="hidden" onChange={(event) => event.target.files?.[0] && void restoreDatabase(event.target.files[0])} /></Panel>
+                <Panel className="p-5 sm:p-6"><div className="flex items-center gap-2 text-sm font-semibold text-white"><Trash2 className="size-4 text-[#ff8792]" /> Destructive</div><Button variant="ghost" className="mt-4 w-full border border-[#f0001c]/20 text-[#ff9da6] hover:bg-[#f0001c]/10" onClick={clearDatabase}>Clear local database</Button></Panel>
               </div>
-              <Panel className="overflow-hidden">
-                <div className="flex items-center gap-2 border-b border-white/10 p-5 sm:p-6"><History className="size-5 text-[#8ce8ff]" /><h2 className="text-2xl font-semibold text-white">Archive snapshots</h2></div>
-                <div className="divide-y divide-white/8">{state.snapshots.map((snapshot) => <div key={snapshot.id} className="grid gap-3 p-5 sm:grid-cols-[1fr_repeat(3,auto)] sm:items-center sm:px-6"><div><p className="font-medium text-white/76">{formatDate(snapshot.at)}</p><p className="mt-1 text-xs text-white/32">{snapshot.archiveAccounts.toLocaleString()} known archive accounts</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Followers</p><p className="text-lg font-semibold text-white">{snapshot.followers.toLocaleString()}</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Following</p><p className="text-lg font-semibold text-white">{snapshot.following.toLocaleString()}</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Mutuals</p><p className="text-lg font-semibold text-[#8ce8ff]">{snapshot.mutuals.toLocaleString()}</p></div></div>)}{!state.snapshots.length && <div className="p-8 text-sm text-white/44">No archive snapshots yet.</div>}</div>
-              </Panel>
+              <Panel className="overflow-hidden"><div className="flex items-center gap-2 border-b border-white/10 p-5 sm:p-6"><History className="size-5 text-[#8ce8ff]" /><h2 className="text-2xl font-semibold text-white">Archive snapshots</h2></div><div className="divide-y divide-white/8">{state.snapshots.map((snapshot) => <div key={snapshot.id} className="grid gap-3 p-5 sm:grid-cols-[1fr_repeat(3,auto)] sm:items-center sm:px-6"><div><p className="font-medium text-white/76">{formatDate(snapshot.at)}</p><p className="mt-1 text-xs text-white/32">{snapshot.archiveAccounts.toLocaleString()} known archive accounts</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Followers</p><p className="text-lg font-semibold text-white">{snapshot.followers.toLocaleString()}</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Following</p><p className="text-lg font-semibold text-white">{snapshot.following.toLocaleString()}</p></div><div><p className="text-[10px] uppercase tracking-[0.12em] text-white/28">Mutuals</p><p className="text-lg font-semibold text-[#8ce8ff]">{snapshot.mutuals.toLocaleString()}</p></div></div>)}{!state.snapshots.length && <div className="p-8 text-sm text-white/44">No archive snapshots yet.</div>}</div></Panel>
             </div>
           )}
         </Container>
