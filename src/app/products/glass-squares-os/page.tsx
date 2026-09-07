@@ -1,173 +1,44 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import {
-  AppWindow,
-  Archive,
-  ArrowRight,
-  Cloud,
-  FileText,
-  Gauge,
-  Grid2X2,
-  KeyRound,
-  Layers3,
-  LockKeyhole,
-  MonitorCog,
-  PackageCheck,
-  ShieldCheck,
-  Sparkles,
-  Terminal,
-} from "lucide-react";
-import { ProductBrandLockup } from "@/components/brand/product-brand-lockup";
+import { AppWindow, ArrowDown, ArrowRight, Cable, Check, Grid2X2, HardDrive, Layers3, MonitorCog, PackageCheck, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { StructuredData } from "@/components/seo/structured-data";
-import { FeatureGrid } from "@/components/sections/feature-grid";
-import { RoadmapTimeline } from "@/components/sections/roadmap-timeline";
-import { Badge } from "@/components/ui/badge";
-import { buttonStyles } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Container } from "@/components/ui/container";
-import { Reveal } from "@/components/ui/reveal";
-import { Section } from "@/components/ui/section";
-import { OSMockup } from "@/components/visuals/os-mockup";
 import { createPageMetadata, siteConfig } from "@/lib/site-config";
+import styles from "./glass-squares.module.css";
 
 export const metadata: Metadata = createPageMetadata({
-  title: "Glass Squares OS: A Low-Bloat Linux Desktop",
-  description:
-    "Glass Squares OS is a Linux-based desktop operating system built around glassy surfaces, square-based layouts, low bloat, and practical compatibility.",
+  title: "Glass Squares OS: A More Human Linux Desktop",
+  description: "Explore Glass Squares OS, an independent Linux desktop in development. See the VM-tested desktop milestone, six core apps, visual direction, and next steps.",
   path: "/products/glass-squares-os",
 });
 
-const features = [
-  {
-    title: "Glass shell interface",
-    description: "Frosted surfaces, translucent panels, and a desktop shell with a sharper visual identity.",
-    icon: Sparkles,
-  },
-  {
-    title: "Square-based layout system",
-    description: "A geometric UI language built around tiles, grids, and clean desktop structure.",
-    icon: Grid2X2,
-  },
-  {
-    title: "Low-bloat default apps",
-    description: "Default tools selected for usefulness, clarity, and restraint.",
-    icon: PackageCheck,
-  },
-  {
-    title: "Familiar desktop workflow",
-    description: "Approachable patterns for normal users without copying a competing OS.",
-    icon: AppWindow,
-  },
-  {
-    title: "Privacy-respecting defaults",
-    description: "Settings that favor user control and plain-language choices.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "Security-conscious foundation",
-    description: "A Linux base with a careful direction for permissions, updates, and storage.",
-    icon: LockKeyhole,
-  },
-  {
-    title: "Practical compatibility paths",
-    description: "Common files, web workflows, Linux apps, compatibility layers, and VM paths.",
-    icon: Layers3,
-  },
-  {
-    title: "Power-user escape hatches",
-    description: "Terminal access and advanced controls without forcing everyone into them.",
-    icon: Terminal,
-  },
+const artwork = "/products/glass-squares/concepts-20260906.avif";
+const principles = [
+  { title: "Distinctive", copy: "Glass, depth, and a shared visual language.", icon: Sparkles },
+  { title: "Familiar", copy: "Launch, switch, search. Keep your bearings.", icon: Grid2X2 },
+  { title: "Modular", copy: "Connected surfaces. Separately built tools.", icon: Layers3 },
+  { title: "Native", copy: "Building on Linux, Plasma, and KWin.", icon: MonitorCog },
 ];
-
-const compatibility = [
-  {
-    title: "Documents & media",
-    copy: "Common document, media, archive, and day-to-day desktop workflows are the first priority.",
-    icon: FileText,
-  },
-  {
-    title: "Browser workflows",
-    copy: "Modern browser and productivity workflows matter because normal computing lives across local and web surfaces.",
-    icon: AppWindow,
-  },
-  {
-    title: "Linux apps",
-    copy: "Native Linux software is the natural starting point for the application ecosystem.",
-    icon: PackageCheck,
-  },
-  {
-    title: "Windows compatibility paths",
-    copy: "Compatibility layers may help some workflows, but they are not magic and will be tested honestly.",
-    icon: MonitorCog,
-  },
-  {
-    title: "Virtual machines",
-    copy: "Virtualization remains a practical path for workflows that need a different operating environment.",
-    icon: Layers3,
-  },
-  {
-    title: "Cloud and sync services",
-    copy: "File sync and web-backed productivity need clean integration without hidden background clutter.",
-    icon: Cloud,
-  },
+const previews = [
+  { title: "Login", copy: "A calm beginning to your session.", crop: styles.login, alt: "Concept preview of a Glass Squares login screen over a blue planetary landscape" },
+  { title: "Desktop shell", copy: "A clear space for the work in front of you.", crop: styles.desktop, alt: "Concept preview of the Glass Squares desktop with a translucent bottom shelf" },
+  { title: "Start", copy: "Your applications, within reach.", crop: styles.start, alt: "Concept preview of the Glass Squares Start menu with a search field and application grid" },
+  { title: "Quick settings", copy: "System controls, in one place.", crop: styles.settings, alt: "Concept preview of Glass Squares quick settings; deeper system integration is planned" },
 ];
-
-const security = [
-  {
-    title: "Sane defaults",
-    copy: "Start from conservative behavior and make tradeoffs clear.",
-    icon: ShieldCheck,
-  },
-  {
-    title: "App permissions direction",
-    copy: "Permission surfaces should be legible, practical, and hard to miss.",
-    icon: KeyRound,
-  },
-  {
-    title: "Encrypted storage direction",
-    copy: "Storage protection is part of the roadmap, not a decorative bullet.",
-    icon: Archive,
-  },
-  {
-    title: "Clear updates",
-    copy: "Updates need visible notes, minimal drama, and no mystery bundles.",
-    icon: Gauge,
-  },
+const apps = [
+  { name: "Welcome", copy: "First-run guidance and a way into your desktop.", icon: Sparkles },
+  { name: "Store", copy: "Application discovery and clearer software choices.", icon: PackageCheck },
+  { name: "Update", copy: "A dedicated home for system-update information.", icon: RefreshCw },
+  { name: "Drive Center", copy: "A focused interface for storage and connected drives.", icon: HardDrive },
+  { name: "Bridge", copy: "Tools for connecting workflows across environments.", icon: Cable },
+  { name: "Windows Workspace", copy: "A place to develop practical Windows workflow options.", icon: AppWindow },
 ];
-
 const roadmap = [
-  {
-    title: "Brand system",
-    description: "Define the Glass Squares OS name, desktop identity, surfaces, and product language.",
-    status: "Active" as const,
-  },
-  {
-    title: "Desktop shell prototype",
-    description: "Prototype the glass-panel shell, square grid UI, app surfaces, and desktop workflow.",
-    status: "Active" as const,
-  },
-  {
-    title: "Installer research",
-    description: "Explore approachable install paths without hiding important system decisions.",
-    status: "Research" as const,
-  },
-  {
-    title: "Compatibility testing",
-    description: "Test common file, browser, Linux app, compatibility layer, and VM workflows.",
-    status: "Upcoming" as const,
-  },
-  {
-    title: "Beta image",
-    description: "Prepare an early image for qualified testers and feedback loops.",
-    status: "Upcoming" as const,
-  },
-  {
-    title: "Public preview",
-    description: "Open a broader preview once quality, compatibility notes, and security docs are ready.",
-    status: "Upcoming" as const,
-  },
+  { phase: "01", status: "Accepted in a VM", title: "Desktop fundamentals", copy: "Fresh login, Start, Store, Shelf, Spotlight, and repeat-session behavior.", done: true },
+  { phase: "02", status: "Next phase", title: "Deeper system integration", copy: "Audio, network, power, notifications, and session controls. This phase has not started.", done: false },
+  { phase: "03", status: "Still ahead", title: "Hardware & compatibility", copy: "Validate this candidate on physical hardware and test complete application workflows.", done: false },
+  { phase: "04", status: "Not yet released", title: "Public preview", copy: "Open testing after the relevant quality and release gates pass. No release date announced.", done: false },
 ];
 
 export default function GlassSquaresOSPage() {
@@ -176,222 +47,102 @@ export default function GlassSquaresOSPage() {
     "@type": "SoftwareApplication",
     "@id": `${siteConfig.url}/products/glass-squares-os#software`,
     name: "Glass Squares OS",
-    description:
-      "Glass Squares OS is a Linux-based desktop operating system in development, built around glassy surfaces, square-based layouts, low bloat, and practical compatibility.",
+    description: "An independent Linux desktop in development, with a VM-tested desktop milestone, a modular Plasma/KWin-based shell, and a shared first-party application design language.",
     applicationCategory: "OperatingSystem",
     operatingSystem: "Linux",
     url: `${siteConfig.url}/products/glass-squares-os`,
-    publisher: {
-      "@type": "Organization",
-      "@id": `${siteConfig.url}/#organization`,
-      name: siteConfig.name,
-      url: siteConfig.url,
-    },
+    publisher: { "@type": "Organization", "@id": `${siteConfig.url}/#organization`, name: siteConfig.name, url: siteConfig.url },
   };
 
   return (
-    <>
+    <div className={styles.page}>
       <StructuredData data={structuredData} />
-      <div className="border-b border-white/10 bg-black/15">
-        <Container className="py-4">
-          <Breadcrumbs
-            items={[
-              { name: "Home", path: "/" },
-              { name: "Products", path: "/products" },
-              { name: "Glass Squares OS", path: "/products/glass-squares-os" },
-            ]}
-          />
-        </Container>
+      <div className={styles.subnav}>
+        <div className={styles.wrap}>
+          <Breadcrumbs items={[{ name: "Home", path: "/" }, { name: "Products", path: "/products" }, { name: "Glass Squares OS", path: "/products/glass-squares-os" }]} />
+          <nav aria-label="Glass Squares page sections" className={styles.localLinks}>
+            <a href="#build-state">Build state</a><a href="#preview">Design</a><a href="#roadmap">Roadmap</a>
+          </nav>
+        </div>
       </div>
-      <section className="relative overflow-hidden border-b border-[#16c8ff]/15 bg-[radial-gradient(circle_at_82%_22%,rgba(22,200,255,0.11),transparent_28%),radial-gradient(circle_at_72%_72%,rgba(109,49,255,0.1),transparent_30%)]">
-        <div className="absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,#16c8ff,#6d31ff,transparent)]" />
-        <Container className="grid items-center gap-12 py-20 sm:py-24 lg:grid-cols-[0.9fr_1.1fr]">
-          <Reveal>
-            <div>
-              <ProductBrandLockup product="Glass Squares OS" />
-              <Badge tone="blue" className="mt-6">
-                In development
-              </Badge>
-              <h1 className="mt-6 text-4xl font-semibold leading-[1.05] text-white sm:text-6xl">
-                A cleaner desktop made of glass, speed, and control.
-              </h1>
-              <p className="mt-6 max-w-3xl text-lg leading-8 text-white/68">
-                Glass Squares OS is a Linux-based desktop operating system built
-                around glassy surfaces, square-based layouts, low bloat, practical
-                compatibility, and a familiar workflow.
-              </p>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-[#8aeaff]">
-                Current work includes the brand system and desktop shell prototype.
-                Installer, compatibility, beta-image, and public-preview work remain
-                roadmap direction, not completed releases.
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/download" className={buttonStyles({ variant: "glass", size: "lg" })}>
-                  Join OS Beta
-                  <ArrowRight aria-hidden className="size-4" />
-                </Link>
-                <Link
-                  href="/changelog"
-                  className={buttonStyles({ variant: "secondary", size: "lg" })}
-                >
-                  View Roadmap
-                </Link>
-              </div>
+
+      <section className={styles.hero} aria-labelledby="glass-title">
+        <div className={`${styles.wrap} ${styles.heroGrid}`}>
+          <div className={styles.heroCopy}>
+            <p className={styles.wordmark}>Glass Squares <span>OS</span></p>
+            <p className={styles.badge}><span aria-hidden="true" /> In development</p>
+            <h1 id="glass-title">A more human<br /><span>computer.</span></h1>
+            <p className={styles.heroLead}>Focused. Calm. Beautiful. Yours.</p>
+            <p className={styles.heroBody}>An independent Linux desktop bringing a distinctive glass interface, familiar controls, and a shared visual language to everyday computing.</p>
+            <div className={styles.actions}>
+              <a className={styles.primary} href="#preview">Explore the desktop <ArrowDown aria-hidden="true" size={17} /></a>
+              <a className={styles.secondary} href="#build-state">See build progress <ArrowRight aria-hidden="true" size={17} /></a>
             </div>
-          </Reveal>
-          <Reveal delay={0.1}>
-            <OSMockup />
-          </Reveal>
-        </Container>
+            <p className={styles.heroNote}>First desktop milestone passed in VM testing.<br />Public release still ahead.</p>
+          </div>
+          <figure className={styles.heroFigure}>
+            <div className={styles.heroArtwork}>
+              <Image src={artwork} alt="Glass Squares concept artwork: illuminated overlapping glass squares above water between dark monoliths and a blue planet" width={600} height={700} priority unoptimized className={styles.heroImage} />
+            </div>
+            <figcaption>Concept artwork · visual direction</figcaption>
+          </figure>
+        </div>
       </section>
 
-      <Section>
-        <Container className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr]">
-          <Reveal>
-            <div>
-              <Badge tone="gold">Why another OS?</Badge>
-              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Because the desktop should feel intentional again.
-              </h2>
-            </div>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <Card className="p-6 sm:p-8">
-              <p className="text-lg leading-8 text-white/68">
-                Because most desktops have become bloated, noisy, and weirdly
-                hostile to the people using them. Glass Squares OS is Rukh Labs&apos;
-                attempt to make the desktop feel clean, beautiful, fast, and
-                intentional again.
-              </p>
-            </Card>
-          </Reveal>
-        </Container>
-      </Section>
+      <section className={styles.principles} aria-label="Design principles">
+        <div className={`${styles.wrap} ${styles.principleGrid}`}>
+          {principles.map(({ title, copy, icon: Icon }) => <div className={styles.principle} key={title}><Icon aria-hidden="true" size={25} strokeWidth={1.3} /><div><h2>{title}</h2><p>{copy}</p></div></div>)}
+        </div>
+      </section>
 
-      <Section id="features" className="border-y border-[#16c8ff]/14 bg-[#071020]/55">
-        <Container>
-          <Reveal>
-            <div className="max-w-3xl">
-              <Badge tone="blue">Features</Badge>
-              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Glassy surfaces. Square layouts. Practical control.
-              </h2>
-            </div>
-          </Reveal>
-          <div className="mt-10">
-            <FeatureGrid features={features} tone="glass" />
+      <section id="build-state" className={`${styles.section} ${styles.statusSection}`} aria-labelledby="build-title">
+        <div className={styles.wrap}>
+          <div className={styles.sectionHeading}>
+            <div><p className={styles.eyebrow}>Current build state</p><h2 id="build-title">From concept to a<br />working desktop.</h2></div>
+            <div className={styles.statusIntro}><p className={styles.passBadge}><Check aria-hidden="true" size={15} /> First desktop milestone passed</p><p>The integrated desktop passed its first acceptance milestone in a virtual machine. It is a working development build, not a finished OS or a public beta.</p><p className={styles.date}>Latest accepted checkpoint · <time dateTime="2026-09-06">September 6, 2026</time></p></div>
           </div>
-        </Container>
-      </Section>
-
-      <Section>
-        <Container>
-          <Reveal>
-            <div className="max-w-4xl">
-              <Badge tone="gold">Compatibility</Badge>
-              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Practical compatibility, not magic.
-              </h2>
-              <p className="mt-6 text-lg leading-8 text-white/64">
-                Glass Squares OS is designed around practical compatibility, not
-                magic. The goal is to support common document, media, archive,
-                browser, and productivity workflows first, with Windows application
-                support explored through compatibility layers, virtualization, and
-                curated alternatives.
-              </p>
-            </div>
-          </Reveal>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {compatibility.map((item, index) => {
-              const Icon = item.icon;
-
-              return (
-                <Reveal key={item.title} delay={index * 0.04}>
-                  <Card interactive className="h-full p-5">
-                    <Icon aria-hidden className="size-5 text-[#d8b47a]" />
-                    <h3 className="mt-5 text-lg font-semibold text-white">{item.title}</h3>
-                    <p className="mt-3 text-sm leading-6 text-white/58">{item.copy}</p>
-                  </Card>
-                </Reveal>
-              );
-            })}
+          <dl className={styles.stats}>
+            <div><dt>Required runtime checks passed</dt><dd>24<span> / 24</span></dd></div>
+            <div><dt>Visible first-party app launches passed</dt><dd>6</dd></div>
+            <div><dt>Source tests passed</dt><dd>227</dd></div>
+          </dl>
+          <div className={styles.statusGrid}>
+            <article><p className={styles.passed}>Passed · virtual-machine testing</p><h3>Desktop fundamentals</h3><p>Fresh login. Start navigation. Store presentation. Shelf grouping and minimize/restore. Spotlight application launches. Genuine logout and relogin. Normal boot and shutdown.</p></article>
+            <article><p className={styles.planned}>Next · not started</p><h3>System integration</h3><p>The next shell phase brings deeper work on audio, networking, power, notifications, and session controls. Full application workflows still need broader validation.</p></article>
+            <article><p className={styles.pending}>Ahead · not yet validated</p><h3>Hardware & release</h3><p>This candidate has not completed physical-hardware acceptance. Driver compatibility, release readiness, and public testing remain ahead. No public OS download is available.</p></article>
           </div>
-        </Container>
-      </Section>
+          <p className={styles.footnote}>Based on the final <code>ae47cf5</code> acceptance record. Passing this milestone does not establish that every application feature works.</p>
+        </div>
+      </section>
 
-      <Section className="border-y border-white/10 bg-white/[0.025]">
-        <Container>
-          <Reveal>
-            <div className="max-w-3xl">
-              <Badge tone="ivory">Security direction</Badge>
-              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                No mystery bloat. Clear updates. Real release notes.
-              </h2>
-            </div>
-          </Reveal>
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {security.map((item, index) => {
-              const Icon = item.icon;
-
-              return (
-                <Reveal key={item.title} delay={index * 0.04}>
-                  <Card className="h-full p-5">
-                    <Icon aria-hidden className="size-5 text-[#8ce8ff]" />
-                    <h3 className="mt-5 text-lg font-semibold text-white">{item.title}</h3>
-                    <p className="mt-3 text-sm leading-6 text-white/58">{item.copy}</p>
-                  </Card>
-                </Reveal>
-              );
-            })}
+      <section id="preview" className={`${styles.section} ${styles.previewSection}`} aria-labelledby="preview-title">
+        <div className={styles.wrap}>
+          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>The desktop experience</p><h2 id="preview-title">A first look at the direction.</h2></div><p className={styles.headingNote}>These are concept previews inspired by the Glass Squares mockups, <strong>not screenshots of the current build.</strong></p></div>
+          <div className={styles.previewGrid}>
+            {previews.map((preview) => <figure className={styles.previewCard} key={preview.title}><div className={styles.previewArtwork}><Image src={artwork} width={600} height={700} alt={preview.alt} unoptimized className={`${styles.previewImage} ${preview.crop}`} /></div><figcaption><span className={styles.conceptLabel}>Concept preview</span><h3>{preview.title}</h3><p>{preview.copy}</p></figcaption></figure>)}
           </div>
-        </Container>
-      </Section>
+          <div className={styles.desktopNote}><Layers3 aria-hidden="true" size={23} /><p><strong>One desktop. Distinct parts.</strong> Start, Shelf, and Spotlight are evolving as connected native surfaces on the existing Plasma/KWin foundation—not a monolithic replacement compositor.</p></div>
+        </div>
+      </section>
 
-      <Section>
-        <Container className="grid gap-10 lg:grid-cols-[0.75fr_1.25fr]">
-          <Reveal>
-            <div>
-              <Badge tone="blue">Roadmap</Badge>
-              <h2 className="mt-5 text-3xl font-semibold text-white sm:text-5xl">
-                Roadmap to a public preview.
-              </h2>
-            </div>
-          </Reveal>
-          <Reveal delay={0.08}>
-            <RoadmapTimeline items={roadmap} />
-          </Reveal>
-        </Container>
-      </Section>
+      <section id="apps" className={styles.section} aria-labelledby="apps-title">
+        <div className={styles.wrap}>
+          <div className={styles.sectionHeading}><div><p className={styles.eyebrow}>Core apps · in development</p><h2 id="apps-title">A shared language.<br />Tools with a purpose.</h2></div><p className={styles.headingNote}>Welcome, Store, Update, Drive Center, Bridge, and Windows Workspace form the core app family. Each is being developed as its own focused tool.</p></div>
+          <div className={styles.appGrid}>{apps.map(({ name, copy, icon: Icon }) => <article className={styles.appCard} key={name}><span className={styles.appIcon}><Icon aria-hidden="true" size={24} strokeWidth={1.5} /></span><h3>{name}</h3><p>{copy}</p><span className={styles.appState}>In development</span></article>)}</div>
+          <p className={styles.footnote}>Six visible launches passed in the accepted VM. Installation, remote updates, storage operations, and Windows compatibility are not implied by a successful launch.</p>
+        </div>
+      </section>
 
-      <Section className="border-y border-white/10 bg-white/[0.02]">
-        <Container>
-          <Reveal>
-            <div className="flex flex-col gap-5 rounded-xl border border-[#16c8ff]/20 bg-[#16c8ff]/[0.04] p-6 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <Badge tone="blue">Product work</Badge>
-                <h2 className="mt-4 text-2xl font-semibold text-white">See the work behind the Glass Squares OS direction.</h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-white/58">The Work page separates the existing concept, active prototype direction, research, and roadmap boundaries.</p>
-              </div>
-              <Link href="/work/glass-squares-os" className={buttonStyles({ variant: "secondary", className: "shrink-0" })}>Explore Glass Squares OS work</Link>
-            </div>
-          </Reveal>
-        </Container>
-      </Section>
+      <section id="roadmap" className={`${styles.section} ${styles.roadmapSection}`} aria-labelledby="roadmap-title">
+        <div className={styles.wrap}>
+          <p className={styles.eyebrow}>What comes next</p><h2 id="roadmap-title">Build the experience.<br />Prove the essentials.</h2>
+          <div className={styles.roadmapGrid}>{roadmap.map((item) => <article className={styles.roadmapCard} key={item.phase}><div className={styles.phase}><span>{item.phase}</span>{item.done ? <Check aria-hidden="true" size={18} /> : <ArrowRight aria-hidden="true" size={18} />}</div><p className={item.done ? styles.passed : styles.planned}>{item.status}</p><h3>{item.title}</h3><p>{item.copy}</p></article>)}</div>
+          <details className={styles.evidence}><summary>What this checkpoint proves—and what it does not</summary><div><h3>Tested in the accepted VM</h3><p>The September 6 acceptance record covers all 24 required runtime checks, 227 source tests, 23 build-input groups, six visible app launches, and seven installed self-tests. Desktop checks included 1920 × 1080 at 100%, 1366 × 768, and 150% scaling. Essential interactions passed with reduced motion.</p><h3>Known limits</h3><p>Four utilities retain generic window identities. Full suppression of Start’s custom motion remains unproven. Spotlight has cosmetic glyph-encoding issues, and remote Update checks remain incomplete. VM and platform limitations still apply.</p><p>The first disk attempt was interrupted by a builder runtime stall; the recorded recovery reused the validated source and container. Physical-hardware acceptance for this candidate and the next shell phase have not been completed.</p><p className={styles.footnote}>Status source: final Glass Shell Slice 1 acceptance record, <time dateTime="2026-09-06">September 6, 2026</time>, source <code>ae47cf5</code>. Artwork on this page represents design direction only.</p></div></details>
+        </div>
+      </section>
 
-      <Section className="pt-0">
-        <Container>
-          <Reveal>
-            <div className="rounded-[1.75rem] border border-[#16c8ff]/22 bg-[linear-gradient(135deg,rgba(22,200,255,0.12),rgba(109,49,255,0.12))] p-6 sm:p-8 lg:p-10">
-              <h2 className="text-3xl font-semibold text-white sm:text-5xl">
-                Help shape the desktop Glass Squares OS becomes.
-              </h2>
-              <Link href="/download" className={buttonStyles({ variant: "glass", className: "mt-8", size: "lg" })}>
-                Join OS Beta
-              </Link>
-            </div>
-          </Reveal>
-        </Container>
-      </Section>
-    </>
+      <section className={styles.follow} aria-labelledby="follow-title"><div className={`${styles.wrap} ${styles.followGrid}`}><div><p className={styles.eyebrow}>Follow development</p><h2 id="follow-title">See what comes next.</h2><p>Get notified when public testing opens. Glass Squares OS is still in development; there is no public download yet.</p></div><Link className={styles.primary} href="/download">Get release updates <ArrowRight aria-hidden="true" size={18} /></Link></div></section>
+      <div className={`${styles.wrap} ${styles.pageEnd}`}><ShieldCheck aria-hidden="true" size={16} /><p>Build status and concept imagery are kept separate. Last substantive update: <time dateTime="2026-09-06">September 6, 2026</time>.</p></div>
+    </div>
   );
 }

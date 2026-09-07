@@ -25,6 +25,7 @@ const SEO_ABOUT_UPDATED = "2026-08-05";
 export const SEO_PHASE_TWO_DEPLOYMENT_DATE = "2026-08-05";
 export const SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE = "2026-08-14";
 export const SEO_DATA_OPS_DEPLOYMENT_DATE = "2026-08-22";
+export const SEO_GLASS_SQUARES_UPDATED = "2026-09-06";
 
 export const seoRoutes: readonly SeoRoute[] = [
   { path: "/", lastModified: SEO_DATA_OPS_DEPLOYMENT_DATE, changeFrequency: "weekly", priority: 1, indexable: true, follow: true, classification: "indexable" },
@@ -35,10 +36,10 @@ export const seoRoutes: readonly SeoRoute[] = [
   { path: "/services/web-development/professional-services", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
   { path: "/services/career-portfolios/data-analysts", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
   { path: "/services/career-portfolios/bi-developers", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
-  { path: "/products", lastModified: SEO_NETWORK_EXPLORER_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
+  { path: "/products", lastModified: SEO_GLASS_SQUARES_UPDATED, changeFrequency: "monthly", priority: 0.8, indexable: true, follow: true, classification: "indexable" },
   { path: "/products/farzin", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.9, indexable: true, follow: true, classification: "indexable" },
   { path: "/products/farzin/privacy", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "yearly", priority: 0.3, indexable: true, follow: true, classification: "indexable" },
-  { path: "/products/glass-squares-os", lastModified: SEO_PHASE_TWO_DEPLOYMENT_DATE, changeFrequency: "monthly", priority: 0.9, indexable: true, follow: true, classification: "indexable" },
+  { path: "/products/glass-squares-os", lastModified: SEO_GLASS_SQUARES_UPDATED, changeFrequency: "monthly", priority: 0.9, indexable: true, follow: true, classification: "indexable" },
   { path: "/download", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "monthly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/changelog", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "weekly", priority: 0.7, indexable: true, follow: true, classification: "indexable" },
   { path: "/security", lastModified: SEO_CONTENT_UPDATED, changeFrequency: "yearly", priority: 0.5, indexable: true, follow: true, classification: "indexable" },
