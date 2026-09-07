@@ -12,7 +12,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -33,3 +33,25 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: SEO audit
+        run: npm run seo:audit
+
+      - name: Install isolated browser test tooling
+        run: |
+          npm install --prefix "$RUNNER_TEMP/glass-browser" playwright@1.55.1 --no-audit --no-fund
+          "$RUNNER_TEMP/glass-browser/node_modules/.bin/playwright" install --with-deps chromium
+
+      - name: Verify Glass Squares public page
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: GLASS_BROWSER_MODULES="$RUNNER_TEMP/glass-browser/node_modules" node scripts/verify-glass-page.mjs
+
+      - name: Retain Glass Squares browser evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: glass-squares-page-evidence
+          path: artifacts/glass-page
+          if-no-files-found: ignore
+          retention-days: 7
