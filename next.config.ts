@@ -22,6 +22,21 @@ const privatePortfolioRoutes = [
 
 const nextConfig: NextConfig = {
   trailingSlash: false,
+  // Vercel serves /_next/image through its Image Optimization service. None of
+  // our routes import Sharp, so its native libraries are unused in Functions.
+  // Keep them available for next start and other self-hosted deployments.
+  ...(process.env.VERCEL === "1"
+    ? {
+        outputFileTracingExcludes: {
+          "/*": [
+            "./node_modules/sharp/**/*",
+            "./node_modules/@img/sharp-*/**/*",
+            "./node_modules/.pnpm/sharp@*/**/*",
+            "./node_modules/.pnpm/@img+sharp-*/**/*",
+          ],
+        },
+      }
+    : {}),
   async redirects() {
     return [
       {
