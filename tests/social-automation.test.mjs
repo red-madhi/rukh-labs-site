@@ -9,16 +9,16 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const config = { key:'dropsite',displayName:'Drop Site',sourceDid:'did:source',sourceHandle:'source.test',tableName:'bluesky_dropsite_daily_reposts',envPrefix:'DROP_SITE',defaultHour:8,defaultMinute:30 };
 function load(file, sql, fetch, automation = {}, clock = { value: Date.parse('2026-09-10T15:00:00Z') }) {
   class Clock extends Date { constructor(...args) { super(...(args.length ? args : [clock.value])); } static now() { return clock.value; } }
-  const module = { exports:{} };
+  const testModule = { exports:{} };
   const result = ts.transpileModule(fs.readFileSync(path.join(ROOT,'src/lib',file),'utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS},reportDiagnostics:true});
   assert.equal(result.diagnostics.length,0);
-  const context = { module,exports:module.exports,require:(id)=> {
+  const context = { module:testModule,exports:testModule.exports,require:(id)=> {
     if (id === '@neondatabase/serverless') return { neon:()=>sql };
     if (id === '@/lib/bluesky-repost-automation') return automation;
     throw new Error(`Unexpected import ${id}`);
   },process:{env:{DATABASE_URL:'test-only'}},Date:Clock,Intl,URLSearchParams,AbortSignal,fetch,console:{warn(){},error(){},log(){}},setTimeout,clearTimeout };
   vm.runInNewContext(result.outputText,context,{filename:file});
-  return module.exports;
+  return testModule.exports;
 }
 function response(payload) { return {ok:true,json:async()=>payload}; }
 function post(did,uri='at://fresh',text='I shipped my app. New feature: export.',date='2026-09-10T12:00:00Z') {
