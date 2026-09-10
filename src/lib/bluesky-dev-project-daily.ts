@@ -195,7 +195,7 @@ export async function runDailyDevProjectReposts(options: { force?: boolean; sche
       try { return await bestProjectPost(candidate,usedUris); }
       catch (error) { feedErrors.push({ source: candidate.handle,error: error instanceof Error ? error.message.slice(0,200) : "Feed request failed." }); return null; }
     }));
-    winner = evaluated.filter((p): p is ProjectPost => p !== null).sort(rotationCompare)[0] ?? null;
+    winner = evaluated.filter((p): p is NonNullable<typeof p> => p !== null).sort(rotationCompare)[0] ?? null;
     if (!winner) {
       const message = feedErrors.length === candidates.length && candidates.length > 0 ? "Every developer feed request failed; no post was selected." : "No eligible unused dev project posts were found.";
       console.warn("Dev project selection incomplete",{ checked: candidates.length,feedErrors });
