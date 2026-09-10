@@ -10,26 +10,17 @@ const ALLOWED_WORKFLOWS = [
   "bluesky-follow-automation.yml",
   "iazma-social-automation-v2.yml",
   "rukh-leads-contact-enrichment.yml",
+  "iazma-daily-boosts.yml",
 ];
 const ALLOWED_EVENTS = ["schedule", "workflow_dispatch", "push"];
 
 export async function GET(request: NextRequest) {
   const authorization = request.headers.get("authorization");
-  const token = authorization?.startsWith("Bearer ")
-    ? authorization.slice(7).trim()
-    : "";
-
+  const token = authorization?.startsWith("Bearer ") ? authorization.slice(7).trim() : "";
   try {
-    if (
-      !token ||
-      !(await verifyGithubActionsToken(token, ALLOWED_WORKFLOWS, ALLOWED_EVENTS))
-    ) {
-      return NextResponse.json(
-        { error: "GitHub Actions OIDC authentication failed." },
-        { status: 401 },
-      );
+    if (!token || !(await verifyGithubActionsToken(token, ALLOWED_WORKFLOWS, ALLOWED_EVENTS))) {
+      return NextResponse.json({ error: "GitHub Actions OIDC authentication failed." }, { status: 401 });
     }
-
     const targetValue = Number(request.nextUrl.searchParams.get("target"));
     const targetCount = targetValue === 1 || targetValue === 2 ? targetValue : undefined;
     const result = await runDailyDevProjectReposts({
@@ -37,27 +28,15 @@ export async function GET(request: NextRequest) {
       scheduled: request.nextUrl.searchParams.get("catchup") === "1",
       targetCount,
     });
-    return NextResponse.json(result, {
+    return NextResponse.json({ ...result, automationRevision: "2026-09-10.1" }, {
       status: result.ok ? 200 : 500,
-      headers: {
-        "Cache-Control": "no-store, max-age=0",
-        "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
-      },
+      headers: { "Cache-Control": "no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet" },
     });
   } catch (error) {
     console.error("Daily dev project reposts failed", error);
-    return NextResponse.json(
-      {
-        ok: false,
-        error: error instanceof Error ? error.message : "Daily dev project reposts failed.",
-      },
-      {
-        status: 500,
-        headers: {
-          "Cache-Control": "no-store, max-age=0",
-          "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet",
-        },
-      },
-    );
+    return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : "Daily dev project reposts failed." }, {
+      status: 500,
+      headers: { "Cache-Control": "no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow, noarchive, nosnippet" },
+    });
   }
 }
