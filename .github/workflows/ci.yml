@@ -25,6 +25,9 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Test social automation regressions
+        run: node --test tests/social-automation.test.mjs
+
       - name: Build
         id: build
         run: npm run build

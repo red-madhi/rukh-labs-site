@@ -1,38 +1,97 @@
-name: IAZMA Daily Boosts
+name: IAZMA Morning and Staggered Posts
 
 on:
   schedule:
-    # Offset from the busiest part of the hour. The endpoint owns its Denver-
-    # time due check and daily idempotency, so hourly retries are safe.
-    - cron: "17 14-23 * * *"
+    # The application owns America/Denver due times and daily idempotency.
+    # Offset from the top of the hour; all-day retries also cover DST changes.
+    - cron: "2-59/5 * * * *"
   workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - ".github/workflows/iazma-daily-boosts.yml"
+      - "src/lib/advanced-network-daily-boosts-v2.ts"
+      - "src/lib/bluesky-daily-source-refresh.ts"
+      - "src/lib/bluesky-dev-project-daily.ts"
+      - "src/app/api/advanced-network/dropsite-daily/route.ts"
+      - "src/app/api/advanced-network/fightback-daily/route.ts"
+      - "src/app/api/advanced-network/dev-project-daily/route.ts"
 
 permissions:
   contents: read
   id-token: write
 
-concurrency:
-  group: iazma-daily-boosts
-  cancel-in-progress: false
-
 jobs:
-  prepare:
+  social:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 12
+    concurrency:
+      group: iazma-social-${{ matrix.key }}
+      cancel-in-progress: false
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - key: morning
+            name: Morning approval email
+            path: /api/advanced-network/daily-boosts/prepare
+            revision: false
+          - key: dropsite
+            name: Drop Site repost
+            path: /api/advanced-network/dropsite-daily
+            revision: true
+          - key: fightback
+            name: Fight Back News repost
+            path: /api/advanced-network/fightback-daily
+            revision: true
+          - key: developer
+            name: Staggered developer reposts
+            path: /api/advanced-network/dev-project-daily?catchup=1
+            revision: true
     steps:
-      - name: Prepare picks and send approval email
+      - name: Run due work and verify the response
+        env:
+          TARGET_PATH: ${{ matrix.path }}
+          CHECK_REVISION: ${{ matrix.revision }}
+          JOB_KEY: ${{ matrix.key }}
         run: |
-          TOKEN=$(curl -fsS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -r .value)
-          test -n "$TOKEN" -a "$TOKEN" != "null"
-          URL="https://rukhlabs.com/api/advanced-network/daily-boosts/prepare"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            URL="$URL?force=1"
-          fi
-          curl --fail --silent --show-error --retry 3 --retry-delay 5 \
-            --max-time 90 \
-            -H "Authorization: Bearer $TOKEN" "$URL"
+          set -uo pipefail
+          # Never force a post on deployment or manual execution. The same
+          # Denver-time gates, approval requirement, and daily limits always apply.
+          for attempt in 1 2 3 4 5 6 7 8; do
+            TOKEN=$(curl -fsS --max-time 15 \
+              -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+              "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=rukhlabs.com" | jq -er .value) || TOKEN=""
+            if [ -n "$TOKEN" ] && [ "$TOKEN" != "null" ]; then
+              RESPONSE_FILE=$(mktemp)
+              HTTP_CODE=$(curl --silent --show-error --max-time 65 \
+                --output "$RESPONSE_FILE" --write-out "%{http_code}" \
+                -H "Authorization: Bearer $TOKEN" \
+                "https://rukhlabs.com${TARGET_PATH}" || true)
+              cat "$RESPONSE_FILE"
+              VALID=false
+              if [[ "$HTTP_CODE" =~ ^2[0-9][0-9]$ ]] && jq -e '.ok == true' "$RESPONSE_FILE" >/dev/null; then
+                VALID=true
+                if [ "$CHECK_REVISION" = "true" ] && ! jq -e '.automationRevision == "2026-09-10.1"' "$RESPONSE_FILE" >/dev/null; then
+                  VALID=false
+                fi
+                if [ "$JOB_KEY" != "morning" ] && ! jq -e '
+                  (.skipped == true and (.message | type == "string")) or
+                  (.verification.repositoryVerified == true and .verification.publicVisible == true)
+                ' "$RESPONSE_FILE" >/dev/null; then
+                  VALID=false
+                fi
+              fi
+              if [ "$VALID" = "true" ]; then
+                jq -r 'if .skipped == true then "SKIPPED: " + (.message // "No work due") else "COMPLETED: " + (.message // (if .emailed then "Approval email sent; posting still requires approval." else "Public repost verification passed." end)) end' "$RESPONSE_FILE" >> "$GITHUB_STEP_SUMMARY"
+                rm -f "$RESPONSE_FILE"
+                exit 0
+              fi
+              rm -f "$RESPONSE_FILE"
+              echo "Attempt $attempt did not return a valid success (HTTP $HTTP_CODE)."
+            fi
+            if [ "$attempt" -lt 8 ]; then sleep 20; fi
+          done
+          echo "::error::Social automation failed. Review the response above; no delivery is being claimed."
+          exit 1
