@@ -1,0 +1,64 @@
+name: IRS Worker Offline Tests
+
+on:
+  pull_request:
+    paths:
+      - "scripts/leads/**"
+      - "tests/test_irs_nonprofits.py"
+      - "tests/irs-*.mjs"
+      - "src/lib/leads/irs-*.ts"
+      - "src/lib/leads/github-oidc.ts"
+      - "src/lib/leads/crawl.ts"
+      - "src/lib/leads/backpressure.ts"
+      - "src/lib/leads/auth.ts"
+      - "src/lib/leads/contact-values.ts"
+      - "src/app/api/github-crawl-ingest/route.ts"
+      - "src/app/api/leads/ingest/**"
+      - "src/proxy.ts"
+      - "docs/rukh-leads-crawl-schema.sql"
+      - "src/app/api/leads/collect/irs-nonprofits/route.ts"
+      - ".github/workflows/rukh-leads-irs-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/leads/**"
+      - "tests/test_irs_nonprofits.py"
+      - "tests/irs-*.mjs"
+      - "src/lib/leads/irs-*.ts"
+      - "src/lib/leads/github-oidc.ts"
+      - "src/lib/leads/crawl.ts"
+      - "src/lib/leads/backpressure.ts"
+      - "src/lib/leads/auth.ts"
+      - "src/lib/leads/contact-values.ts"
+      - "src/app/api/github-crawl-ingest/route.ts"
+      - "src/app/api/leads/ingest/**"
+      - "src/proxy.ts"
+      - "docs/rukh-leads-crawl-schema.sql"
+      - "src/app/api/leads/collect/irs-nonprofits/route.ts"
+      - ".github/workflows/rukh-leads-irs-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test IRS parsing and worker without network or credentials
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
+        run: python3 -m unittest discover -s tests -p 'test_irs_nonprofits.py' -v
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install application and isolated PostgreSQL test dependencies
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --prefix "$RUNNER_TEMP/irs-db-tests" @electric-sql/pglite@0.5.8 --ignore-scripts --no-audit --no-fund
+      - name: Test authenticated IRS ingestion with local PostgreSQL
+        run: IRS_TEST_MODULES="$RUNNER_TEMP/irs-db-tests" node --test tests/irs-ingestion-*.test.mjs

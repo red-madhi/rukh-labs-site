@@ -23,6 +23,8 @@ export function proxy(request: NextRequest) {
     pathname.startsWith("/api/leads/collect/") ||
     pathname === "/api/leads/crawl" ||
     pathname.startsWith("/api/leads/crawl/") ||
+    pathname === "/api/leads/ingest/candidates" ||
+    pathname === "/api/leads/ingest/report" ||
     pathname.startsWith("/api/leads/process/");
 
   if (isAutomation) {
